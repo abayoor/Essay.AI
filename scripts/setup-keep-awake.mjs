@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 
-const ENV_FILE = '.env';
+const ENV_FILE = '.env.local';
 const WORKFLOW = 'keep-awake.yml';
 
 function fail(message) {

@@ -1,0 +1,40 @@
+.app-shell { min-height: 100vh; }
+
+.site-header {
+  align-items: center; display: flex; justify-content: space-between; margin: 0 auto;
+  max-width: 1200px; padding: 24px 32px;
+}
+
+.brand { color: var(--navy); font-family: Georgia, "Times New Roman", serif; font-size: 1.35rem; font-weight: 700; }
+.site-header nav { align-items: center; display: flex; gap: 20px; font-size: .92rem; }
+
+.landing { margin: 0 auto; max-width: 1200px; padding: 64px 32px 96px; }
+.hero { max-width: 800px; padding: 60px 0 100px; }
+.hero h1 { color: var(--navy); font-size: clamp(3.7rem, 9vw, 7.2rem); letter-spacing: -.06em; line-height: .92; margin: 18px 0 28px; }
+.hero h1 em { color: var(--ochre); font-weight: 500; }
+.hero-copy { color: #475467; font-size: 1.16rem; line-height: 1.7; max-width: 620px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 34px; }
+
+.approach-grid { border-top: 1px solid var(--line); display: grid; gap: 36px; grid-template-columns: repeat(3, 1fr); padding-top: 36px; }
+.approach-grid article { padding-right: 18px; }
+.approach-grid span { color: var(--ochre); font-size: .78rem; font-weight: 700; }
+.approach-grid h2 { font-size: 1.65rem; margin: 14px 0 10px; }
+.approach-grid p { color: var(--muted); line-height: 1.6; }
+
+.auth-page, .narrow-page { display: grid; min-height: calc(100vh - 80px); padding: 32px; place-items: center; }
+.content-page, .editor-page { margin: 0 auto; max-width: 1120px; padding: 52px 32px 96px; }
+.page-intro, .editor-heading { align-items: end; display: flex; justify-content: space-between; margin-bottom: 36px; }
+.page-intro h1, .editor-heading h1 { font-size: clamp(2.4rem, 5vw, 4rem); letter-spacing: -.045em; margin-top: 7px; }
+
+.essay-list { display: grid; gap: 14px; max-width: 800px; }
+.editor-layout { align-items: start; display: grid; gap: 28px; grid-template-columns: minmax(0, 1.8fr) minmax(300px, .9fr); }
+.loading-copy { color: var(--muted); padding: 80px 0; text-align: center; }
+
+@media (max-width: 720px) {
+  .site-header, .landing, .content-page, .editor-page { padding-left: 20px; padding-right: 20px; }
+  .hero { padding: 36px 0 72px; }
+  .approach-grid, .editor-layout { grid-template-columns: 1fr; }
+  .approach-grid { gap: 28px; }
+  .page-intro, .editor-heading { align-items: start; flex-direction: column; gap: 18px; }
+  .auth-page, .narrow-page { padding: 20px; }
+}
