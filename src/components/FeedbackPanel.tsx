@@ -1,5 +1,6 @@
 import { MarginComment } from './MarginComment';
-import type { CoachingFeedback } from '../lib/models';
+import { PersonaFeedbackCards } from './PersonaFeedbackCards';
+import type { CoachingFeedback, PersonaFeedback } from '../lib/models';
 
 type FeedbackPanelProps = {
   feedback: CoachingFeedback | null;
@@ -7,20 +8,33 @@ type FeedbackPanelProps = {
   onRequest: () => void;
   disabled: boolean;
   error: string;
+  personas: PersonaFeedback | null;
+  personasLoading: boolean;
+  personasError: string;
+  onRequestPersonas: () => void;
 };
 
-export function FeedbackPanel({ feedback, loading, onRequest, disabled, error }: FeedbackPanelProps) {
+export function FeedbackPanel({
+  feedback, loading, onRequest, disabled, error, personas, personasLoading, personasError, onRequestPersonas,
+}: FeedbackPanelProps) {
   if (loading) {
     return <aside className="feedback-panel"><p className="eyebrow">ИИ-коуч</p><div className="feedback-skeleton" /><div className="feedback-skeleton short" /></aside>;
   }
 
   return (
-    <aside className="feedback-panel">
+    <>
+      <aside className="feedback-panel">
       <p className="eyebrow">ИИ-коуч</p>
       <h2>Мягкая обратная связь</h2>
       <p className="muted">Не переписывает текст — помогает сделать его яснее и честнее.</p>
-      <button onClick={onRequest} disabled={disabled}>Получить фидбэк</button>
+      <div className="feedback-actions">
+        <button onClick={onRequest} disabled={disabled}>Получить фидбэк</button>
+        <button className="secondary-button" onClick={onRequestPersonas} disabled={disabled || personasLoading}>
+          {personasLoading ? 'Слушаем читателей…' : 'Три читателя'}
+        </button>
+      </div>
       {error && <p className="form-message" role="alert">{error}</p>}
+      {personasError && <p className="form-message" role="alert">{personasError}</p>}
       {!feedback && !error && <p className="empty-copy">Напиши хотя бы пару предложений — затем попроси коуча посмотреть на черновик.</p>}
       {feedback && (
         <div className="feedback-content">
@@ -33,7 +47,9 @@ export function FeedbackPanel({ feedback, loading, onRequest, disabled, error }:
           {feedback.margin_comments?.map((comment, index) => <MarginComment key={comment.quote + index} comment={comment} />)}
         </div>
       )}
-    </aside>
+      </aside>
+      {personas && <PersonaFeedbackCards feedback={personas} />}
+    </>
   );
 }
 

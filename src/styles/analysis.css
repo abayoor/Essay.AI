@@ -1,0 +1,38 @@
+.overlap-panel, .persona-feedback, .interview-card, .interview-feedback {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 16px 42px rgba(31, 41, 55, .06);
+}
+.overlap-panel { display: grid; gap: 18px; margin-top: 28px; padding: 26px; }
+.overlap-panel h2, .persona-feedback h2, .interview-card h2, .interview-feedback h2 { font-size: 1.8rem; margin: 8px 0; }
+.overlap-button { max-width: 280px; }
+.overlap-results { display: grid; gap: 12px; }
+.overlap-result { background: #f7f3ec; border: 1px solid #e5dac9; border-radius: 10px; padding: 17px; }
+.overlap-result h3, .persona-card h3 { font-size: 1.15rem; margin: 5px 0 8px; }
+.overlap-result p, .persona-card p, .interview-feedback li { color: #475467; line-height: 1.55; }
+
+.feedback-actions { display: grid; gap: 10px; margin-top: 23px; }
+.feedback-actions .feedback-panel button, .feedback-actions button { margin: 0; }
+.feedback-actions .secondary-button { color: var(--navy); }
+.persona-feedback { grid-column: 1 / -1; padding: 26px; }
+.persona-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, 1fr); margin-top: 22px; }
+.persona-card { background: #f7f3ec; border: 1px solid #e5dac9; border-radius: 10px; padding: 18px; }
+
+.editor-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.editor-actions .secondary-button { color: var(--navy); width: auto; }
+.interview-page { margin: 0 auto; max-width: 780px; padding: 52px 32px 96px; }
+.interview-intro { margin-bottom: 30px; }
+.interview-intro h1 { font-size: clamp(2.4rem, 5vw, 4rem); letter-spacing: -.045em; margin: 7px 0 14px; }
+.interview-start { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 30px; }
+.interview-start p { color: var(--muted); line-height: 1.6; margin-bottom: 22px; }
+.interview-card { padding: 30px; }
+.interview-card textarea { border: 1px solid #cfc7bb; border-radius: 8px; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 1rem; line-height: 1.6; margin: 22px 0; min-height: 190px; padding: 14px; resize: vertical; width: 100%; }
+.interview-card button, .interview-start button, .interview-finish { background: var(--ochre); border: 1px solid var(--ochre); border-radius: 8px; color: #fff; font-weight: 700; padding: 13px 18px; }
+.interview-finish { margin-top: 18px; width: 100%; }
+.interview-feedback { margin-top: 24px; padding: 26px; }
+.interview-feedback ol { display: grid; gap: 16px; margin: 22px 0 0; padding-left: 22px; }
+.interview-feedback strong { color: var(--navy); display: block; margin-bottom: 5px; }
+
+@media (max-width: 720px) {
+  .persona-grid { grid-template-columns: 1fr; }
+  .interview-page { padding-left: 20px; padding-right: 20px; }
+  .interview-card, .interview-start, .persona-feedback, .overlap-panel { padding: 22px; }
+}

@@ -1,4 +1,5 @@
 import type { EssayDetail, EssaySummary, EssayType, EssayVersion } from './models';
+import { generateAndSaveEssayEmbedding } from './essayOverlap';
 import { supabase } from './supabase';
 
 type NewEssay = {
@@ -37,7 +38,7 @@ export async function createEssay(input: NewEssay): Promise<string> {
 export async function loadEssay(id: string): Promise<EssayDetail | null> {
   const { data, error } = await supabase
     .from('essays')
-    .select('id, title, target_school, essay_type, status, updated_at, prompt_id, current_version_id, essay_versions(id, content, word_count, created_at)')
+    .select('id, title, target_school, essay_type, status, updated_at, prompt_id, current_version_id, essay_versions!essay_versions_essay_id_fkey(id, content, word_count, created_at)')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -60,7 +61,11 @@ export async function saveVersion(essayId: string, content: string): Promise<Ess
     .update({ current_version_id: version.id })
     .eq('id', essayId);
   if (updateError) throw updateError;
-  return version;
+
+  // Черновик уже сохранён, даже если AI временно недоступен. Проверка пересечений
+  // попробует дополнить отсутствующий вектор перед сравнением.
+  const embedding = await generateAndSaveEssayEmbedding(version.id, content).catch(() => null);
+  return { ...version, embedding };
 }
 
 export async function saveFeedback(versionId: string, feedback: object): Promise<void> {

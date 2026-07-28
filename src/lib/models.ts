@@ -18,6 +18,7 @@ export type EssayVersion = {
   content: string;
   word_count: number;
   created_at: string;
+  embedding?: string | null;
 };
 
 export type EssayDetail = EssaySummary & {
@@ -40,4 +41,34 @@ export type CoachingFeedback = {
   word_count_status: 'under' | 'within' | 'over';
   ghostwriting_request?: boolean;
   margin_comments?: CoachComment[];
+};
+
+export type PersonaFeedback = {
+  strict_formalist: string;
+  empathetic_reader: string;
+  pragmatic_reviewer: string;
+};
+
+export type OverlapCheckResult = {
+  essayId: string;
+  title: string;
+  similarity: number;
+  verdict: 'warning' | 'okay';
+  explanation: string;
+  recommendation: string;
+};
+
+export type InterviewAnswer = {
+  question: string;
+  answer: string;
+};
+
+export type InterviewFeedback = {
+  question: string;
+  consistency_note: string;
+};
+
+export type InterviewSession = {
+  id: string;
+  questions: string[];
 };

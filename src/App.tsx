@@ -5,6 +5,7 @@ import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EssayEditorPage } from './pages/EssayEditorPage';
 import { HomePage } from './pages/HomePage';
+import { InterviewPrepPage } from './pages/InterviewPrepPage';
 import { NewEssayPage } from './pages/NewEssayPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/essays/new" component={NewEssayPage} />
+      <Route path="/essays/:id/interview-prep" component={InterviewPrepPage} />
       <Route path="/essays/:id/edit" component={EssayEditorPage} />
       <Route component={NotFoundPage} />
     </Switch>

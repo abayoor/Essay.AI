@@ -22,6 +22,12 @@ type GeminiResponse = {
   }>;
 };
 
+type GeminiEmbeddingResponse = {
+  embedding?: {
+    values?: unknown;
+  };
+};
+
 function json(body: object, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -39,13 +45,38 @@ Deno.serve(async (req) => {
       return json({ error: 'AI пока не настроен. Попроси наставника проверить секрет.' }, 503);
     }
 
-    const body = (await req.json()) as { prompt?: unknown; system?: unknown };
+    const body = (await req.json()) as { prompt?: unknown; system?: unknown; mode?: unknown };
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
     const system = typeof body.system === 'string' ? body.system.trim() : '';
+    const mode = body.mode === 'embedding' ? 'embedding' : 'text';
 
     if (!prompt) return json({ error: 'Напиши запрос для AI.' }, 400);
-    if (prompt.length > 10_000 || system.length > 5_000) {
+    const promptLimit = mode === 'embedding' ? 10_000 : 20_000;
+    if (prompt.length > promptLimit || system.length > 5_000) {
       return json({ error: 'Запрос слишком длинный. Сделай его короче.' }, 400);
+    }
+
+    if (mode === 'embedding') {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: { parts: [{ text: prompt }] },
+            embedContentConfig: { outputDimensionality: 1024 },
+          }),
+        },
+      );
+
+      const data = (await response.json()) as GeminiEmbeddingResponse;
+      const values = data.embedding?.values;
+      if (!response.ok || !Array.isArray(values) || values.some((value) => typeof value !== 'number')) {
+        console.error('Gemini embedding request failed', response.status);
+        return json({ error: 'Не удалось подготовить текст для сравнения. Попробуй ещё раз.' }, 502);
+      }
+
+      return json({ embedding: values });
     }
 
     const response = await fetch(
