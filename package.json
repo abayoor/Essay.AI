@@ -1,5 +1,5 @@
 {
-  "name": "nfact-teens-starter",
+  "name": "velokz",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -14,14 +14,15 @@
     "db:link": "supabase link",
     "db:new": "supabase migration new",
     "db:push": "supabase db push",
-    "keep-awake:setup": "node --use-system-ca scripts/setup-keep-awake.mjs",
-    "ai:secret": "node scripts/setup-ai-secret.mjs",
-    "ai:deploy": "supabase functions deploy ai"
+    "keep-awake:setup": "node --use-system-ca scripts/setup-keep-awake.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
+    "@types/leaflet": "^1.9.21",
+    "leaflet": "^1.9.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
     "wouter": "^3.10.0"
   },
   "devDependencies": {

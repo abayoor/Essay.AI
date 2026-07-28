@@ -1,108 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'wouter';
-import { startGoogleSignIn, signUpWithEmail } from '../lib/auth';
+import { signUpWithEmail, startGoogleSignIn } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { PasswordField } from './PasswordField';
-import { SupabaseSetupMessage } from './SupabaseSetupMessage';
-import { clearPendingReferral, rememberReferralFromUrl } from '../lib/referrals';
 
-type AuthFormProps = {
-  mode: 'sign-in' | 'sign-up';
-};
-
-function authErrorMessage(error: string): string {
-  if (error.toLowerCase().includes('already registered')) {
-    return 'Этот адрес уже зарегистрирован. Войди с паролем на странице входа.';
-  }
-  return 'Не удалось выполнить вход. Проверь почту и пароль.';
-}
-
-export function AuthForm({ mode }: AuthFormProps) {
-  const [, navigate] = useLocation();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-  const isSignUp = mode === 'sign-up';
-
-  useEffect(() => {
-    if (isSignUp) rememberReferralFromUrl();
-    else clearPendingReferral();
-  }, [isSignUp]);
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (password.length < 8) {
-      setMessage('Пароль должен быть не короче 8 символов.');
-      return;
-    }
-
-    setBusy(true);
-    setMessage('');
-    try {
-      const action = isSignUp
-        ? signUpWithEmail(email, password)
-        : supabase.auth.signInWithPassword({ email, password });
-      const { data, error } = await action;
-
-      if (error) {
-        if (!isSignUp && error.message.toLowerCase().includes('email not confirmed')) {
-          navigate(`/auth/confirm?email=${encodeURIComponent(email)}`);
-          return;
-        }
-        setMessage(authErrorMessage(error.message));
-        return;
-      }
-      if (isSignUp && !data.session) {
-        navigate(`/auth/confirm?email=${encodeURIComponent(email)}`);
-        return;
-      }
-      navigate(isSignUp ? '/onboarding' : '/dashboard');
-    } catch {
-      setMessage('Не удалось подключиться к Supabase. Попробуй ещё раз.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function signInWithGoogle() {
-    setBusy(true);
-    setMessage('');
-    try {
-      const { data, error } = await startGoogleSignIn();
-      if (error || !data.url) {
-        setMessage(error?.message.includes('provider is not enabled')
-          ? 'Вход через Google пока не включён в настройках Supabase.'
-          : 'Не удалось начать вход через Google. Попробуй ещё раз.');
-        return;
-      }
-      window.location.assign(data.url);
-    } catch {
-      setMessage('Не удалось открыть Google. Попробуй ещё раз.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!isSupabaseConfigured) return <SupabaseSetupMessage />;
-
-  return (
-    <section className="auth-card">
-      <p className="eyebrow">EssayCoach</p>
-      <h1>{isSignUp ? 'Создай личное пространство для эссе' : 'С возвращением'}</h1>
-      <p className="muted">ИИ помогает думать и замечать детали, но твой текст всегда остаётся твоим.</p>
-      <form onSubmit={(event) => void submit(event)} className="stack-form">
-        <label>Электронная почта<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-        <PasswordField value={password} onChange={(event) => setPassword(event.target.value)} />
-        <button disabled={busy} type="submit">{busy ? 'Подождём…' : isSignUp ? 'Создать аккаунт' : 'Войти'}</button>
-      </form>
-      <div className="separator">или</div>
-      <button className="secondary-button" disabled={busy} onClick={() => void signInWithGoogle()}>Продолжить с Google</button>
-      {message && <p className="form-message" role="alert">{message}</p>}
-      <p className="muted small-text">
-        {isSignUp ? 'Уже есть аккаунт? ' : 'Впервые здесь? '}
-        <Link href={isSignUp ? '/auth/sign-in' : '/auth/sign-up'}>{isSignUp ? 'Войти' : 'Зарегистрироваться'}</Link>
-      </p>
-    </section>
-  );
+export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
+  const [, navigate] = useLocation(); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false); const isSignup = mode === 'sign-up';
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (password.length < 8) { setMessage('Пароль должен быть не короче 8 символов.'); return; } setBusy(true); setMessage(''); try { const { data, error } = await (isSignup ? signUpWithEmail(email, password) : supabase.auth.signInWithPassword({ email, password })); if (error) { setMessage(error.message); return; } if (isSignup && !data.session) { navigate(`/auth/confirm?email=${encodeURIComponent(email)}`); return; } navigate(isSignup ? '/onboarding' : '/dashboard'); } catch { setMessage('Не удалось подключиться к аккаунту. Попробуй ещё раз.'); } finally { setBusy(false); } }
+  async function google() { setBusy(true); setMessage(''); try { const { data, error } = await startGoogleSignIn(); if (error || !data.url) { setMessage(error?.message.includes('provider is not enabled') ? 'Вход через Google пока не подключён.' : 'Не удалось открыть Google.'); return; } window.location.assign(data.url); } catch { setMessage('Не удалось открыть Google.'); } finally { setBusy(false); } }
+  if (!isSupabaseConfigured) return <main className="auth-page"><section className="auth-card"><h1>Supabase ещё не подключён</h1><p>Добавь настройки окружения, чтобы создать велосообщество.</p></section></main>;
+  return <section className="auth-card"><p className="kicker">VeloKZ</p><h1>{isSignup ? 'Начни свой путь.' : 'С возвращением.'}</h1><p>Твой гараж, твои километры и дороги рядом.</p><form className="cycle-form" onSubmit={(event) => void submit(event)}><label>Электронная почта<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label><label>Пароль<input type="password" required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} /></label><button className="signal-button" disabled={busy}>{busy ? 'Подождём…' : isSignup ? 'Создать аккаунт' : 'Войти'}</button></form><div className="auth-separator">или</div><button className="outline-button" disabled={busy} onClick={() => void google()}>Продолжить с Google</button>{message && <p className="form-note" role="alert">{message}</p>}<p className="auth-switch">{isSignup ? 'Уже есть аккаунт?' : 'Впервые здесь?'} <Link href={isSignup ? '/auth/sign-in' : '/auth/sign-up'}>{isSignup ? 'Войти' : 'Создать аккаунт'}</Link></p></section>;
 }

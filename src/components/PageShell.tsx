@@ -1,12 +1,9 @@
+import type { ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useSession } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 
-type PageShellProps = {
-  children: React.ReactNode;
-};
-
-export function PageShell({ children }: PageShellProps) {
+export function PageShell({ children }: { children: ReactNode }) {
   const { session } = useSession();
   const [, navigate] = useLocation();
 
@@ -16,19 +13,14 @@ export function PageShell({ children }: PageShellProps) {
   }
 
   return (
-    <div className="app-shell">
-      <header className="site-header">
-        <Link href="/" className="brand">EssayCoach</Link>
+    <div className="cycle-shell">
+      <header className="cycle-header">
+        <Link href="/" className="cycle-brand"><span>↗</span> VeloKZ</Link>
         <nav aria-label="Основная навигация">
-          {session ? (
-            <>
-              <Link href="/dashboard">Мои эссе</Link>
-              <Link href="/settings">Настройки</Link>
-              <button className="text-button" onClick={() => void signOut()}>Выйти</button>
-            </>
-          ) : (
-            <Link href="/auth/sign-in">Войти</Link>
-          )}
+          {session ? <>
+            <Link href="/dashboard">Сводка</Link><Link href="/routes">Маршруты</Link><Link href="/bikes">Гараж</Link><Link href="/profile">Профиль</Link>
+            <button className="quiet-button" onClick={() => void signOut()}>Выйти</button>
+          </> : <Link className="header-cta" href="/auth/sign-in">Войти</Link>}
         </nav>
       </header>
       {children}

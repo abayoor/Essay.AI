@@ -1,25 +1,14 @@
 import { Link } from 'wouter';
+import { ElevationLine } from '../components/ElevationLine';
 import { PageShell } from '../components/PageShell';
 
 export function HomePage() {
   return (
     <PageShell>
-      <main className="landing">
-        <section className="hero">
-          <p className="eyebrow">Для абитуриентов из Центральной Азии</p>
-          <h1>Твоя история.<br /><em>Твой</em> голос.</h1>
-          <p className="hero-copy">EssayCoach помогает собрать мысли, увидеть сильные детали и отточить эссе — без шаблонных текстов, написанных вместо тебя.</p>
-          <div className="hero-actions">
-            <Link href="/auth/sign-up" className="primary-link">Начать бесплатно</Link>
-            <Link href="/hook-check" className="secondary-button hero-hook-link">Проверить хук</Link>
-            <a href="#approach" className="quiet-link">Как это работает</a>
-          </div>
-        </section>
-        <section id="approach" className="approach-grid">
-          <article><span>01</span><h2>Пишешь сам</h2><p>Черновик остаётся твоим. Никаких «идеальных» эссе от нейросети.</p></article>
-          <article><span>02</span><h2>Получаешь вопросы</h2><p>Коуч подсвечивает детали, структуру и места, которые стоит раскрыть глубже.</p></article>
-          <article><span>03</span><h2>Становишься увереннее</h2><p>Сохраняй версии и возвращайся к тексту со свежим взглядом.</p></article>
-        </section>
+      <main className="landing-page">
+        <section className="cycle-hero"><p className="kicker">Локальное велосообщество</p><h1>Ближе к дороге.<br /><em>Ближе</em> к своим.</h1><p>Маршруты, гараж, журнал заездов и люди, с которыми хочется крутить дальше.</p><div><Link className="signal-button" href="/auth/sign-up">Присоединиться</Link><Link className="text-link" href="/routes">Смотреть маршруты →</Link></div></section>
+        <ElevationLine />
+        <section className="landing-grid"><article><span>01</span><h2>Собирай километры</h2><p>Логируй заезды и смотри честную статистику — без шума.</p></article><article><span>02</span><h2>Знай свою технику</h2><p>Гараж напоминает о цепи, покрышках и тормозах до того, как станет поздно.</p></article><article><span>03</span><h2>Находи дорогу</h2><p>Делись маршрутами из своего региона и забирай с собой проверенные треки.</p></article></section>
       </main>
     </PageShell>
   );
