@@ -35,7 +35,11 @@ function callbackUrl(): string {
 }
 
 export function signUpWithEmail(email: string, password: string) {
-  return supabase.auth.signUp({ email, password });
+  return supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: callbackUrl() },
+  });
 }
 
 export function startGoogleSignIn() {
@@ -54,7 +58,11 @@ export function verifySignupCode(email: string, token: string) {
 }
 
 export function resendSignupCode(email: string) {
-  return supabase.auth.resend({ type: 'signup', email });
+  return supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: callbackUrl() },
+  });
 }
 
 export function exchangeAuthCode(code: string) {
