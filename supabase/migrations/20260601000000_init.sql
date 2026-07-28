@@ -13,6 +13,10 @@ create table if not exists public.entries (
 -- 2) Включаем Row Level Security (без этого таблица закрыта для всех)
 alter table public.entries enable row level security;
 
+grant usage on schema public to anon, authenticated;
+grant select on public.entries to anon, authenticated;
+grant insert, delete on public.entries to authenticated;
+
 -- 3) Правила доступа: каждый работает только со своими строками (user_id = текущий вход)
 create policy "read own entries"
   on public.entries for select
