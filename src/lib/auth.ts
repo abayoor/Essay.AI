@@ -41,7 +41,11 @@ export function signUpWithEmail(email: string, password: string) {
 export function startGoogleSignIn() {
   return supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: callbackUrl() },
+    options: {
+      redirectTo: callbackUrl(),
+      skipBrowserRedirect: true,
+      queryParams: { prompt: 'select_account' },
+    },
   });
 }
 

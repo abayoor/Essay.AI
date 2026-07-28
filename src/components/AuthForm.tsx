@@ -33,35 +33,47 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     setBusy(true);
     setMessage('');
-    const action = isSignUp
-      ? signUpWithEmail(email, password)
-      : supabase.auth.signInWithPassword({ email, password });
-    const { data, error } = await action;
-    setBusy(false);
+    try {
+      const action = isSignUp
+        ? signUpWithEmail(email, password)
+        : supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await action;
 
-    if (error) {
-      if (!isSignUp && error.message.toLowerCase().includes('email not confirmed')) {
+      if (error) {
+        if (!isSignUp && error.message.toLowerCase().includes('email not confirmed')) {
+          navigate(`/auth/confirm?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        setMessage(authErrorMessage(error.message));
+        return;
+      }
+      if (isSignUp && !data.session) {
         navigate(`/auth/confirm?email=${encodeURIComponent(email)}`);
         return;
       }
-      setMessage(authErrorMessage(error.message));
-      return;
+      navigate(isSignUp ? '/onboarding' : '/dashboard');
+    } catch {
+      setMessage('Не удалось подключиться к Supabase. Попробуй ещё раз.');
+    } finally {
+      setBusy(false);
     }
-    if (isSignUp && !data.session) {
-      navigate(`/auth/confirm?email=${encodeURIComponent(email)}`);
-      return;
-    }
-    navigate(isSignUp ? '/onboarding' : '/dashboard');
   }
 
   async function signInWithGoogle() {
     setBusy(true);
     setMessage('');
-    const { error } = await startGoogleSignIn();
-    if (error) {
-      setMessage(error.message.includes('provider is not enabled')
-        ? 'Вход через Google пока не включён в настройках Supabase.'
-        : 'Не удалось начать вход через Google. Попробуй ещё раз.');
+    try {
+      const { data, error } = await startGoogleSignIn();
+      if (error || !data.url) {
+        setMessage(error?.message.includes('provider is not enabled')
+          ? 'Вход через Google пока не включён в настройках Supabase.'
+          : 'Не удалось начать вход через Google. Попробуй ещё раз.');
+        return;
+      }
+      window.location.assign(data.url);
+    } catch {
+      setMessage('Не удалось открыть Google. Попробуй ещё раз.');
+    } finally {
       setBusy(false);
     }
   }
