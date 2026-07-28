@@ -113,6 +113,13 @@ alter table public.essays enable row level security;
 alter table public.essay_versions enable row level security;
 alter table public.feedback_logs enable row level security;
 
+grant usage on schema public to authenticated;
+grant select, update on public.users to authenticated;
+grant select on public.prompts to authenticated;
+grant select, insert, update, delete on public.essays to authenticated;
+grant select, insert, update, delete on public.essay_versions to authenticated;
+grant select, insert, update, delete on public.feedback_logs to authenticated;
+
 create policy "users read their profile"
   on public.users for select using (auth.uid() = id);
 create policy "users update their profile"
