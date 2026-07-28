@@ -5,6 +5,8 @@ const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export const isSupabaseConfigured = Boolean(url && anonKey);
+export const supabaseUrl = url;
+export const supabaseAnonKey = anonKey;
 
 // Запасные значения позволяют показать понятную подсказку в интерфейсе вместо белого экрана.
 export const supabase = createClient(

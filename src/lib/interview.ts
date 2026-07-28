@@ -2,8 +2,23 @@ import { requestInterviewFeedback, requestInterviewQuestions } from './analysisA
 import type { InterviewAnswer, InterviewFeedback, InterviewQuestion, InterviewSession } from './models';
 import { supabase } from './supabase';
 
-export async function startInterview(essayId: string, content: string): Promise<InterviewSession> {
-  const questions = await requestInterviewQuestions(content);
+export async function hasCompletedInterview(essayId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('interview_practice_sessions')
+    .select('id')
+    .eq('essay_id', essayId)
+    .not('feedback', 'is', null)
+    .limit(1);
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+export async function startInterview(
+  essayId: string,
+  content: string,
+  onChunk?: (chunk: string) => void,
+): Promise<InterviewSession> {
+  const questions = await requestInterviewQuestions(content, onChunk);
   const { data, error } = await supabase
     .from('interview_practice_sessions')
     .insert({ essay_id: essayId, questions })
@@ -27,8 +42,9 @@ export async function finishInterview(
   sessionId: string,
   content: string,
   answers: InterviewAnswer[],
+  onChunk?: (chunk: string) => void,
 ): Promise<InterviewFeedback[]> {
-  const feedback = await requestInterviewFeedback(content, answers);
+  const feedback = await requestInterviewFeedback(content, answers, onChunk);
   const { error } = await supabase
     .from('interview_practice_sessions')
     .update({ answers, feedback })

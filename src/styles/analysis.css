@@ -46,6 +46,20 @@
 .referral-link { display: flex; gap: 10px; margin-top: 24px; }
 .referral-link input { background: #fff; border: 1px solid #cfc7bb; border-radius: 8px; color: var(--ink); min-width: 0; padding: 12px; width: 100%; }
 .hero-hook-link { align-self: center; width: auto; }
+.essay-progress { display: flex; flex-wrap: wrap; gap: 8px 18px; list-style: none; margin: -12px 0 28px; padding: 0; }
+.essay-progress li { align-items: center; color: var(--muted); display: inline-flex; font-size: .84rem; font-weight: 650; gap: 6px; }
+.essay-progress li.complete { color: #276246; }
+.essay-progress li span { color: var(--ochre); font-size: 1rem; }
+.essay-progress li.complete span { color: #276246; }
+.ai-stream-preview { background: #f7f3ec; border: 1px solid #e5dac9; border-radius: 10px; margin-top: 18px; padding: 14px; }
+.ai-stream-preview > p { align-items: center; color: #71512b; display: flex; font-size: .9rem; font-weight: 650; gap: 8px; }
+.ai-stream-preview pre { color: #475467; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .76rem; line-height: 1.5; margin: 12px 0 0; max-height: 180px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+.stream-dot { animation: streamPulse 1s ease-in-out infinite; background: var(--ochre); border-radius: 50%; display: inline-block; height: 8px; width: 8px; }
+.error-action { margin-top: 16px; }
+.error-action .form-message { margin-top: 0; }
+.error-action .text-button { color: var(--ochre-dark); font-weight: 700; margin-top: 6px; }
+.next-step { color: var(--ochre-dark); display: inline-block; font-size: .92rem; font-weight: 750; margin-top: 18px; }
+@keyframes streamPulse { 50% { opacity: .35; transform: scale(.72); } }
 
 @media (max-width: 720px) {
   .persona-grid { grid-template-columns: 1fr; }
@@ -54,4 +68,6 @@
   .interview-card, .interview-start, .persona-feedback, .overlap-panel { padding: 22px; }
   .hook-card, .settings-card { padding: 24px; }
   .referral-link { align-items: stretch; flex-direction: column; }
+  .essay-progress { gap: 10px 14px; }
+  .site-header nav { flex-wrap: wrap; gap: 10px 14px; justify-content: flex-end; }
 }

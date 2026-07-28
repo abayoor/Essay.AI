@@ -31,6 +31,14 @@ type GeminiEmbeddingResponse = {
   };
 };
 
+type AiRequestBody = {
+  prompt?: unknown;
+  system?: unknown;
+  mode?: unknown;
+  usage?: unknown;
+  stream?: unknown;
+};
+
 function json(body: object, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -48,11 +56,12 @@ Deno.serve(async (req) => {
       return json({ error: 'AI пока не настроен. Попроси наставника проверить секрет.' }, 503);
     }
 
-    const body = (await req.json()) as { prompt?: unknown; system?: unknown; mode?: unknown; usage?: unknown };
+    const body = (await req.json()) as AiRequestBody;
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
     const system = typeof body.system === 'string' ? body.system.trim() : '';
     const mode = body.mode === 'embedding' || body.mode === 'hook' ? body.mode : 'text';
     const usesMainFeedbackCredit = body.usage === 'main_feedback';
+    const shouldStream = body.stream === true && mode !== 'embedding';
 
     if (!prompt) return json({ error: 'Напиши запрос для AI.' }, 400);
     const promptLimit = mode === 'embedding' ? 10_000 : 20_000;
@@ -97,7 +106,7 @@ Deno.serve(async (req) => {
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:${shouldStream ? 'streamGenerateContent?alt=sse&' : 'generateContent?'}key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,6 +116,17 @@ Deno.serve(async (req) => {
         }),
       },
     );
+
+    if (shouldStream && response.ok && response.body) {
+      return new Response(response.body, {
+        headers: {
+          ...cors,
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
+    }
 
     const data = (await response.json()) as GeminiResponse;
     if (!response.ok) {

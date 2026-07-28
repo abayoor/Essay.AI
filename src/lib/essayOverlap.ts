@@ -65,6 +65,7 @@ export async function checkEssayOverlap(
   versionId: string,
   content: string,
   savedEmbedding?: string | null,
+  onChunk?: (chunk: string) => void,
 ): Promise<OverlapCheckResult[]> {
   const targetEmbedding = savedEmbedding ?? await generateAndSaveEssayEmbedding(versionId, content);
   if (!targetEmbedding) return [];
@@ -81,7 +82,7 @@ export async function checkEssayOverlap(
   const candidates = (data ?? []).filter(isSimilarEssay);
   const results: OverlapCheckResult[] = [];
   for (const candidate of candidates) {
-    const verdict = await requestOverlapVerdict(content, candidate.content);
+    const verdict = await requestOverlapVerdict(content, candidate.content, onChunk);
     results.push({
       essayId: candidate.essay_id,
       title: candidate.title,

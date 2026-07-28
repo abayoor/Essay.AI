@@ -19,7 +19,7 @@ export function InterviewQuestionCard({
       <h2>{question}</h2>
       <label className="visually-hidden" htmlFor="interview-answer">Твой ответ</label>
       <textarea id="interview-answer" value={value} onChange={(event) => onChange(event.target.value)} placeholder="Ответь так, как рассказал(а) бы это живому человеку…" />
-      {!isLast && <button onClick={onNext}>Следующий вопрос</button>}
+      {!isLast && <button onClick={onNext} disabled={!value.trim()}>Следующий вопрос</button>}
     </section>
   );
 }

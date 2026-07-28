@@ -42,13 +42,13 @@ export function EssayEditor({ content, onSave, onChange }: EssayEditorProps) {
   }
 
   const wordCount = countWords(content);
-  const status = saveState === 'saving' ? 'Сохраняем…' : saveState === 'error' ? 'Не удалось сохранить' : 'Сохранено';
+  const status = saveState === 'saving' ? 'Сохраняем…' : saveState === 'error' ? 'Попробовать сохранить' : 'Сохранено';
 
   return (
     <section className="editor-card">
       <div className="editor-toolbar">
         <span>{wordCount} слов</span>
-        <button className="text-button" onClick={() => void saveNow()}>{status}</button>
+        <button className="text-button" onClick={() => void saveNow()} disabled={saveState === 'saving'}>{status}</button>
       </div>
       <label className="visually-hidden" htmlFor="essay-content">Текст эссе</label>
       <textarea
