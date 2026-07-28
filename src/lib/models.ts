@@ -63,6 +63,11 @@ export type InterviewAnswer = {
   answer: string;
 };
 
+export type InterviewQuestion = {
+  question: string;
+  category: string;
+};
+
 export type InterviewFeedback = {
   question: string;
   consistency_note: string;
@@ -70,5 +75,5 @@ export type InterviewFeedback = {
 
 export type InterviewSession = {
   id: string;
-  questions: string[];
+  questions: InterviewQuestion[];
 };

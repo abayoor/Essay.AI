@@ -11,6 +11,7 @@ export function HomePage() {
           <p className="hero-copy">EssayCoach помогает собрать мысли, увидеть сильные детали и отточить эссе — без шаблонных текстов, написанных вместо тебя.</p>
           <div className="hero-actions">
             <Link href="/auth/sign-up" className="primary-link">Начать бесплатно</Link>
+            <Link href="/hook-check" className="secondary-button hero-hook-link">Проверить хук</Link>
             <a href="#approach" className="quiet-link">Как это работает</a>
           </div>
         </section>

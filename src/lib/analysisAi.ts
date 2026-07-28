@@ -1,5 +1,5 @@
-import type { InterviewAnswer, InterviewFeedback, PersonaFeedback } from './models';
-import { supabase } from './supabase';
+import { invokeAi } from './aiClient';
+import type { InterviewAnswer, InterviewFeedback, InterviewQuestion, PersonaFeedback } from './models';
 
 type OverlapVerdict = {
   verdict: 'warning' | 'okay';
@@ -16,18 +16,16 @@ function parseJson(text: string): unknown {
 }
 
 async function requestJson<T>(prompt: string, system: string, isExpected: (value: unknown) => value is T): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('ai', { body: { prompt, system } });
-  if (error) throw error;
-  if (!isRecord(data) || typeof data.text !== 'string') throw new Error('AI вернул ответ в неожиданном формате.');
+  const data = await invokeAi({ prompt, system });
+  if (typeof data.text !== 'string') throw new Error('AI вернул ответ в неожиданном формате.');
   const parsed = parseJson(data.text);
   if (!isExpected(parsed)) throw new Error('AI вернул ответ в неожиданном формате.');
   return parsed;
 }
 
 export async function createEssayEmbedding(content: string): Promise<number[]> {
-  const { data, error } = await supabase.functions.invoke('ai', { body: { mode: 'embedding', prompt: content } });
-  if (error) throw error;
-  if (!isRecord(data) || !Array.isArray(data.embedding) || data.embedding.length !== 1024
+  const data = await invokeAi({ mode: 'embedding', prompt: content });
+  if (!Array.isArray(data.embedding) || data.embedding.length !== 1024
     || data.embedding.some((value) => typeof value !== 'number' || !Number.isFinite(value))) {
     throw new Error('Не удалось подготовить текст для сравнения.');
   }
@@ -78,18 +76,22 @@ export function requestOverlapVerdict(currentContent: string, otherContent: stri
   );
 }
 
-function isQuestions(value: unknown): value is string[] {
+function isQuestions(value: unknown): value is InterviewQuestion[] {
   return Array.isArray(value) && value.length >= 5 && value.length <= 7
-    && value.every((question) => typeof question === 'string' && question.trim().length > 0);
+    && value.every((item) => isRecord(item)
+      && typeof item.question === 'string' && item.question.trim().length > 0
+      && typeof item.category === 'string' && item.category.trim().length > 0);
 }
 
-export function requestInterviewQuestions(content: string): Promise<string[]> {
+export function requestInterviewQuestions(content: string): Promise<InterviewQuestion[]> {
   return requestJson(
     `Эссе студента:\n${content}`,
     [
-      'Сгенерируй 5–7 вопросов для пробного интервью по этому конкретному эссе.',
-      'Верни только JSON-массив строк.',
-      'Каждый вопрос должен ссылаться на деталь, событие или выбор из текста, а не быть общим вроде «расскажи о себе».',
+      'Сгенерируй 5–7 вопросов для практики интервью на основе эссе студента.',
+      'Верни только JSON-массив объектов {question: string, category: string}.',
+      'Каждый вопрос относится ровно к одной категории: Лидерство, Трудная проблема, Тяжёлый выбор, Неудача/провал, Конфликт или разногласие, Работа в команде, Мотивация/почему это важно.',
+      'Используй категорию только при наличии конкретной зацепки в тексте. Лучше 5 сильных вопросов, чем 7 общих.',
+      'Формулируй каждый вопрос через реальную деталь, событие или выбор из эссе; не используй общие вопросы вроде «расскажи о себе».',
       'Не добавляй факты и не пиши ответы вместо студента.',
     ].join('\n'),
     isQuestions,

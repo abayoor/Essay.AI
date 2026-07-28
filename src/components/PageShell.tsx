@@ -23,6 +23,7 @@ export function PageShell({ children }: PageShellProps) {
           {session ? (
             <>
               <Link href="/dashboard">Мои эссе</Link>
+              <Link href="/settings">Настройки</Link>
               <button className="text-button" onClick={() => void signOut()}>Выйти</button>
             </>
           ) : (

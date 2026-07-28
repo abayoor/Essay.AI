@@ -4,6 +4,7 @@ import { PageShell } from '../components/PageShell';
 import { useSession } from '../lib/auth';
 import type { Locale } from '../lib/models';
 import { loadProfile, saveProfile } from '../lib/profile';
+import { applyPendingReferral } from '../lib/referrals';
 
 const schools = ['Common App', 'Nazarbayev University', 'University of Toronto', 'University of Hong Kong'];
 
@@ -18,13 +19,16 @@ export function OnboardingPage() {
 
   useEffect(() => {
     if (!loading && !session) navigate('/auth/sign-in');
-    if (session) void loadProfile().then((profile) => {
-      if (profile) {
-        setLocale(profile.locale);
-        setSchool(profile.target_schools[0] ?? schools[0]);
-        setApplicationType(profile.application_type ?? 'university');
-      }
-    });
+    if (session) {
+      void loadProfile().then((profile) => {
+        if (profile) {
+          setLocale(profile.locale);
+          setSchool(profile.target_schools[0] ?? schools[0]);
+          setApplicationType(profile.application_type ?? 'university');
+        }
+      });
+      void applyPendingReferral().catch(() => setMessage('Аккаунт создан, но реферальный бонус пока не удалось применить. Обнови страницу.'));
+    }
   }, [loading, navigate, session]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {

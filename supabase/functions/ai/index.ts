@@ -6,6 +6,9 @@
 //   2) Загрузи секрет:  npm run ai:secret
 //   3) Задеплой:        npm run ai:deploy
 
+import { enforceHookRateLimit } from './rateLimit.ts';
+import { consumeMainFeedbackCredit, requireSignedInUser } from './usage.ts';
+
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const MODEL = 'gemini-3.5-flash';
 
@@ -45,15 +48,24 @@ Deno.serve(async (req) => {
       return json({ error: 'AI пока не настроен. Попроси наставника проверить секрет.' }, 503);
     }
 
-    const body = (await req.json()) as { prompt?: unknown; system?: unknown; mode?: unknown };
+    const body = (await req.json()) as { prompt?: unknown; system?: unknown; mode?: unknown; usage?: unknown };
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
     const system = typeof body.system === 'string' ? body.system.trim() : '';
-    const mode = body.mode === 'embedding' ? 'embedding' : 'text';
+    const mode = body.mode === 'embedding' || body.mode === 'hook' ? body.mode : 'text';
+    const usesMainFeedbackCredit = body.usage === 'main_feedback';
 
     if (!prompt) return json({ error: 'Напиши запрос для AI.' }, 400);
     const promptLimit = mode === 'embedding' ? 10_000 : 20_000;
     if (prompt.length > promptLimit || system.length > 5_000) {
       return json({ error: 'Запрос слишком длинный. Сделай его короче.' }, 400);
+    }
+
+    if (mode === 'hook') {
+      const rateLimit = await enforceHookRateLimit(req);
+      if (!rateLimit.allowed) return json({ error: rateLimit.error }, rateLimit.status);
+    } else {
+      const access = await requireSignedInUser(req);
+      if (!access.allowed) return json({ error: access.error }, access.status);
     }
 
     if (mode === 'embedding') {
@@ -77,6 +89,11 @@ Deno.serve(async (req) => {
       }
 
       return json({ embedding: values });
+    }
+
+    if (usesMainFeedbackCredit) {
+      const credit = await consumeMainFeedbackCredit(req);
+      if (!credit.allowed) return json({ error: credit.error }, credit.status);
     }
 
     const response = await fetch(

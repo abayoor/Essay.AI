@@ -38,7 +38,7 @@ export function InterviewPrepPage() {
     try {
       const nextPractice = await startInterview(essay.id, content);
       setPractice(nextPractice);
-      setAnswers(nextPractice.questions.map((question) => ({ question, answer: '' })));
+      setAnswers(nextPractice.questions.map((item) => ({ question: item.question, answer: '' })));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Не удалось подготовить вопросы. Попробуй ещё раз.');
     } finally {
@@ -76,7 +76,7 @@ export function InterviewPrepPage() {
         {!content.trim() && <p className="setup-note">Сначала добавь в эссе несколько предложений — тогда вопросы будут по-настоящему твоими.</p>}
         {!practice && content.trim() && <section className="interview-start"><h2>Готов(а) рассказать историю вслух?</h2><p>Подготовим 5–7 конкретных вопросов, которые мог бы задать интервьюер после чтения этого текста.</p><button onClick={() => void begin()} disabled={loadingAction}>{loadingAction ? 'Готовим вопросы…' : 'Начать интервью'}</button></section>}
         {currentQuestion && !feedback && <>
-          <InterviewQuestionCard question={currentQuestion} value={answers[position]?.answer ?? ''} questionNumber={position + 1} total={practice?.questions.length ?? 0} onChange={updateAnswer} onNext={() => setPosition((current) => current + 1)} isLast={position === (practice?.questions.length ?? 1) - 1} />
+          <InterviewQuestionCard question={currentQuestion.question} category={currentQuestion.category} value={answers[position]?.answer ?? ''} questionNumber={position + 1} total={practice?.questions.length ?? 0} onChange={updateAnswer} onNext={() => setPosition((current) => current + 1)} isLast={position === (practice?.questions.length ?? 1) - 1} />
           {position === (practice?.questions.length ?? 1) - 1 && <button className="interview-finish" onClick={() => void complete()} disabled={loadingAction}>{loadingAction ? 'Сравниваем ответы…' : 'Завершить и получить фидбэк'}</button>}
         </>}
         {error && <p className="form-message" role="alert">{error}</p>}

@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'wouter';
 import { startGoogleSignIn, signUpWithEmail } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { PasswordField } from './PasswordField';
 import { SupabaseSetupMessage } from './SupabaseSetupMessage';
+import { clearPendingReferral, rememberReferralFromUrl } from '../lib/referrals';
 
 type AuthFormProps = {
   mode: 'sign-in' | 'sign-up';
@@ -23,6 +24,11 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const isSignUp = mode === 'sign-up';
+
+  useEffect(() => {
+    if (isSignUp) rememberReferralFromUrl();
+    else clearPendingReferral();
+  }, [isSignUp]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

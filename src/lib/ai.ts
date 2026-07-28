@@ -1,5 +1,5 @@
 import type { CoachingFeedback } from './models';
-import { supabase } from './supabase';
+import { invokeAi } from './aiClient';
 
 const coachSystemPrompt = [
   'Ты — бережный коуч по мотивационным эссе для абитуриентов из Казахстана и Центральной Азии.',
@@ -23,12 +23,8 @@ function isFeedback(value: unknown): value is CoachingFeedback {
 
 export async function requestFeedback(content: string, school?: string | null): Promise<CoachingFeedback> {
   const prompt = ['Проверь черновик эссе. Школа: ' + (school ?? 'не выбрана') + '.', 'Текст:', content].join('\n');
-  const { data, error } = await supabase.functions.invoke('ai', {
-    body: { prompt, system: coachSystemPrompt },
-  });
-  if (error) throw error;
-
-  const text = typeof data?.text === 'string' ? data.text : '';
+  const data = await invokeAi({ prompt, system: coachSystemPrompt, usage: 'main_feedback' });
+  const text = typeof data.text === 'string' ? data.text : '';
   const json = text.replace(/^\s*\`\`\`json\s*|\s*\`\`\`\s*$/g, '');
   const parsed: unknown = JSON.parse(json);
   if (!isFeedback(parsed)) throw new Error('AI вернул ответ в неожиданном формате.');
