@@ -1,21 +1,63 @@
-import type { RiderProfile, RiderStats } from './cyclingModels';
+import type { PublicProfile, RiderProfile, RiderStats } from './cyclingModels';
 import { supabase } from './supabase';
+
+type RiderProfileUpdate = Partial<Pick<RiderProfile, 'full_name' | 'avatar_url' | 'home_city' | 'bio' | 'username' | 'interests' | 'locale' | 'theme_preference'>>;
 
 function numberValue(value: unknown): number {
   return typeof value === 'number' ? value : typeof value === 'string' ? Number(value) || 0 : 0;
 }
 
 export async function loadRiderProfile(): Promise<RiderProfile | null> {
-  const { data, error } = await supabase.from('users').select('full_name, avatar_url, home_city, bio').maybeSingle();
+  const { data, error } = await supabase
+    .from('users')
+    .select('full_name, avatar_url, home_city, bio, username, interests, locale, theme_preference')
+    .maybeSingle();
   if (error) throw error;
   return data as RiderProfile | null;
 }
 
-export async function saveRiderProfile(profile: RiderProfile): Promise<void> {
+export async function loadPublicProfile(username: string): Promise<PublicProfile | null> {
+  const { data, error } = await supabase
+    .from('public_profiles')
+    .select('id, username, full_name, avatar_url, home_city, bio, interests')
+    .ilike('username', username)
+    .maybeSingle();
+  if (error) throw error;
+  return data as PublicProfile | null;
+}
+
+export async function loadPublicProfiles(ids: string[]): Promise<PublicProfile[]> {
+  if (!ids.length) return [];
+  const { data, error } = await supabase
+    .from('public_profiles')
+    .select('id, username, full_name, avatar_url, home_city, bio, interests')
+    .in('id', ids);
+  if (error) throw error;
+  return (data ?? []) as PublicProfile[];
+}
+
+export async function saveRiderProfile(profile: RiderProfileUpdate): Promise<void> {
   const { data } = await supabase.auth.getUser();
   if (!data.user) throw new Error('Войди в аккаунт, чтобы сохранить профиль.');
   const { error } = await supabase.from('users').update(profile).eq('id', data.user.id);
   if (error) throw error;
+}
+
+function storageFilename(name: string): string {
+  const extension = name.includes('.') ? `.${name.split('.').pop()?.toLowerCase()}` : '';
+  return `${crypto.randomUUID()}${extension}`;
+}
+
+export async function uploadAvatar(file: File): Promise<string> {
+  if (!file.type.startsWith('image/')) throw new Error('Выбери изображение для аватара.');
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) throw new Error('Войди в аккаунт, чтобы загрузить аватар.');
+
+  const path = `${userData.user.id}/${storageFilename(file.name)}`;
+  const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: false });
+  if (error) throw error;
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl;
 }
 
 export async function loadRiderStats(): Promise<RiderStats> {

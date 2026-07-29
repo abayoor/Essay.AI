@@ -3,14 +3,23 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { AuthPage } from './pages/AuthPage';
 import { BikesPage } from './pages/BikesPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
+import { ConversationPage } from './pages/ConversationPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { FeedPage } from './pages/FeedPage';
 import { HomePage } from './pages/HomePage';
+import { MessagesPage } from './pages/MessagesPage';
+import { NewPostPage } from './pages/NewPostPage';
 import { NewRoutePage } from './pages/NewRoutePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { PublicProfilePage } from './pages/PublicProfilePage';
+import { RecordPage } from './pages/RecordPage';
+import { RideDetailPage } from './pages/RideDetailPage';
+import { RidesPage } from './pages/RidesPage';
 import { RouteDetailPage } from './pages/RouteDetailPage';
 import { RoutesPage } from './pages/RoutesPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 export default function App() {
   return (
@@ -23,10 +32,19 @@ export default function App() {
       <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/bikes" component={BikesPage} />
+      <Route path="/feed" component={FeedPage} />
+      <Route path="/record" component={RecordPage} />
+      <Route path="/rides/:id" component={RideDetailPage} />
+      <Route path="/rides" component={RidesPage} />
+      <Route path="/posts/new" component={NewPostPage} />
+      <Route path="/messages/:id" component={ConversationPage} />
+      <Route path="/messages" component={MessagesPage} />
       <Route path="/routes/new" component={NewRoutePage} />
       <Route path="/routes/:id" component={RouteDetailPage} />
       <Route path="/routes" component={RoutesPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/settings" component={SettingsPage} />
+      <Route path="/u/:username" component={PublicProfilePage} />
       <Route component={NotFoundPage} />
     </Switch>
   );

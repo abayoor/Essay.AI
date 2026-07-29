@@ -249,7 +249,7 @@ otp_expiry = 3600
 # content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.confirmation]
-subject = "Код подтверждения VeloKZ"
+subject = "Код подтверждения Slipstream"
 content_path = "./supabase/templates/confirmation.html"
 
 # Uncomment to customize notification email template

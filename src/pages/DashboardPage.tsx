@@ -32,7 +32,7 @@ export function DashboardPage() {
   const name = profile?.full_name?.trim() || session?.user.email?.split('@')[0] || 'Райдер';
 
   return <PageShell><main className="cycle-page dashboard-page">
-    <header className="page-heading"><div><p className="kicker">Твоя сводка</p><h1>Привет, {name}.</h1><p>{profile?.home_city || 'Добавь город в профиле — так маршруты станут ближе.'}</p></div><Link className="signal-button" href="/bikes">Записать заезд</Link></header>
+    <header className="page-heading"><div><p className="kicker">Твоя сводка</p><h1>Привет, {name}.</h1><p>{profile?.home_city || 'Добавь город в профиле — так маршруты станут ближе.'}</p></div><div className="page-heading-actions"><Link className="outline-inline-button" href="/rides">Мои заезды</Link><Link className="signal-button" href="/record">Записать GPS-заезд</Link></div></header>
     {error && <div className="inline-error" role="alert">{error}<button onClick={() => void refresh()}>Повторить</button></div>}
     {!stats ? <p className="loading-copy">Собираем данные поездки…</p> : <section className="metrics"><MetricCard label="За всё время" value={stats.distanceKm.toFixed(1)} unit="км" /><MetricCard label="Заездов" value={String(stats.ridesCount)} /><MetricCard label="Набор" value={String(Math.round(stats.elevationM))} unit="м" /><MetricCard label="Самый длинный" value={stats.longestRideKm.toFixed(1)} unit="км" /></section>}
     <ElevationLine />

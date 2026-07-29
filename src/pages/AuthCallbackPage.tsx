@@ -30,5 +30,5 @@ export function AuthCallbackPage() {
     });
   }, [navigate]);
 
-  return <PageShell><main className="auth-page"><section className="auth-card"><p className="kicker">VeloKZ</p><h1>{message}</h1></section></main></PageShell>;
+  return <PageShell><main className="auth-page"><section className="auth-card"><p className="kicker">Slipstream</p><h1>{message}</h1></section></main></PageShell>;
 }

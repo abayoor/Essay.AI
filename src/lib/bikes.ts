@@ -43,3 +43,8 @@ export async function logRide(input: RideLog): Promise<void> {
   });
   if (error) throw error;
 }
+
+export async function deleteBike(bikeId: string): Promise<void> {
+  const { error } = await supabase.from('bikes').delete().eq('id', bikeId);
+  if (error) throw error;
+}
