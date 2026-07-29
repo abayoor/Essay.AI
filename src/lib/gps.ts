@@ -41,11 +41,11 @@ export function calculateRecordingMetrics(track: GpsTrackPoint[], elapsedTimeSec
     const speedKmh = segmentDistanceKm / intervalSeconds * 3600;
     if (speedKmh > maximumPlausibleSpeedKmh) return;
 
+    distanceKm += segmentDistanceKm;
     currentSpeedKmh = speedKmh;
     maxSpeedKmh = Math.max(maxSpeedKmh, speedKmh);
     const isMoving = speedKmh >= autoPauseSpeedKmh;
     if (isMoving) {
-      distanceKm += segmentDistanceKm;
       movingTimeSeconds += intervalSeconds;
       stationaryRunSeconds = 0;
     } else {

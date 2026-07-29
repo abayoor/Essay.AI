@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LocateFixed } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { LiveRecordMap } from '../components/LiveRecordMap';
 import { PageShell } from '../components/PageShell';
@@ -11,6 +12,7 @@ import { saveRecordedRide, type SavedRecordedRide, updateRecordedRide } from '..
 import { shareRide } from '../lib/share';
 
 type RecordStatus = 'idle' | 'running' | 'paused' | 'finished';
+type GpsStatus = 'idle' | 'locating' | 'ready' | 'paused' | 'denied' | 'error';
 
 function formatTime(totalSeconds: number): string {
   const rounded = Math.max(0, Math.floor(totalSeconds));
@@ -30,6 +32,8 @@ export function RecordPage() {
   const [, navigate] = useLocation();
   const [status, setStatus] = useState<RecordStatus>('idle');
   const [track, setTrack] = useState<GpsTrackPoint[]>([]);
+  const [currentPosition, setCurrentPosition] = useState<GpsTrackPoint | null>(null);
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>('idle');
   const [metrics, setMetrics] = useState<RideRecordingMetrics>(emptyRecordingMetrics);
   const [message, setMessage] = useState('');
   const [rideTitle, setRideTitle] = useState(defaultRideTitle);
@@ -42,6 +46,7 @@ export function RecordPage() {
   const startedAt = useRef<number | null>(null);
   const pausedAt = useRef<number | null>(null);
   const pausedDuration = useRef(0);
+  const trackingActive = useRef(false);
 
   const activeElapsedSeconds = useCallback((now = Date.now()): number => {
     if (!startedAt.current) return 0;
@@ -54,35 +59,51 @@ export function RecordPage() {
   }, [activeElapsedSeconds]);
 
   const stopWatching = useCallback(() => {
+    trackingActive.current = false;
     if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     watchId.current = null;
   }, []);
 
+  const receiveLocation = useCallback((position: GeolocationPosition) => {
+    if (!trackingActive.current) return;
+    const point: GpsTrackPoint = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      elevation: position.coords.altitude,
+      timestamp: position.timestamp,
+    };
+    setCurrentPosition(point);
+    setGpsStatus('ready');
+    const previous = trackRef.current[trackRef.current.length - 1];
+    if (previous && point.timestamp - previous.timestamp < 600) return;
+    if (previous && position.coords.accuracy > 120) return;
+    const nextTrack = [...trackRef.current, point];
+    trackRef.current = nextTrack;
+    setTrack(nextTrack);
+    updateMetrics(nextTrack, point.timestamp);
+  }, [updateMetrics]);
+
+  const handleLocationError = useCallback((error: GeolocationPositionError) => {
+    if (!trackingActive.current) return;
+    if (error.code === error.PERMISSION_DENIED) {
+      setGpsStatus('denied');
+      setMessage('Разреши доступ к геолокации в настройках браузера — без него маршрут не записывается.');
+      return;
+    }
+    setGpsStatus('error');
+    setMessage('GPS пока не найден. Выйди на открытое место и подожди несколько секунд.');
+  }, []);
+
   const watchLocation = useCallback(() => {
     if (!navigator.geolocation) {
+      setGpsStatus('error');
       setMessage('Браузер не поддерживает геолокацию.');
       return;
     }
-    watchId.current = navigator.geolocation.watchPosition((position) => {
-      if (position.coords.accuracy > 70) return;
-      const point: GpsTrackPoint = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        elevation: position.coords.altitude,
-        timestamp: position.timestamp,
-      };
-      const previous = trackRef.current[trackRef.current.length - 1];
-      if (previous && point.timestamp - previous.timestamp < 900) return;
-      const nextTrack = [...trackRef.current, point];
-      trackRef.current = nextTrack;
-      setTrack(nextTrack);
-      updateMetrics(nextTrack, point.timestamp);
-    }, (error) => {
-      setMessage(error.code === error.PERMISSION_DENIED
-        ? 'Разреши доступ к геолокации, чтобы начать запись.'
-        : 'Не удалось получить GPS-координаты. Проверь сигнал и попробуй ещё раз.');
-    }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
-  }, [updateMetrics]);
+    trackingActive.current = true;
+    setGpsStatus('locating');
+    watchId.current = navigator.geolocation.watchPosition(receiveLocation, handleLocationError, { enableHighAccuracy: true, maximumAge: 3000, timeout: 30000 });
+  }, [handleLocationError, receiveLocation]);
 
   useEffect(() => {
     if (!loading && !session) navigate('/auth/sign-in');
@@ -101,6 +122,8 @@ export function RecordPage() {
     setRideTitle(defaultRideTitle());
     setRideDescription('');
     setTrack([]);
+    setCurrentPosition(null);
+    setGpsStatus('locating');
     trackRef.current = [];
     startedAt.current = Date.now();
     pausedAt.current = null;
@@ -112,6 +135,7 @@ export function RecordPage() {
 
   function pause() {
     stopWatching();
+    setGpsStatus('paused');
     pausedAt.current = Date.now();
     setStatus('paused');
     updateMetrics(trackRef.current, pausedAt.current);
@@ -211,7 +235,7 @@ export function RecordPage() {
           <div><span>Скорость</span><strong>{metrics.currentSpeedKmh.toFixed(1)} <small>км/ч</small></strong></div>
           <div><span>Время</span><strong>{formatTime(metrics.elapsedTimeSeconds)}</strong></div>
         </section>
-        <section className="record-map-slot" aria-label="Карта текущей тренировки"><LiveRecordMap track={track} /></section>
+        <section className="record-map-slot" aria-label="Карта текущей тренировки"><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`}><LocateFixed size={16} aria-hidden="true" />{gpsStatus === 'locating' && 'Ищем GPS…'}{gpsStatus === 'ready' && `GPS найден · точек: ${track.length}`}{gpsStatus === 'paused' && 'Запись на паузе'}{gpsStatus === 'denied' && 'Нужен доступ к геолокации'}{gpsStatus === 'error' && 'GPS пока недоступен'}{gpsStatus === 'idle' && 'Нажми «Старт записи»'}</p></section>
         <section className={`record-controls${status === 'running' ? ' is-recording' : ''}`} aria-label="Управление записью">
           {status === 'idle' && <button className="signal-button record-primary" onClick={start}>Старт записи</button>}
           {status === 'running' && <><button className="outline-inline-button" onClick={pause}>Пауза</button><button className="signal-button record-primary" onClick={() => void finish()}>Завершить</button></>}

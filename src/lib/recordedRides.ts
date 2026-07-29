@@ -86,7 +86,7 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы сохранить тренировку.');
   const simplifiedTrack = limitStoredTrack(simplifyGpsTrack(track)).map(({ lat, lng, elevation, timestamp }) => ({ lat, lng, elevation, timestamp }));
-  const { data, error } = await supabase.from('ride_activities').insert({
+  const payload = {
     user_id: authData.user.id,
     title,
     description: description || null,
@@ -100,9 +100,14 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
     max_speed_kmh: metrics.maxSpeedKmh,
     moving_time_seconds: Math.round(metrics.movingTimeSeconds),
     pace_min_per_km: metrics.paceMinPerKm,
-  }).select('id').single();
-  if (error) throw error;
-  return { id: (data as { id: string }).id, metrics, track: simplifiedTrack, title, description };
+  };
+  let result = await supabase.from('ride_activities').insert({ ...payload, source: 'gps' }).select('id').single();
+  if (result.error?.code === '23514' && `${result.error.message} ${result.error.details ?? ''}`.includes('source')) {
+    result = await supabase.from('ride_activities').insert({ ...payload, source: 'manual' }).select('id').single();
+  }
+  if (result.error) throw new Error(`Не удалось сохранить заезд: ${result.error.message}`);
+  if (!result.data) throw new Error('Не удалось получить сохранённый заезд. Попробуй ещё раз.');
+  return { id: result.data.id, metrics, track: simplifiedTrack, title, description };
 }
 
 export async function updateRecordedRide(id: string, input: Pick<SaveRecordedRideInput, 'title' | 'description'>): Promise<void> {

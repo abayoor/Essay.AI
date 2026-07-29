@@ -1,4 +1,4 @@
-import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from 'react-leaflet';
+import { CircleMarker, MapContainer, Polyline, TileLayer, useMap, ZoomControl } from 'react-leaflet';
 import { useEffect } from 'react';
 import type { GpsTrackPoint } from '../lib/cyclingModels';
 
@@ -12,13 +12,24 @@ function FollowRider({ point }: { point: GpsTrackPoint | null }) {
   return null;
 }
 
-export function LiveRecordMap({ track, className = 'record-map' }: { track: GpsTrackPoint[]; className?: string }) {
-  const currentPoint = track[track.length - 1] ?? null;
+function KeepMapSized() {
+  const map = useMap();
+  useEffect(() => {
+    const timer = window.setTimeout(() => map.invalidateSize(), 0);
+    return () => window.clearTimeout(timer);
+  }, [map]);
+  return null;
+}
+
+export function LiveRecordMap({ track, currentPoint = null, className = 'record-map' }: { track: GpsTrackPoint[]; currentPoint?: GpsTrackPoint | null; className?: string }) {
+  const displayedPoint = currentPoint ?? track[track.length - 1] ?? null;
   const positions = track.map((point) => [point.lat, point.lng] as [number, number]);
-  return <MapContainer center={currentPoint ? [currentPoint.lat, currentPoint.lng] : almaty} zoom={15} className={className} zoomControl={false}>
+  return <MapContainer center={displayedPoint ? [displayedPoint.lat, displayedPoint.lng] : almaty} zoom={15} minZoom={4} maxZoom={19} zoomSnap={0.25} zoomDelta={0.5} wheelPxPerZoomLevel={180} touchZoom="center" scrollWheelZoom className={className} zoomControl={false}>
     <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-    <FollowRider point={currentPoint} />
-    {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: '#1b8577', weight: 5 }} />}
-    {currentPoint && <CircleMarker center={[currentPoint.lat, currentPoint.lng]} radius={9} pathOptions={{ color: '#fff', fillColor: '#1b8577', fillOpacity: 1, weight: 3 }} />}
+    <ZoomControl position="bottomright" />
+    <KeepMapSized />
+    <FollowRider point={displayedPoint} />
+    {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: '#1b8577', weight: 5, lineCap: 'round', lineJoin: 'round' }} />}
+    {displayedPoint && <CircleMarker center={[displayedPoint.lat, displayedPoint.lng]} radius={9} pathOptions={{ color: '#fff', fillColor: '#1b8577', fillOpacity: 1, weight: 3 }} />}
   </MapContainer>;
 }
