@@ -155,9 +155,9 @@ export function RecordPage() {
   }, [loading, navigate, session]);
   useEffect(() => () => { stopWatching(); stopPreviewLocation(); void allowScreenSleep(); }, [allowScreenSleep, stopPreviewLocation, stopWatching]);
   useEffect(() => {
-    if (session && status === 'idle') startPreviewLocation();
+    if (status !== 'running') startPreviewLocation();
     return () => stopPreviewLocation();
-  }, [session, startPreviewLocation, status, stopPreviewLocation]);
+  }, [startPreviewLocation, status, stopPreviewLocation]);
   useEffect(() => {
     if (status !== 'running') return undefined;
     const interval = window.setInterval(() => updateMetrics(trackRef.current), 1000);

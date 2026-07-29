@@ -30,6 +30,9 @@ export function LiveRecordMap({ track, currentPoint = null, className = 'record-
     <KeepMapSized />
     <FollowRider point={displayedPoint} />
     {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: '#1b8577', weight: 5, lineCap: 'round', lineJoin: 'round' }} />}
-    {displayedPoint && <CircleMarker center={[displayedPoint.lat, displayedPoint.lng]} radius={9} pathOptions={{ color: '#fff', fillColor: '#1b8577', fillOpacity: 1, weight: 3 }} />}
+    {displayedPoint && <>
+      <CircleMarker center={[displayedPoint.lat, displayedPoint.lng]} radius={18} pathOptions={{ color: '#1b8577', fillColor: '#1b8577', fillOpacity: .16, weight: 2 }} />
+      <CircleMarker center={[displayedPoint.lat, displayedPoint.lng]} radius={8} pathOptions={{ color: '#fff', fillColor: '#1b8577', fillOpacity: 1, weight: 3 }} />
+    </>}
   </MapContainer>;
 }
