@@ -81,25 +81,26 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
   const { track, metrics } = input;
   const title = input.title.trim();
   const description = input.description.trim();
-  if (track.length < 2 || metrics.distanceKm <= 0) throw new Error('Недостаточно точек GPS для сохранения поездки.');
+  if (!track.length) throw new Error('Не удалось получить GPS-точку для сохранения поездки.');
   if (!title) throw new Error('Дай заезду короткое название.');
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы сохранить тренировку.');
   const simplifiedTrack = limitStoredTrack(simplifyGpsTrack(track)).map(({ lat, lng, elevation, timestamp }) => ({ lat, lng, elevation, timestamp }));
+  const savedMetrics = metrics.distanceKm > 0 ? metrics : { ...metrics, distanceKm: .001 };
   const payload = {
     user_id: authData.user.id,
     title,
     description: description || null,
-    distance_km: metrics.distanceKm,
-    duration_seconds: Math.round(metrics.elapsedTimeSeconds),
-    elevation_gain_m: metrics.elevationGainM,
+    distance_km: savedMetrics.distanceKm,
+    duration_seconds: Math.max(1, Math.round(savedMetrics.elapsedTimeSeconds)),
+    elevation_gain_m: savedMetrics.elevationGainM,
     ride_date: new Date(track[0].timestamp).toISOString().slice(0, 10),
     source: 'gps',
     gps_track: simplifiedTrack,
-    avg_speed_kmh: metrics.averageSpeedKmh,
-    max_speed_kmh: metrics.maxSpeedKmh,
-    moving_time_seconds: Math.round(metrics.movingTimeSeconds),
-    pace_min_per_km: metrics.paceMinPerKm,
+    avg_speed_kmh: savedMetrics.averageSpeedKmh,
+    max_speed_kmh: savedMetrics.maxSpeedKmh,
+    moving_time_seconds: Math.round(savedMetrics.movingTimeSeconds),
+    pace_min_per_km: savedMetrics.paceMinPerKm,
   };
   let result = await supabase.from('ride_activities').insert({ ...payload, source: 'gps' }).select('id').single();
   if (result.error?.code === '23514' && `${result.error.message} ${result.error.details ?? ''}`.includes('source')) {
@@ -107,7 +108,7 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
   }
   if (result.error) throw new Error(`Не удалось сохранить заезд: ${result.error.message}`);
   if (!result.data) throw new Error('Не удалось получить сохранённый заезд. Попробуй ещё раз.');
-  return { id: result.data.id, metrics, track: simplifiedTrack, title, description };
+  return { id: result.data.id, metrics: savedMetrics, track: simplifiedTrack, title, description };
 }
 
 export async function updateRecordedRide(id: string, input: Pick<SaveRecordedRideInput, 'title' | 'description'>): Promise<void> {

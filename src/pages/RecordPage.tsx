@@ -13,6 +13,8 @@ import { shareRide } from '../lib/share';
 
 type RecordStatus = 'idle' | 'running' | 'paused' | 'finished';
 type GpsStatus = 'idle' | 'locating' | 'ready' | 'paused' | 'denied' | 'error';
+type ScreenWakeLock = { release: () => Promise<void> };
+type WakeLockNavigator = Navigator & { wakeLock?: { request: (type: 'screen') => Promise<ScreenWakeLock> } };
 
 function formatTime(totalSeconds: number): string {
   const rounded = Math.max(0, Math.floor(totalSeconds));
@@ -42,6 +44,8 @@ export function RecordPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const watchId = useRef<number | null>(null);
+  const previewWatchId = useRef<number | null>(null);
+  const wakeLock = useRef<ScreenWakeLock | null>(null);
   const trackRef = useRef<GpsTrackPoint[]>([]);
   const startedAt = useRef<number | null>(null);
   const pausedAt = useRef<number | null>(null);
@@ -62,6 +66,26 @@ export function RecordPage() {
     trackingActive.current = false;
     if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     watchId.current = null;
+  }, []);
+
+  const stopPreviewLocation = useCallback(() => {
+    if (previewWatchId.current !== null) navigator.geolocation.clearWatch(previewWatchId.current);
+    previewWatchId.current = null;
+  }, []);
+
+  const keepScreenAwake = useCallback(async () => {
+    const wakeLockNavigator = navigator as WakeLockNavigator;
+    if (!wakeLockNavigator.wakeLock || wakeLock.current) return;
+    try { wakeLock.current = await wakeLockNavigator.wakeLock.request('screen'); }
+    catch { /* Some browsers or low-power modes do not allow a wake lock. */ }
+  }, []);
+
+  const allowScreenSleep = useCallback(async () => {
+    if (!wakeLock.current) return;
+    const activeWakeLock = wakeLock.current;
+    wakeLock.current = null;
+    try { await activeWakeLock.release(); }
+    catch { /* A released wake lock does not need further handling. */ }
   }, []);
 
   const receiveLocation = useCallback((position: GeolocationPosition) => {
@@ -94,6 +118,27 @@ export function RecordPage() {
     setMessage('GPS пока не найден. Выйди на открытое место и подожди несколько секунд.');
   }, []);
 
+  const previewLocation = useCallback((position: GeolocationPosition) => {
+    const point: GpsTrackPoint = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      elevation: position.coords.altitude,
+      timestamp: position.timestamp,
+    };
+    setCurrentPosition(point);
+    setGpsStatus('ready');
+  }, []);
+
+  const previewLocationError = useCallback((error: GeolocationPositionError) => {
+    setGpsStatus(error.code === error.PERMISSION_DENIED ? 'denied' : 'error');
+  }, []);
+
+  const startPreviewLocation = useCallback(() => {
+    if (!navigator.geolocation || previewWatchId.current !== null) return;
+    setGpsStatus('locating');
+    previewWatchId.current = navigator.geolocation.watchPosition(previewLocation, previewLocationError, { enableHighAccuracy: false, maximumAge: 15000, timeout: 30000 });
+  }, [previewLocation, previewLocationError]);
+
   const watchLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setGpsStatus('error');
@@ -108,12 +153,21 @@ export function RecordPage() {
   useEffect(() => {
     if (!loading && !session) navigate('/auth/sign-in');
   }, [loading, navigate, session]);
-  useEffect(() => () => stopWatching(), [stopWatching]);
+  useEffect(() => () => { stopWatching(); stopPreviewLocation(); void allowScreenSleep(); }, [allowScreenSleep, stopPreviewLocation, stopWatching]);
+  useEffect(() => {
+    if (session && status === 'idle') startPreviewLocation();
+    return () => stopPreviewLocation();
+  }, [session, startPreviewLocation, status, stopPreviewLocation]);
   useEffect(() => {
     if (status !== 'running') return undefined;
     const interval = window.setInterval(() => updateMetrics(trackRef.current), 1000);
     return () => window.clearInterval(interval);
   }, [status, updateMetrics]);
+  useEffect(() => {
+    const restoreWakeLock = () => { if (document.visibilityState === 'visible' && status === 'running') void keepScreenAwake(); };
+    document.addEventListener('visibilitychange', restoreWakeLock);
+    return () => document.removeEventListener('visibilitychange', restoreWakeLock);
+  }, [keepScreenAwake, status]);
 
   function start() {
     setMessage('');
@@ -121,20 +175,25 @@ export function RecordPage() {
     setReviewOpen(false);
     setRideTitle(defaultRideTitle());
     setRideDescription('');
-    setTrack([]);
-    setCurrentPosition(null);
+    stopPreviewLocation();
+    const initialTrack = currentPosition !== null && Date.now() - currentPosition.timestamp < 30_000
+      ? [currentPosition]
+      : [];
+    setTrack(initialTrack);
     setGpsStatus('locating');
-    trackRef.current = [];
+    trackRef.current = initialTrack;
     startedAt.current = Date.now();
     pausedAt.current = null;
     pausedDuration.current = 0;
     setMetrics(emptyRecordingMetrics);
     setStatus('running');
     watchLocation();
+    void keepScreenAwake();
   }
 
   function pause() {
     stopWatching();
+    void allowScreenSleep();
     setGpsStatus('paused');
     pausedAt.current = Date.now();
     setStatus('paused');
@@ -146,15 +205,17 @@ export function RecordPage() {
     pausedAt.current = null;
     setStatus('running');
     watchLocation();
+    void keepScreenAwake();
   }
 
   async function finish() {
     stopWatching();
+    void allowScreenSleep();
     const completedMetrics = calculateRecordingMetrics(trackRef.current, activeElapsedSeconds());
     setMetrics(completedMetrics);
     setStatus('finished');
-    if (trackRef.current.length < 2 || completedMetrics.distanceKm <= 0) {
-      setMessage('Слишком мало точек для сохранения. Проедь немного дальше с включённым GPS и попробуй снова.');
+    if (!trackRef.current.length) {
+      setMessage('Не удалось получить ни одной GPS-точки. Разреши геолокацию и попробуй ещё раз.');
       return;
     }
     const completedTitle = defaultRideTitle(trackRef.current[0].timestamp);
@@ -235,7 +296,7 @@ export function RecordPage() {
           <div><span>Скорость</span><strong>{metrics.currentSpeedKmh.toFixed(1)} <small>км/ч</small></strong></div>
           <div><span>Время</span><strong>{formatTime(metrics.elapsedTimeSeconds)}</strong></div>
         </section>
-        <section className="record-map-slot" aria-label="Карта текущей тренировки"><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`}><LocateFixed size={16} aria-hidden="true" />{gpsStatus === 'locating' && 'Ищем GPS…'}{gpsStatus === 'ready' && `GPS найден · точек: ${track.length}`}{gpsStatus === 'paused' && 'Запись на паузе'}{gpsStatus === 'denied' && 'Нужен доступ к геолокации'}{gpsStatus === 'error' && 'GPS пока недоступен'}{gpsStatus === 'idle' && 'Нажми «Старт записи»'}</p></section>
+        <section className="record-map-slot" aria-label="Карта текущей тренировки"><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`}><LocateFixed size={16} aria-hidden="true" />{gpsStatus === 'locating' && 'Ищем GPS…'}{gpsStatus === 'ready' && (status === 'idle' ? 'GPS найден · готов к записи' : `GPS найден · точек: ${track.length}`)}{gpsStatus === 'paused' && 'Запись на паузе'}{gpsStatus === 'denied' && 'Нужен доступ к геолокации'}{gpsStatus === 'error' && 'GPS пока недоступен'}{gpsStatus === 'idle' && 'Ищем твоё местоположение…'}</p></section>
         <section className={`record-controls${status === 'running' ? ' is-recording' : ''}`} aria-label="Управление записью">
           {status === 'idle' && <button className="signal-button record-primary" onClick={start}>Старт записи</button>}
           {status === 'running' && <><button className="outline-inline-button" onClick={pause}>Пауза</button><button className="signal-button record-primary" onClick={() => void finish()}>Завершить</button></>}

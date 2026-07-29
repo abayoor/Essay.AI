@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
+import { BikeLoader } from '../components/BikeLoader';
 import { PageShell } from '../components/PageShell';
 import { RouteMap } from '../components/RouteMap';
 import { useSession } from '../lib/auth';
@@ -69,7 +70,7 @@ export function RideDetailPage() {
     }
   }
 
-  if (!ride) return <PageShell><main className="cycle-page loading-copy">{message || 'Открываем заезд…'}</main></PageShell>;
+  if (!ride) return <PageShell><main className="cycle-page">{message ? <p className="inline-error">{message}</p> : <BikeLoader label="Открываем заезд…" />}</main></PageShell>;
   const shareData: RideShareData = { title: ride.title || 'Моя тренировка', distanceKm: ride.distanceKm, elevationGainM: ride.elevationGainM, durationSeconds: ride.movingTimeSeconds ?? ride.durationSeconds };
 
   return <PageShell><main className="cycle-page ride-detail-page">
