@@ -7,7 +7,7 @@ import { useSession } from '../lib/auth';
 import type { GpsTrackPoint, RideRecordingMetrics } from '../lib/cyclingModels';
 import { calculateRecordingMetrics, emptyRecordingMetrics } from '../lib/gps';
 import { createPost } from '../lib/posts';
-import { saveRecordedRide, type SavedRecordedRide } from '../lib/recordedRides';
+import { saveRecordedRide, type SavedRecordedRide, updateRecordedRide } from '../lib/recordedRides';
 import { shareRide } from '../lib/share';
 
 type RecordStatus = 'idle' | 'running' | 'paused' | 'finished';
@@ -124,7 +124,7 @@ export function RecordPage() {
     watchLocation();
   }
 
-  function finish() {
+  async function finish() {
     stopWatching();
     const completedMetrics = calculateRecordingMetrics(trackRef.current, activeElapsedSeconds());
     setMetrics(completedMetrics);
@@ -133,17 +133,28 @@ export function RecordPage() {
       setMessage('Слишком мало точек для сохранения. Проедь немного дальше с включённым GPS и попробуй снова.');
       return;
     }
-    setRideTitle(defaultRideTitle(trackRef.current[0].timestamp));
+    const completedTitle = defaultRideTitle(trackRef.current[0].timestamp);
+    setRideTitle(completedTitle);
     setMessage('');
     setReviewOpen(true);
+    await saveRide({ metrics: completedMetrics, title: completedTitle, description: '' });
   }
 
-  async function saveRide(): Promise<SavedRecordedRide | null> {
-    if (savedRide) return savedRide;
+  async function saveRide(overrides?: Partial<Pick<SavedRecordedRide, 'metrics' | 'title' | 'description'>>): Promise<SavedRecordedRide | null> {
+    const nextMetrics = overrides?.metrics ?? metrics;
+    const nextTitle = overrides?.title ?? rideTitle;
+    const nextDescription = overrides?.description ?? rideDescription;
     setBusy(true);
     setMessage('Сохраняем тренировку…');
     try {
-      const ride = await saveRecordedRide({ track: trackRef.current, metrics, title: rideTitle, description: rideDescription });
+      if (savedRide) {
+        await updateRecordedRide(savedRide.id, { title: nextTitle, description: nextDescription });
+        const updatedRide = { ...savedRide, metrics: nextMetrics, title: nextTitle.trim(), description: nextDescription.trim() };
+        setSavedRide(updatedRide);
+        setMessage('Изменения сохранены в «Моих заездах».');
+        return updatedRide;
+      }
+      const ride = await saveRecordedRide({ track: trackRef.current, metrics: nextMetrics, title: nextTitle, description: nextDescription });
       setSavedRide(ride);
       setMessage('Заезд сохранён в «Мои заезды».');
       return ride;
@@ -201,10 +212,10 @@ export function RecordPage() {
           <div><span>Время</span><strong>{formatTime(metrics.elapsedTimeSeconds)}</strong></div>
         </section>
         <section className="record-map-slot" aria-label="Карта текущей тренировки"><LiveRecordMap track={track} /></section>
-        <section className="record-controls" aria-label="Управление записью">
+        <section className={`record-controls${status === 'running' ? ' is-recording' : ''}`} aria-label="Управление записью">
           {status === 'idle' && <button className="signal-button record-primary" onClick={start}>Старт записи</button>}
-          {status === 'running' && <><button className="outline-inline-button" onClick={pause}>Пауза</button><button className="signal-button record-primary" onClick={finish}>Завершить</button></>}
-          {status === 'paused' && <><button className="signal-button record-primary" onClick={resume}>Продолжить</button><button className="outline-inline-button" onClick={finish}>Завершить</button></>}
+          {status === 'running' && <><button className="outline-inline-button" onClick={pause}>Пауза</button><button className="signal-button record-primary" onClick={() => void finish()}>Завершить</button></>}
+          {status === 'paused' && <><button className="signal-button record-primary" onClick={resume}>Продолжить</button><button className="outline-inline-button" onClick={() => void finish()}>Завершить</button></>}
           {status === 'finished' && <><button className="signal-button record-primary" onClick={start}>Новая запись</button><Link className="outline-inline-button" href="/rides">Мои заезды</Link></>}
         </section>
         {!reviewOpen && message && <p className="record-note" role="status">{message}</p>}

@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check } from 'lucide-react';
 import { createPost, uploadPostMedia } from '../lib/posts';
 import { loadStravaActivities, saveStravaActivity, type StravaActivity } from '../lib/strava';
 
@@ -18,6 +20,7 @@ export function PostComposer({ onPublished }: PostComposerProps) {
   const [busy, setBusy] = useState(false);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [message, setMessage] = useState('');
+  const [published, setPublished] = useState(false);
 
   async function importActivities() {
     setLoadingActivities(true); setMessage('');
@@ -32,13 +35,13 @@ export function PostComposer({ onPublished }: PostComposerProps) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!file && !selectedActivity) {
-      setMessage('Добавь фото, видео или тренировку из Strava.');
+    if (!caption.trim() && !file && !selectedActivity) {
+      setMessage('Добавь текст, медиа или тренировку из Strava.');
       return;
     }
     setBusy(true); setMessage('');
     try {
-      const media = file ? await uploadPostMedia(file) : { url: '', type: 'image' as const };
+      const media = file ? await uploadPostMedia(file) : { url: null, type: null };
       const importedRide = selectedActivity ? await saveStravaActivity(selectedActivity) : null;
       await createPost({
         mediaUrl: media.url,
@@ -47,7 +50,8 @@ export function PostComposer({ onPublished }: PostComposerProps) {
         rideActivityId: importedRide?.id,
         rideStats: importedRide?.stats,
       });
-      setFile(null); setCaption(''); setSelectedActivity(null); setMessage('Пост опубликован.');
+      setFile(null); setCaption(''); setSelectedActivity(null); setMessage('Пост опубликован.'); setPublished(true);
+      window.setTimeout(() => setPublished(false), 900);
       await onPublished();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Не удалось опубликовать пост.');
@@ -60,5 +64,5 @@ export function PostComposer({ onPublished }: PostComposerProps) {
     {activities.length > 0 && <label>Выбери тренировку<select value={selectedActivity ? String(selectedActivity.id) : ''} onChange={(event) => setSelectedActivity(activities.find((activity) => String(activity.id) === event.target.value) ?? null)}><option value="">Без тренировки</option>{activities.map((activity) => <option key={activity.id} value={activity.id}>{activity.name} — {formatActivity(activity)}</option>)}</select></label>}
     <label>Описание<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={2200} placeholder="Как прошёл заезд?" /></label>
     <button className="signal-button" disabled={busy}>{busy ? 'Публикуем…' : 'Опубликовать'}</button>
-  </form>{message && <p className="form-note" role="status">{message}</p>}</section>;
+  </form><AnimatePresence>{published && <motion.p className="form-note publish-success" role="status" initial={{ opacity: 0, scale: .86 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .9 }}><Check size={16} aria-hidden="true" /> Пост опубликован</motion.p>}</AnimatePresence>{message && !published && <p className="form-note" role="status">{message}</p>}</section>;
 }

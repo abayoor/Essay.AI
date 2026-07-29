@@ -5,8 +5,8 @@ import { supabase } from './supabase';
 type PostRow = {
   id: string;
   user_id: string;
-  media_url: string;
-  media_type: PostMediaType;
+  media_url: string | null;
+  media_type: PostMediaType | null;
   caption: string;
   created_at: string;
   strava_distance_km: number | string | null;
@@ -128,8 +128,8 @@ export async function loadPosts(userId?: string): Promise<SocialPost[]> {
 }
 
 export type CreatePostInput = {
-  mediaUrl: string;
-  mediaType: PostMediaType;
+  mediaUrl?: string | null;
+  mediaType?: PostMediaType | null;
   caption: string;
   rideActivityId?: string;
   rideStats?: RidePostStats;
@@ -140,10 +140,9 @@ export async function createPost(input: CreatePostInput): Promise<void> {
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы опубликовать пост.');
 
-  const { error } = await supabase.from('posts').insert({
+  const mediaUrl = input.mediaUrl || null;
+  const payload = {
     user_id: authData.user.id,
-    media_url: input.mediaUrl,
-    media_type: input.mediaType,
     caption: input.caption.trim(),
     ride_activity_id: input.rideActivityId ?? null,
     strava_distance_km: input.rideStats?.distanceKm ?? null,
@@ -158,7 +157,11 @@ export async function createPost(input: CreatePostInput): Promise<void> {
     route_distance_km: input.routePreview?.distanceKm ?? null,
     route_elevation_gain_m: input.routePreview?.elevationGainM ?? null,
     route_difficulty: input.routePreview?.difficulty ?? null,
-  });
+  };
+  let { error } = await supabase.from('posts').insert({ ...payload, media_url: mediaUrl, media_type: mediaUrl ? input.mediaType ?? null : null });
+  if (error?.code === '23502' && !mediaUrl) {
+    ({ error } = await supabase.from('posts').insert({ ...payload, media_url: '', media_type: 'image' }));
+  }
   if (error) throw error;
 }
 

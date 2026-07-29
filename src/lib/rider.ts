@@ -36,6 +36,19 @@ export async function loadPublicProfiles(ids: string[]): Promise<PublicProfile[]
   return (data ?? []) as PublicProfile[];
 }
 
+export async function searchPublicProfiles(username: string): Promise<PublicProfile[]> {
+  const query = username.trim();
+  if (query.length < 2) return [];
+  const { data, error } = await supabase
+    .from('public_profiles')
+    .select('id, username, full_name, avatar_url, home_city, bio, interests')
+    .ilike('username', `%${query}%`)
+    .order('username')
+    .limit(12);
+  if (error) throw error;
+  return (data ?? []) as PublicProfile[];
+}
+
 export async function saveRiderProfile(profile: RiderProfileUpdate): Promise<void> {
   const { data } = await supabase.auth.getUser();
   if (!data.user) throw new Error('Войди в аккаунт, чтобы сохранить профиль.');

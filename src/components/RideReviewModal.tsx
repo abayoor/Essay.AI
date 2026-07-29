@@ -58,7 +58,7 @@ export function RideReviewModal(props: RideReviewModalProps) {
         <label>Описание для себя или публикации<textarea value={props.description} onChange={(event) => props.onDescriptionChange(event.target.value)} maxLength={1000} placeholder="Погода, покрытие, с кем ехал(а)" /></label>
       </div>
       <div className="ride-review-actions">
-        {!props.savedRide && <button className="outline-inline-button" disabled={props.busy} onClick={props.onSave}>Сохранить в мои заезды</button>}
+        <button className="outline-inline-button" disabled={props.busy} onClick={props.onSave}>{props.savedRide ? 'Сохранить изменения' : 'Сохранить в мои заезды'}</button>
         <button className="signal-button" disabled={props.busy} onClick={props.onPublish}>Опубликовать в Slipstream</button>
       </div>
       {props.savedRide && <p className="ride-saved-note" role="status">Заезд сохранён. <Link href={`/rides/${props.savedRide.id}`}>Открыть его</Link> или поделиться ниже.</p>}

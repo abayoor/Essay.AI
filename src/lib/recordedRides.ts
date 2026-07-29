@@ -68,6 +68,15 @@ function rideFromRow(row: RideRow): RideActivity {
 
 const rideFields = 'id, title, description, distance_km, duration_seconds, moving_time_seconds, elevation_gain_m, avg_speed_kmh, max_speed_kmh, pace_min_per_km, ride_date, created_at, gps_track';
 
+function limitStoredTrack(track: GpsTrackPoint[], limit = 2500): GpsTrackPoint[] {
+  if (track.length <= limit) return track;
+  const lastIndex = track.length - 1;
+  return Array.from({ length: limit }, (_, index) => {
+    const sourceIndex = Math.round((index * lastIndex) / (limit - 1));
+    return track[sourceIndex];
+  });
+}
+
 export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<SavedRecordedRide> {
   const { track, metrics } = input;
   const title = input.title.trim();
@@ -76,7 +85,7 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
   if (!title) throw new Error('Дай заезду короткое название.');
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы сохранить тренировку.');
-  const simplifiedTrack = simplifyGpsTrack(track).map(({ lat, lng, elevation, timestamp }) => ({ lat, lng, elevation, timestamp }));
+  const simplifiedTrack = limitStoredTrack(simplifyGpsTrack(track)).map(({ lat, lng, elevation, timestamp }) => ({ lat, lng, elevation, timestamp }));
   const { data, error } = await supabase.from('ride_activities').insert({
     user_id: authData.user.id,
     title,
@@ -94,6 +103,14 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
   }).select('id').single();
   if (error) throw error;
   return { id: (data as { id: string }).id, metrics, track: simplifiedTrack, title, description };
+}
+
+export async function updateRecordedRide(id: string, input: Pick<SaveRecordedRideInput, 'title' | 'description'>): Promise<void> {
+  const title = input.title.trim();
+  const description = input.description.trim();
+  if (!title) throw new Error('Дай заезду короткое название.');
+  const { error } = await supabase.from('ride_activities').update({ title, description: description || null }).eq('id', id);
+  if (error) throw error;
 }
 
 export async function loadRecordedRides(): Promise<RideActivity[]> {

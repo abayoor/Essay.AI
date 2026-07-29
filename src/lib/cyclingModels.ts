@@ -113,8 +113,8 @@ export type RoutePostPreview = {
 export type SocialPost = {
   id: string;
   user_id: string;
-  media_url: string;
-  media_type: PostMediaType;
+  media_url: string | null;
+  media_type: PostMediaType | null;
   caption: string;
   created_at: string;
   author: PublicProfile;

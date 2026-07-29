@@ -4,10 +4,12 @@ import { AuthPage } from './pages/AuthPage';
 import { BikesPage } from './pages/BikesPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { ConversationPage } from './pages/ConversationPage';
+import { CompetitionsPage } from './pages/CompetitionsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FeedPage } from './pages/FeedPage';
 import { HomePage } from './pages/HomePage';
 import { MessagesPage } from './pages/MessagesPage';
+import { MapPage } from './pages/MapPage';
 import { NewPostPage } from './pages/NewPostPage';
 import { NewRoutePage } from './pages/NewRoutePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -33,6 +35,8 @@ export default function App() {
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/bikes" component={BikesPage} />
       <Route path="/feed" component={FeedPage} />
+      <Route path="/map" component={MapPage} />
+      <Route path="/competitions" component={CompetitionsPage} />
       <Route path="/record" component={RecordPage} />
       <Route path="/rides/:id" component={RideDetailPage} />
       <Route path="/rides" component={RidesPage} />
