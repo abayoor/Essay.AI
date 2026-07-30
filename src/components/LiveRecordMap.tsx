@@ -24,8 +24,8 @@ function KeepMapSized() {
 export function LiveRecordMap({ track, currentPoint = null, className = 'record-map' }: { track: GpsTrackPoint[]; currentPoint?: GpsTrackPoint | null; className?: string }) {
   const displayedPoint = currentPoint ?? track[track.length - 1] ?? null;
   const positions = track.map((point) => [point.lat, point.lng] as [number, number]);
-  return <MapContainer center={displayedPoint ? [displayedPoint.lat, displayedPoint.lng] : almaty} zoom={15} minZoom={4} maxZoom={19} zoomSnap={0.25} zoomDelta={0.5} wheelPxPerZoomLevel={180} touchZoom="center" scrollWheelZoom className={className} zoomControl={false}>
-    <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+  return <MapContainer center={displayedPoint ? [displayedPoint.lat, displayedPoint.lng] : almaty} zoom={15} minZoom={4} maxZoom={18} zoomSnap={0.25} zoomDelta={0.5} wheelPxPerZoomLevel={180} touchZoom="center" scrollWheelZoom className={className} zoomControl={false}>
+    <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={18} maxNativeZoom={18} />
     <ZoomControl position="bottomright" />
     <KeepMapSized />
     <FollowRider point={displayedPoint} />

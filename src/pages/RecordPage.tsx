@@ -10,6 +10,7 @@ import { calculateRecordingMetrics, emptyRecordingMetrics } from '../lib/gps';
 import { createPost } from '../lib/posts';
 import { saveRecordedRide, type SavedRecordedRide, updateRecordedRide } from '../lib/recordedRides';
 import { shareRide } from '../lib/share';
+import { useTranslations } from '../lib/translations';
 
 type RecordStatus = 'idle' | 'running' | 'paused' | 'finished';
 type GpsStatus = 'idle' | 'locating' | 'ready' | 'paused' | 'denied' | 'error';
@@ -43,6 +44,7 @@ export function RecordPage() {
   const [savedRide, setSavedRide] = useState<SavedRecordedRide | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const t = useTranslations();
   const watchId = useRef<number | null>(null);
   const previewWatchId = useRef<number | null>(null);
   const wakeLock = useRef<ScreenWakeLock | null>(null);
@@ -95,12 +97,15 @@ export function RecordPage() {
       lng: position.coords.longitude,
       elevation: position.coords.altitude,
       timestamp: position.timestamp,
+      accuracyMeters: position.coords.accuracy,
+      altitudeAccuracyMeters: position.coords.altitudeAccuracy,
+      speedMps: position.coords.speed,
     };
     setCurrentPosition(point);
     setGpsStatus('ready');
     const previous = trackRef.current[trackRef.current.length - 1];
-    if (previous && point.timestamp - previous.timestamp < 600) return;
-    if (previous && position.coords.accuracy > 120) return;
+    if (position.coords.accuracy > 45) return;
+    if (previous && point.timestamp - previous.timestamp < 1000) return;
     const nextTrack = [...trackRef.current, point];
     trackRef.current = nextTrack;
     setTrack(nextTrack);
@@ -124,6 +129,9 @@ export function RecordPage() {
       lng: position.coords.longitude,
       elevation: position.coords.altitude,
       timestamp: position.timestamp,
+      accuracyMeters: position.coords.accuracy,
+      altitudeAccuracyMeters: position.coords.altitudeAccuracy,
+      speedMps: position.coords.speed,
     };
     setCurrentPosition(point);
     setGpsStatus('ready');
@@ -136,7 +144,7 @@ export function RecordPage() {
   const startPreviewLocation = useCallback(() => {
     if (!navigator.geolocation || previewWatchId.current !== null) return;
     setGpsStatus('locating');
-    previewWatchId.current = navigator.geolocation.watchPosition(previewLocation, previewLocationError, { enableHighAccuracy: false, maximumAge: 15000, timeout: 30000 });
+    previewWatchId.current = navigator.geolocation.watchPosition(previewLocation, previewLocationError, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
   }, [previewLocation, previewLocationError]);
 
   const watchLocation = useCallback(() => {
@@ -292,20 +300,20 @@ export function RecordPage() {
     <PageShell>
       <main className="record-page topographic-hero">
         <section className="record-metrics" aria-label="Показатели тренировки">
-          <div><span>Дистанция</span><strong>{metrics.distanceKm.toFixed(2)} <small>км</small></strong></div>
-          <div><span>Скорость</span><strong>{metrics.currentSpeedKmh.toFixed(1)} <small>км/ч</small></strong></div>
-          <div><span>Время</span><strong>{formatTime(metrics.elapsedTimeSeconds)}</strong></div>
+          <div><span>{t('recordDistance')}</span><strong>{metrics.distanceKm.toFixed(2)} <small>{t('km')}</small></strong></div>
+          <div><span>{t('recordSpeed')}</span><strong>{metrics.currentSpeedKmh.toFixed(1)} <small>{t('kmh')}</small></strong></div>
+          <div><span>{t('recordTime')}</span><strong>{formatTime(metrics.elapsedTimeSeconds)}</strong></div>
         </section>
-        <section className="record-map-slot" aria-label="Карта текущей тренировки"><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`}><LocateFixed size={16} aria-hidden="true" />{gpsStatus === 'locating' && 'Ищем GPS…'}{gpsStatus === 'ready' && (status === 'idle' ? 'GPS найден · готов к записи' : `GPS найден · точек: ${track.length}`)}{gpsStatus === 'paused' && 'Запись на паузе'}{gpsStatus === 'denied' && 'Нужен доступ к геолокации'}{gpsStatus === 'error' && 'GPS пока недоступен'}{gpsStatus === 'idle' && 'Ищем твоё местоположение…'}</p></section>
+        <section className="record-map-slot" aria-label={t('map')}><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`}><LocateFixed size={16} aria-hidden="true" />{gpsStatus === 'locating' && t('gpsSearching')}{gpsStatus === 'ready' && (status === 'idle' ? t('gpsReady') : `${t('gpsPoints')}${track.length}`)}{gpsStatus === 'paused' && t('gpsPaused')}{gpsStatus === 'denied' && t('gpsDenied')}{gpsStatus === 'error' && t('gpsUnavailable')}{gpsStatus === 'idle' && t('gpsSearching')}</p></section>
         <section className={`record-controls${status === 'running' ? ' is-recording' : ''}`} aria-label="Управление записью">
-          {status === 'idle' && <button className="signal-button record-primary" onClick={start}>Старт записи</button>}
-          {status === 'running' && <><button className="outline-inline-button" onClick={pause}>Пауза</button><button className="signal-button record-primary" onClick={() => void finish()}>Завершить</button></>}
-          {status === 'paused' && <><button className="signal-button record-primary" onClick={resume}>Продолжить</button><button className="outline-inline-button" onClick={() => void finish()}>Завершить</button></>}
-          {status === 'finished' && <><button className="signal-button record-primary" onClick={start}>Новая запись</button><Link className="outline-inline-button" href="/rides">Мои заезды</Link></>}
+          {status === 'idle' && <button className="signal-button record-primary" onClick={start}>{t('startRecording')}</button>}
+          {status === 'running' && <><button className="outline-inline-button" onClick={pause}>{t('pause')}</button><button className="signal-button record-primary" onClick={() => void finish()}>{t('finish')}</button></>}
+          {status === 'paused' && <><button className="signal-button record-primary" onClick={resume}>{t('resume')}</button><button className="outline-inline-button" onClick={() => void finish()}>{t('finish')}</button></>}
+          {status === 'finished' && <><button className="signal-button record-primary" onClick={start}>{t('newRecording')}</button><Link className="outline-inline-button" href="/rides">{t('myRides')}</Link></>}
         </section>
         {!reviewOpen && message && <p className="record-note" role="status">{message}</p>}
         {savedRide && !reviewOpen && <p className="ride-saved-note"><Link href={`/rides/${savedRide.id}`}>Открыть сохранённый заезд</Link></p>}
-        <Link className="record-back" href="/dashboard">← Вернуться к сводке</Link>
+        <Link className="record-back" href="/dashboard">{t('backToDashboard')}</Link>
         {reviewOpen && <RideReviewModal
           track={track}
           metrics={metrics}

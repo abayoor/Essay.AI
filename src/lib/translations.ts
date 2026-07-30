@@ -3,19 +3,19 @@ import { usePreferences } from './preferences';
 
 const messages = {
   ru: {
-    dashboard: 'Сводка', feed: 'Лента', record: 'Запись', routes: 'Маршруты', bikes: 'Гараж', messages: 'Сообщения', profile: 'Профиль', settings: 'Настройки', signIn: 'Войти', signOut: 'Выйти',
-    community: 'Локальное велосообщество', hero: 'Ближе к дороге.', heroEmphasis: 'Ближе', heroEnd: 'к своим.', heroText: 'Маршруты, гараж, журнал заездов и люди, с которыми хочется крутить дальше.', join: 'Присоединиться', viewRoutes: 'Смотреть маршруты →',
-    collect: 'Собирай километры', collectText: 'Логируй заезды и смотри честную статистику — без шума.', garage: 'Знай свою технику', garageText: 'Гараж напоминает о цепи, покрышках и тормозах до того, как станет поздно.', discover: 'Находи дорогу', discoverText: 'Делись маршрутами из своего региона и забирай с собой проверенные треки.',
+    dashboard: 'Сводка', feed: 'Лента', map: 'Карта', record: 'Запись', competitions: 'Соревнования', profile: 'Профиль', settings: 'Настройки', signIn: 'Войти', signOut: 'Выйти', messages: 'Сообщения', myRides: 'Мои заезды', bikesAndService: 'Велосипеды и ТО',
+    feedKicker: 'Общая лента', feedTitle: 'Что у сообщества?', feedDescription: 'Свежие фото, видео и тренировки всех райдеров — в одном месте.', newPost: 'Создать пост', loadFeed: 'Загружаем ленту…', emptyFeedTitle: 'Лента пока пустая', emptyFeedDescription: 'Опубликуй первый заезд — его увидит всё сообщество.', retry: 'Повторить',
+    recordDistance: 'Дистанция', recordSpeed: 'Скорость', recordTime: 'Время', km: 'км', kmh: 'км/ч', gpsSearching: 'Ищем GPS…', gpsReady: 'GPS найден · готов к записи', gpsPoints: 'GPS найден · точек: ', gpsPaused: 'Запись на паузе', gpsDenied: 'Нужен доступ к геолокации', gpsUnavailable: 'GPS пока недоступен', startRecording: 'Старт записи', pause: 'Пауза', finish: 'Завершить', resume: 'Продолжить', newRecording: 'Новая запись', backToDashboard: '← Вернуться к сводке',
   },
   kz: {
-    dashboard: 'Шолу', feed: 'Лента', record: 'Жазба', routes: 'Бағыттар', bikes: 'Гараж', messages: 'Хабарламалар', profile: 'Профиль', settings: 'Баптаулар', signIn: 'Кіру', signOut: 'Шығу',
-    community: 'Жергілікті велоқауымдастық', hero: 'Жолға жақын.', heroEmphasis: 'Өзіңе', heroEnd: 'жақын.', heroText: 'Бағыттар, гараж, сапар журналы және бірге педаль басқың келетін адамдар.', join: 'Қосылу', viewRoutes: 'Бағыттарды көру →',
-    collect: 'Километр жина', collectText: 'Сапарларды жазып, таза статистиканы көр.', garage: 'Техникаңды таны', garageText: 'Гараж шынжыр, дөңгелек және тежегіш туралы алдын ала ескертеді.', discover: 'Жолды тап', discoverText: 'Өз өңіріңнің бағыттарымен бөлісіп, тексерілген тректерді ал.',
+    dashboard: 'Шолу', feed: 'Лента', map: 'Карта', record: 'Жазба', competitions: 'Жарыстар', profile: 'Профиль', settings: 'Баптаулар', signIn: 'Кіру', signOut: 'Шығу', messages: 'Хабарламалар', myRides: 'Менің сапарларым', bikesAndService: 'Велосипедтер және қызмет',
+    feedKicker: 'Ортақ лента', feedTitle: 'Қауымдастықта не болып жатыр?', feedDescription: 'Барлық райдердің жаңа фотолары, видеолары және жаттығулары — бір жерде.', newPost: 'Жазба жасау', loadFeed: 'Лента жүктелуде…', emptyFeedTitle: 'Лента әзірге бос', emptyFeedDescription: 'Алғашқы сапарыңды жарияла — оны бүкіл қауымдастық көреді.', retry: 'Қайталау',
+    recordDistance: 'Қашықтық', recordSpeed: 'Жылдамдық', recordTime: 'Уақыт', km: 'км', kmh: 'км/сағ', gpsSearching: 'GPS ізделуде…', gpsReady: 'GPS табылды · жазуға дайын', gpsPoints: 'GPS табылды · нүктелер: ', gpsPaused: 'Жазба кідіртілді', gpsDenied: 'Геолокацияға рұқсат керек', gpsUnavailable: 'GPS әзірге қолжетімсіз', startRecording: 'Жазбаны бастау', pause: 'Кідірту', finish: 'Аяқтау', resume: 'Жалғастыру', newRecording: 'Жаңа жазба', backToDashboard: '← Шолуға оралу',
   },
   en: {
-    dashboard: 'Overview', feed: 'Feed', record: 'Record', routes: 'Routes', bikes: 'Garage', messages: 'Messages', profile: 'Profile', settings: 'Settings', signIn: 'Sign in', signOut: 'Sign out',
-    community: 'Local cycling community', hero: 'Closer to the road.', heroEmphasis: 'Closer', heroEnd: 'to your people.', heroText: 'Routes, garage, ride log and people you want to keep riding with.', join: 'Join in', viewRoutes: 'Explore routes →',
-    collect: 'Collect kilometres', collectText: 'Log rides and see clear statistics without the noise.', garage: 'Know your bike', garageText: 'The garage reminds you about chains, tyres and brakes before it is too late.', discover: 'Find your road', discoverText: 'Share local routes and take proven tracks with you.',
+    dashboard: 'Overview', feed: 'Feed', map: 'Map', record: 'Record', competitions: 'Competitions', profile: 'Profile', settings: 'Settings', signIn: 'Sign in', signOut: 'Sign out', messages: 'Messages', myRides: 'My rides', bikesAndService: 'Bikes & service',
+    feedKicker: 'Community feed', feedTitle: 'What is the community up to?', feedDescription: 'Fresh photos, videos and rides from every rider — all in one place.', newPost: 'Create post', loadFeed: 'Loading feed…', emptyFeedTitle: 'The feed is empty', emptyFeedDescription: 'Publish the first ride for the whole community to see.', retry: 'Retry',
+    recordDistance: 'Distance', recordSpeed: 'Speed', recordTime: 'Time', km: 'km', kmh: 'km/h', gpsSearching: 'Finding GPS…', gpsReady: 'GPS found · ready to record', gpsPoints: 'GPS found · points: ', gpsPaused: 'Recording paused', gpsDenied: 'Location permission is needed', gpsUnavailable: 'GPS is unavailable', startRecording: 'Start recording', pause: 'Pause', finish: 'Finish', resume: 'Resume', newRecording: 'New recording', backToDashboard: '← Back to overview',
   },
 } as const;
 

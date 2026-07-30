@@ -3,7 +3,9 @@ import type { GpsTrackPoint, RideRecordingMetrics } from './cyclingModels';
 const earthRadiusKm = 6371;
 const autoPauseSpeedKmh = 1.8;
 const autoPauseAfterSeconds = 8;
-const maximumPlausibleSpeedKmh = 95;
+const maximumPlausibleSpeedKmh = 85;
+const maximumTrackAccuracyMeters = 45;
+const elevationDeadbandMeters = 3;
 
 export const emptyRecordingMetrics: RideRecordingMetrics = {
   distanceKm: 0,
@@ -32,16 +34,23 @@ export function calculateRecordingMetrics(track: GpsTrackPoint[], elapsedTimeSec
   let currentSpeedKmh = 0;
   let elevationGainM = 0;
   let stationaryRunSeconds = 0;
+  let elevationBaseline: number | null = null;
 
   track.slice(1).forEach((point, index) => {
     const previous = track[index];
     const intervalSeconds = Math.max(0, (point.timestamp - previous.timestamp) / 1000);
     if (!intervalSeconds || intervalSeconds > 90) return;
+    if ((point.accuracyMeters ?? 0) > maximumTrackAccuracyMeters || (previous.accuracyMeters ?? 0) > maximumTrackAccuracyMeters) return;
     const segmentDistanceKm = distanceBetweenKm(previous, point);
-    const speedKmh = segmentDistanceKm / intervalSeconds * 3600;
+    const calculatedSpeedKmh = segmentDistanceKm / intervalSeconds * 3600;
+    const speedKmh = point.speedMps !== null && point.speedMps !== undefined && point.speedMps >= 0
+      ? point.speedMps * 3.6
+      : calculatedSpeedKmh;
     if (speedKmh > maximumPlausibleSpeedKmh) return;
 
-    distanceKm += segmentDistanceKm;
+    const accuracyFloorKm = Math.max(0.0025, Math.min(0.012, Math.max(point.accuracyMeters ?? 0, previous.accuracyMeters ?? 0) / 3500));
+    const isGpsJitter = segmentDistanceKm < accuracyFloorKm && speedKmh < autoPauseSpeedKmh;
+    if (!isGpsJitter) distanceKm += segmentDistanceKm;
     currentSpeedKmh = speedKmh;
     maxSpeedKmh = Math.max(maxSpeedKmh, speedKmh);
     const isMoving = speedKmh >= autoPauseSpeedKmh;
@@ -58,8 +67,19 @@ export function calculateRecordingMetrics(track: GpsTrackPoint[], elapsedTimeSec
       }
     }
 
-    const elevationDelta = point.elevation !== null && previous.elevation !== null ? point.elevation - previous.elevation : 0;
-    if (elevationDelta > 2) elevationGainM += elevationDelta;
+    const altitudeIsAccurate = (point.altitudeAccuracyMeters ?? 0) <= 20 && (previous.altitudeAccuracyMeters ?? 0) <= 20;
+    if (point.elevation !== null && altitudeIsAccurate) {
+      if (elevationBaseline === null) {
+        elevationBaseline = previous.elevation ?? point.elevation;
+      }
+      const elevationDelta = point.elevation - elevationBaseline;
+      if (elevationDelta >= elevationDeadbandMeters) {
+        elevationGainM += elevationDelta;
+        elevationBaseline = point.elevation;
+      } else if (elevationDelta <= -elevationDeadbandMeters) {
+        elevationBaseline = point.elevation;
+      }
+    }
   });
 
   const averageSpeedKmh = movingTimeSeconds > 0 ? distanceKm / movingTimeSeconds * 3600 : 0;

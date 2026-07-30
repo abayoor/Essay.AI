@@ -6,6 +6,7 @@ import { PostCard } from '../components/PostCard';
 import type { SocialPost } from '../lib/cyclingModels';
 import { useSession } from '../lib/auth';
 import { loadPosts } from '../lib/posts';
+import { useTranslations } from '../lib/translations';
 
 export function FeedPage() {
   const { session, loading } = useSession();
@@ -13,6 +14,7 @@ export function FeedPage() {
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [error, setError] = useState('');
+  const t = useTranslations();
 
   const refresh = useCallback(async (showLoader = false) => {
     if (showLoader) setPostsLoading(true);
@@ -40,5 +42,5 @@ export function FeedPage() {
     if (session) void refresh(true);
   }, [loading, navigate, refresh, session]);
 
-  return <PageShell><main className="cycle-page feed-page"><header className="page-heading"><div><p className="kicker">Общая лента</p><h1>Что у сообщества?</h1><p>Свежие фото, видео и тренировки всех райдеров — в одном месте.</p></div><Link className="signal-button" href="/posts/new">Создать пост</Link></header>{error && <div className="inline-error" role="alert">{error}<button onClick={() => void refresh()}>Повторить</button></div>}{postsLoading ? <BikeLoader label="Загружаем ленту…" /> : posts.length ? <section className="feed-list">{posts.map((post) => <PostCard key={post.id} post={post} viewerId={session?.user.id ?? ''} onLikeChange={updateLike} onRefresh={refresh} />)}</section> : <section className="empty-panel"><h2>Лента пока пустая</h2><p>Опубликуй первый заезд — его увидит всё сообщество.</p><Link className="signal-button" href="/posts/new">Создать пост</Link></section>}</main></PageShell>;
+  return <PageShell><main className="cycle-page feed-page"><header className="page-heading"><div><p className="kicker">{t('feedKicker')}</p><h1>{t('feedTitle')}</h1><p>{t('feedDescription')}</p></div><Link className="signal-button" href="/posts/new">{t('newPost')}</Link></header>{error && <div className="inline-error" role="alert">{error}<button onClick={() => void refresh()}>{t('retry')}</button></div>}{postsLoading ? <BikeLoader label={t('loadFeed')} /> : posts.length ? <section className="feed-list">{posts.map((post) => <PostCard key={post.id} post={post} viewerId={session?.user.id ?? ''} onLikeChange={updateLike} onRefresh={refresh} />)}</section> : <section className="empty-panel"><h2>{t('emptyFeedTitle')}</h2><p>{t('emptyFeedDescription')}</p><Link className="signal-button" href="/posts/new">{t('newPost')}</Link></section>}</main></PageShell>;
 }

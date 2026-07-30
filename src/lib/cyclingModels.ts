@@ -6,6 +6,9 @@ export type RoutePoint = { lat: number; lng: number };
 export type GpsTrackPoint = RoutePoint & {
   elevation: number | null;
   timestamp: number;
+  accuracyMeters?: number;
+  altitudeAccuracyMeters?: number | null;
+  speedMps?: number | null;
 };
 
 export type RideRecordingMetrics = {
