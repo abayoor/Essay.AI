@@ -5,6 +5,7 @@ import { LiveRecordMap } from '../components/LiveRecordMap';
 import { PageShell } from '../components/PageShell';
 import { RideReviewModal } from '../components/RideReviewModal';
 import { useSession } from '../lib/auth';
+import { startBackgroundRecording, stopBackgroundRecording, supportsBackgroundRecording } from '../lib/backgroundRecording';
 import type { GpsTrackPoint, RideRecordingMetrics } from '../lib/cyclingModels';
 import { calculateRecordingMetrics, emptyRecordingMetrics } from '../lib/gps';
 import { createPost } from '../lib/posts';
@@ -30,6 +31,18 @@ function defaultRideTitle(timestamp = Date.now()): string {
   return `Заезд · ${date}`;
 }
 
+function toGpsTrackPoint(position: GeolocationPosition): GpsTrackPoint {
+  return {
+    lat: position.coords.latitude,
+    lng: position.coords.longitude,
+    elevation: position.coords.altitude,
+    timestamp: position.timestamp,
+    accuracyMeters: position.coords.accuracy,
+    altitudeAccuracyMeters: position.coords.altitudeAccuracy,
+    speedMps: position.coords.speed,
+  };
+}
+
 export function RecordPage() {
   const { session, loading } = useSession();
   const [, navigate] = useLocation();
@@ -53,6 +66,8 @@ export function RecordPage() {
   const pausedAt = useRef<number | null>(null);
   const pausedDuration = useRef(0);
   const trackingActive = useRef(false);
+  const nativeTrackingActive = useRef(false);
+  const trackingAttempt = useRef(0);
 
   const activeElapsedSeconds = useCallback((now = Date.now()): number => {
     if (!startedAt.current) return 0;
@@ -66,8 +81,13 @@ export function RecordPage() {
 
   const stopWatching = useCallback(() => {
     trackingActive.current = false;
+    trackingAttempt.current += 1;
     if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     watchId.current = null;
+    if (nativeTrackingActive.current) {
+      nativeTrackingActive.current = false;
+      void stopBackgroundRecording().catch(() => undefined);
+    }
   }, []);
 
   const stopPreviewLocation = useCallback(() => {
@@ -90,27 +110,22 @@ export function RecordPage() {
     catch { /* A released wake lock does not need further handling. */ }
   }, []);
 
-  const receiveLocation = useCallback((position: GeolocationPosition) => {
+  const appendRecordedPoint = useCallback((point: GpsTrackPoint) => {
     if (!trackingActive.current) return;
-    const point: GpsTrackPoint = {
-      lat: position.coords.latitude,
-      lng: position.coords.longitude,
-      elevation: position.coords.altitude,
-      timestamp: position.timestamp,
-      accuracyMeters: position.coords.accuracy,
-      altitudeAccuracyMeters: position.coords.altitudeAccuracy,
-      speedMps: position.coords.speed,
-    };
     setCurrentPosition(point);
     setGpsStatus('ready');
     const previous = trackRef.current[trackRef.current.length - 1];
-    if (position.coords.accuracy > 45) return;
+    if ((point.accuracyMeters ?? Number.POSITIVE_INFINITY) > 45) return;
     if (previous && point.timestamp - previous.timestamp < 1000) return;
     const nextTrack = [...trackRef.current, point];
     trackRef.current = nextTrack;
     setTrack(nextTrack);
     updateMetrics(nextTrack, point.timestamp);
   }, [updateMetrics]);
+
+  const receiveLocation = useCallback((position: GeolocationPosition) => {
+    appendRecordedPoint(toGpsTrackPoint(position));
+  }, [appendRecordedPoint]);
 
   const handleLocationError = useCallback((error: GeolocationPositionError) => {
     if (!trackingActive.current) return;
@@ -124,15 +139,7 @@ export function RecordPage() {
   }, []);
 
   const previewLocation = useCallback((position: GeolocationPosition) => {
-    const point: GpsTrackPoint = {
-      lat: position.coords.latitude,
-      lng: position.coords.longitude,
-      elevation: position.coords.altitude,
-      timestamp: position.timestamp,
-      accuracyMeters: position.coords.accuracy,
-      altitudeAccuracyMeters: position.coords.altitudeAccuracy,
-      speedMps: position.coords.speed,
-    };
+    const point = toGpsTrackPoint(position);
     setCurrentPosition(point);
     setGpsStatus('ready');
   }, []);
@@ -153,10 +160,38 @@ export function RecordPage() {
       setMessage('Браузер не поддерживает геолокацию.');
       return;
     }
-    trackingActive.current = true;
     setGpsStatus('locating');
     watchId.current = navigator.geolocation.watchPosition(receiveLocation, handleLocationError, { enableHighAccuracy: true, maximumAge: 3000, timeout: 30000 });
   }, [handleLocationError, receiveLocation]);
+
+  const handleBackgroundLocationError = useCallback((backgroundMessage: string) => {
+    if (!trackingActive.current) return;
+    setGpsStatus('error');
+    setMessage(backgroundMessage);
+  }, []);
+
+  const startTracking = useCallback(async () => {
+    trackingActive.current = true;
+    const attempt = trackingAttempt.current + 1;
+    trackingAttempt.current = attempt;
+    setGpsStatus('locating');
+    if (supportsBackgroundRecording()) {
+      try {
+        const started = await startBackgroundRecording({ onLocation: appendRecordedPoint, onError: handleBackgroundLocationError });
+        if (!trackingActive.current || trackingAttempt.current !== attempt) {
+          if (started && !trackingActive.current) void stopBackgroundRecording().catch(() => undefined);
+          return;
+        }
+        if (started) {
+          nativeTrackingActive.current = true;
+          return;
+        }
+      } catch {
+        setMessage('Не удалось включить фоновый GPS. Продолжаем запись, пока приложение открыто.');
+      }
+    }
+    if (trackingActive.current && trackingAttempt.current === attempt) watchLocation();
+  }, [appendRecordedPoint, handleBackgroundLocationError, watchLocation]);
 
   useEffect(() => {
     if (!loading && !session) navigate('/auth/sign-in');
@@ -184,7 +219,7 @@ export function RecordPage() {
     setRideTitle(defaultRideTitle());
     setRideDescription('');
     stopPreviewLocation();
-    const initialTrack = currentPosition !== null && Date.now() - currentPosition.timestamp < 30_000
+    const initialTrack = currentPosition !== null && Date.now() - currentPosition.timestamp < 30_000 && (currentPosition.accuracyMeters ?? Number.POSITIVE_INFINITY) <= 45
       ? [currentPosition]
       : [];
     setTrack(initialTrack);
@@ -195,7 +230,7 @@ export function RecordPage() {
     pausedDuration.current = 0;
     setMetrics(emptyRecordingMetrics);
     setStatus('running');
-    watchLocation();
+    void startTracking();
     void keepScreenAwake();
   }
 
@@ -212,7 +247,7 @@ export function RecordPage() {
     if (pausedAt.current) pausedDuration.current += Date.now() - pausedAt.current;
     pausedAt.current = null;
     setStatus('running');
-    watchLocation();
+    void startTracking();
     void keepScreenAwake();
   }
 
@@ -305,6 +340,7 @@ export function RecordPage() {
           <div><span>{t('recordTime')}</span><strong>{formatTime(metrics.elapsedTimeSeconds)}</strong></div>
         </section>
         <section className="record-map-slot" aria-label={t('map')}><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`}><LocateFixed size={16} aria-hidden="true" />{gpsStatus === 'locating' && t('gpsSearching')}{gpsStatus === 'ready' && (status === 'idle' ? t('gpsReady') : `${t('gpsPoints')}${track.length}`)}{gpsStatus === 'paused' && t('gpsPaused')}{gpsStatus === 'denied' && t('gpsDenied')}{gpsStatus === 'error' && t('gpsUnavailable')}{gpsStatus === 'idle' && t('gpsSearching')}</p></section>
+        {supportsBackgroundRecording() && status === 'running' && <p className="record-background-note" role="status">Фоновая GPS-запись включена — можешь заблокировать экран.</p>}
         <section className={`record-controls${status === 'running' ? ' is-recording' : ''}`} aria-label="Управление записью">
           {status === 'idle' && <button className="signal-button record-primary" onClick={start}>{t('startRecording')}</button>}
           {status === 'running' && <><button className="outline-inline-button" onClick={pause}>{t('pause')}</button><button className="signal-button record-primary" onClick={() => void finish()}>{t('finish')}</button></>}
