@@ -10,6 +10,9 @@ import { FeedPage } from './pages/FeedPage';
 import { HomePage } from './pages/HomePage';
 import { MessagesPage } from './pages/MessagesPage';
 import { MapPage } from './pages/MapPage';
+import { MarketplaceListingPage } from './pages/MarketplaceListingPage';
+import { MarketplacePage } from './pages/MarketplacePage';
+import { NewMarketplaceListingPage } from './pages/NewMarketplaceListingPage';
 import { NewPostPage } from './pages/NewPostPage';
 import { NewRoutePage } from './pages/NewRoutePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -36,6 +39,9 @@ export default function App() {
       <Route path="/bikes" component={BikesPage} />
       <Route path="/feed" component={FeedPage} />
       <Route path="/map" component={MapPage} />
+      <Route path="/marketplace/new" component={NewMarketplaceListingPage} />
+      <Route path="/marketplace/:id" component={MarketplaceListingPage} />
+      <Route path="/marketplace" component={MarketplacePage} />
       <Route path="/competitions" component={CompetitionsPage} />
       <Route path="/record" component={RecordPage} />
       <Route path="/rides/:id" component={RideDetailPage} />

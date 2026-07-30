@@ -80,33 +80,29 @@ export async function loadConversationParticipants(conversationId: string): Prom
   return loadPublicProfiles(ids);
 }
 
-export async function sendTextMessage(conversationId: string, text: string): Promise<void> {
+export async function sendTextMessage(conversationId: string, text: string): Promise<DirectMessage> {
   const trimmed = text.trim();
-  if (!trimmed) return;
+  if (!trimmed) throw new Error('Введите сообщение.');
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы отправить сообщение.');
-  const { error } = await supabase.from('messages').insert({
-    conversation_id: conversationId,
-    sender_id: authData.user.id,
-    content_type: 'text',
-    text_content: trimmed,
-  });
+  const { data, error } = await supabase.from('messages').insert({
+    conversation_id: conversationId, sender_id: authData.user.id, content_type: 'text', text_content: trimmed,
+  }).select('id, conversation_id, sender_id, content_type, text_content, file_url, shared_post_id, created_at').single();
   if (error) throw error;
+  return data as DirectMessage;
 }
 
-export async function sendSharedPost(conversationId: string, postId: string): Promise<void> {
+export async function sendSharedPost(conversationId: string, postId: string): Promise<DirectMessage> {
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы отправить публикацию.');
-  const { error } = await supabase.from('messages').insert({
-    conversation_id: conversationId,
-    sender_id: authData.user.id,
-    content_type: 'shared_post',
-    shared_post_id: postId,
-  });
+  const { data, error } = await supabase.from('messages').insert({
+    conversation_id: conversationId, sender_id: authData.user.id, content_type: 'shared_post', shared_post_id: postId,
+  }).select('id, conversation_id, sender_id, content_type, text_content, file_url, shared_post_id, created_at').single();
   if (error) throw error;
+  return data as DirectMessage;
 }
 
-export async function uploadMessageFile(conversationId: string, file: File): Promise<void> {
+export async function uploadMessageFile(conversationId: string, file: File): Promise<DirectMessage> {
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы прикрепить файл.');
   const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'file';
@@ -114,13 +110,14 @@ export async function uploadMessageFile(conversationId: string, file: File): Pro
   const path = `${conversationId}/${authData.user.id}/${crypto.randomUUID()}${extension}`;
   const { error: uploadError } = await supabase.storage.from('message-media').upload(path, file, { upsert: false });
   if (uploadError) throw uploadError;
-  const { error: messageError } = await supabase.from('messages').insert({
+  const { data, error: messageError } = await supabase.from('messages').insert({
     conversation_id: conversationId,
     sender_id: authData.user.id,
     content_type: type,
     file_url: path,
-  });
+  }).select('id, conversation_id, sender_id, content_type, text_content, file_url, shared_post_id, created_at').single();
   if (messageError) throw messageError;
+  return data as DirectMessage;
 }
 
 export async function createMessageFileUrl(path: string): Promise<string | null> {
