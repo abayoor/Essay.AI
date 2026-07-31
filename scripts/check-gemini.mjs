@@ -46,7 +46,7 @@ if (!apiKey) {
         contents: [{ role: 'user', parts: [{ text: 'Prepare a short test cycling insight.' }] }],
         generationConfig: {
           maxOutputTokens: 500,
-          thinkingConfig: { thinkingLevel: 'minimal' },
+          thinkingConfig: { thinkingBudget: 0 },
           responseMimeType: 'application/json',
           responseSchema: {
             type: 'object',

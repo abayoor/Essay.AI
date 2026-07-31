@@ -195,7 +195,7 @@ async function generate(
       }],
       generationConfig: {
         maxOutputTokens,
-        thinkingConfig: { thinkingLevel: 'minimal' },
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: schema,
       },

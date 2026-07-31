@@ -228,7 +228,7 @@ const coachSystemPrompt = [
 ].join(' ');
 
 async function requestGeminiCoach(apiKey: string, input: Record<string, unknown>): Promise<{ text: string | null; status: number }> {
-  const model = process.env.GEMINI_MODEL ?? 'gemini-3.6-flash';
+  const model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     headers: {
@@ -250,7 +250,7 @@ async function requestGeminiCoach(apiKey: string, input: Record<string, unknown>
       }],
       generationConfig: {
         maxOutputTokens: 3000,
-        thinkingConfig: { thinkingLevel: 'minimal' },
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: coachSchema,
       },
