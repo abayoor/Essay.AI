@@ -131,6 +131,25 @@ function responseText(payload: unknown): string | null {
   return null;
 }
 
+function geminiResponseText(payload: unknown): string | null {
+  if (typeof payload !== 'object' || payload === null) return null;
+  const candidates = (payload as Record<string, unknown>).candidates;
+  if (!Array.isArray(candidates)) return null;
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'object' || candidate === null) continue;
+    const content = (candidate as Record<string, unknown>).content;
+    if (typeof content !== 'object' || content === null) continue;
+    const parts = (content as Record<string, unknown>).parts;
+    if (!Array.isArray(parts)) continue;
+    for (const part of parts) {
+      if (typeof part === 'object' && part !== null && typeof (part as Record<string, unknown>).text === 'string') {
+        return (part as Record<string, unknown>).text as string;
+      }
+    }
+  }
+  return null;
+}
+
 const coachSchema = {
   type: 'object',
   additionalProperties: false,
@@ -186,6 +205,92 @@ async function safetyIdentifier(userId: string): Promise<string> {
   return `slipstream_${Array.from(new Uint8Array(digest)).slice(0, 12).map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
+const coachSystemPrompt = [
+  'You are Slipstream’s evidence-based and safety-first cycling coach.',
+  'Use only the supplied privacy-preserving ride metrics. Never invent heart rate, sleep, power, diagnoses, injuries, or medical facts.',
+  'Compare the last 7 days with the previous 7 days, the 28-day baseline, acute-to-baseline load, speed trend, climbing density, longest ride, active days, recent ride samples, current feeling, and selected goal.',
+  'Identify the most important pattern and explain which exact supplied numbers support it. Avoid generic praise.',
+  'Design one immediately actionable workout and a three-session weekly progression with intensity, duration, purpose, recovery spacing, warm-up, main set, and cool-down where relevant.',
+  'Do not increase the longest session or weekly load aggressively. If data is limited, confidence must be low and the plan conservative.',
+  'If feeling is low, load spiked, or recovery is uncertain, reduce intensity. Never recommend extreme loads, supplements, diets, medication, or hiding pain.',
+  'For pain, dizziness, breathing difficulty, or feeling unwell, advise stopping and contacting a trusted adult or clinician.',
+  'Return all user-facing text in the requested language: ru = Russian, kz = Kazakh, en = English.',
+].join(' ');
+
+async function requestGeminiCoach(apiKey: string, input: Record<string, unknown>): Promise<{ text: string | null; status: number }> {
+  const model = process.env.GEMINI_MODEL ?? 'gemini-3.6-flash';
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: coachSystemPrompt }] },
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: JSON.stringify({
+            goal: input.goal,
+            feeling: input.feeling,
+            responseLanguage: input.locale,
+            metrics: input.summary,
+          }),
+        }],
+      }],
+      generationConfig: {
+        temperature: 0.35,
+        maxOutputTokens: 3000,
+        responseMimeType: 'application/json',
+        responseSchema: coachSchema,
+      },
+    }),
+  });
+  const payload: unknown = await response.json().catch(() => null);
+  return { text: response.ok ? geminiResponseText(payload) : null, status: response.status };
+}
+
+async function requestOpenAiCoach(apiKey: string, userId: string, input: Record<string, unknown>): Promise<{ text: string | null; status: number }> {
+  const model = process.env.OPENAI_MODEL ?? 'gpt-5.6';
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      store: false,
+      safety_identifier: await safetyIdentifier(userId),
+      reasoning: { effort: 'high' },
+      max_output_tokens: 2200,
+      input: [
+        { role: 'system', content: coachSystemPrompt },
+        {
+          role: 'user',
+          content: JSON.stringify({
+            goal: input.goal,
+            feeling: input.feeling,
+            responseLanguage: input.locale,
+            metrics: input.summary,
+          }),
+        },
+      ],
+      text: {
+        verbosity: 'medium',
+        format: {
+          type: 'json_schema',
+          name: 'cycling_coach_advice',
+          strict: true,
+          schema: coachSchema,
+        },
+      },
+    }),
+  });
+  const payload: unknown = await response.json().catch(() => null);
+  return { text: response.ok ? responseText(payload) : null, status: response.status };
+}
+
 async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Метод не поддерживается.' }, 405);
   try {
@@ -198,72 +303,23 @@ async function handler(request: Request): Promise<Response> {
       return json({ error: 'Не удалось проверить показатели тренировки.' }, 400);
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    const geminiApiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
+    const openAiApiKey = process.env.OPENAI_API_KEY;
+    if (!geminiApiKey && !openAiApiKey) {
       return json({ error: 'ИИ-модель ещё не подключена. Базовый план уже рассчитан без неё.' }, 503);
     }
 
-    const model = process.env.OPENAI_MODEL ?? 'gpt-5.6';
-    const openAiResponse = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        store: false,
-        safety_identifier: await safetyIdentifier(user.id),
-        reasoning: { effort: 'high' },
-        max_output_tokens: 2200,
-        input: [
-          {
-            role: 'system',
-            content: [
-              'You are Slipstream’s evidence-based and safety-first cycling coach.',
-              'Use only the supplied privacy-preserving ride metrics. Never invent heart rate, sleep, power, diagnoses, injuries, or medical facts.',
-              'Compare the last 7 days with the previous 7 days, the 28-day baseline, acute-to-baseline load, speed trend, climbing density, longest ride, active days, recent ride samples, current feeling, and selected goal.',
-              'Identify the most important pattern and explain which exact supplied numbers support it. Avoid generic praise.',
-              'Design one immediately actionable workout and a three-session weekly progression with intensity, duration, purpose, recovery spacing, warm-up, main set, and cool-down where relevant.',
-              'Do not increase the longest session or weekly load aggressively. If data is limited, confidence must be low and the plan conservative.',
-              'If feeling is low, load spiked, or recovery is uncertain, reduce intensity. Never recommend extreme loads, supplements, diets, medication, or hiding pain.',
-              'For pain, dizziness, breathing difficulty, or feeling unwell, advise stopping and contacting a trusted adult or clinician.',
-              'Return all user-facing text in the requested language: ru = Russian, kz = Kazakh, en = English.',
-            ].join(' '),
-          },
-          {
-            role: 'user',
-            content: JSON.stringify({
-              goal: input.goal,
-              feeling: input.feeling,
-              responseLanguage: input.locale,
-              metrics: input.summary,
-            }),
-          },
-        ],
-        text: {
-          verbosity: 'medium',
-          format: {
-            type: 'json_schema',
-            name: 'cycling_coach_advice',
-            strict: true,
-            schema: coachSchema,
-          },
-        },
-      }),
-    });
-
-    const openAiPayload: unknown = await openAiResponse.json().catch(() => null);
-    if (!openAiResponse.ok) {
-      return json({ error: openAiResponse.status === 429
+    const aiResult = geminiApiKey
+      ? await requestGeminiCoach(geminiApiKey, input)
+      : await requestOpenAiCoach(openAiApiKey as string, user.id, input);
+    if (!aiResult.text) {
+      return json({ error: aiResult.status === 429
         ? 'ИИ-тренер занят. Попробуй ещё раз немного позже.'
         : 'ИИ-тренер временно недоступен. Базовый план продолжает работать.' }, 502);
     }
-    const text = responseText(openAiPayload);
-    if (!text) return json({ error: 'ИИ-тренер не смог подготовить разбор.' }, 502);
-    const advice: unknown = JSON.parse(text);
+    const advice: unknown = JSON.parse(aiResult.text);
     if (typeof advice !== 'object' || advice === null) return json({ error: 'ИИ-тренер вернул неполный разбор.' }, 502);
-    return json(advice as object);
+    return json({ ...(advice as object), provider: geminiApiKey ? 'gemini' : 'openai' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Внутренняя ошибка сервера.';
     const status = message === 'Нужна авторизация.' || message.includes('Сессия истекла') ? 401 : 500;

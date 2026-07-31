@@ -56,6 +56,7 @@ export type CoachAdvice = {
   confidence: CoachConfidence;
   caution: string;
   source: 'local' | 'ai';
+  provider?: 'gemini' | 'openai';
 };
 
 type DatedRide = { ride: RideActivity; timestamp: number };
@@ -324,7 +325,8 @@ function isCoachAdvice(value: unknown): value is Omit<CoachAdvice, 'source'> {
     && item.focus.every((entry) => typeof entry === 'string')
     && typeof item.watchMetric === 'string'
     && (item.confidence === 'low' || item.confidence === 'medium' || item.confidence === 'high')
-    && typeof item.caution === 'string';
+    && typeof item.caution === 'string'
+    && (item.provider === undefined || item.provider === 'gemini' || item.provider === 'openai');
 }
 
 export async function requestAiCoachAdvice(

@@ -51,7 +51,7 @@ function localApiPlugin(): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  ['OPENAI_API_KEY', 'OPENAI_MODEL', 'ORS_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'].forEach((name) => {
+  ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GEMINI_MODEL', 'OPENAI_API_KEY', 'OPENAI_MODEL', 'ORS_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'].forEach((name) => {
     if (!process.env[name] && env[name]) process.env[name] = env[name];
   });
   return {
