@@ -5,7 +5,9 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "strict": true
+    "strict": true,
+    "outDir": "node_modules/.cache/slipstream-config",
+    "tsBuildInfoFile": "node_modules/.cache/slipstream-config/tsconfig.node.tsbuildinfo"
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "api/coach/analyze.ts", "api/routes/directions.ts"]
 }

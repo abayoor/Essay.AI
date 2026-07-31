@@ -91,6 +91,14 @@ export type CycleRoute = {
   difficulty: Difficulty;
   region: string | null;
   created_at: string;
+  route_kind?: 'curated' | 'community';
+  duration_minutes?: number | null;
+  surface?: string | null;
+  start_name?: string | null;
+  end_name?: string | null;
+  source_name?: string | null;
+  source_url?: string | null;
+  popularity_score?: number;
 };
 
 export type PostMediaType = 'image' | 'video';

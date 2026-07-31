@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation } from 'wouter';
+import { CityAutocomplete } from '../components/CityAutocomplete';
 import { PageShell } from '../components/PageShell';
 import { RoutePlannerMap } from '../components/RoutePlannerMap';
 import { useSession } from '../lib/auth';
 import type { Difficulty, RoutePoint } from '../lib/cyclingModels';
 import { routeCyclingWaypoints } from '../lib/directions';
 import { createPost } from '../lib/posts';
+import { takeMapRouteDraft } from '../lib/routeDraft';
 import { createRoute, routeDistanceKm } from '../lib/routes';
 
 export function NewRoutePage() {
@@ -21,11 +23,22 @@ export function NewRoutePage() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [routing, setRouting] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState(0);
   const routeRequest = useRef(0);
 
   useEffect(() => {
     if (!loading && !session) navigate('/auth/sign-in');
   }, [loading, navigate, session]);
+
+  useEffect(() => {
+    const draft = takeMapRouteDraft();
+    if (!draft) return;
+    setTitle(draft.title);
+    setRegion(draft.region);
+    setWaypoints(draft.waypoints);
+    setPoints(draft.points);
+    setElevation(String(Math.round(draft.elevationGainM)));
+  }, []);
 
   async function updateWaypoints(nextWaypoints: RoutePoint[]) {
     setWaypoints(nextWaypoints);
@@ -38,8 +51,12 @@ export function NewRoutePage() {
     }
     setRouting(true);
     try {
-      const routedPoints = await routeCyclingWaypoints(nextWaypoints);
-      if (requestId === routeRequest.current) setPoints(routedPoints);
+      const result = await routeCyclingWaypoints(nextWaypoints);
+      if (requestId === routeRequest.current) {
+        setPoints(result.points);
+        setElevation(String(Math.round(result.elevationGainM)));
+        setDurationMinutes(Math.round(result.durationMinutes));
+      }
     } catch (error) {
       if (requestId === routeRequest.current) {
         setPoints([]);
@@ -75,7 +92,7 @@ export function NewRoutePage() {
         caption: cleanDescription ? `Новый маршрут: ${cleanTitle}\n${cleanDescription}` : `Новый маршрут: ${cleanTitle}`,
         routePreview: { routeId: id, title: cleanTitle, description: cleanDescription || null, path: points, distanceKm: routeDistanceKm(points), elevationGainM: elevationGain, difficulty },
       });
-      navigate('/feed');
+      navigate(`/routes/${id}`);
     } catch {
       setMessage(createdRouteId ? 'Маршрут сохранён, но пока не попал в ленту. Открой его в разделе маршрутов и попробуй опубликовать позже.' : 'Не удалось сохранить маршрут. Попробуй ещё раз.');
     } finally {
@@ -83,5 +100,5 @@ export function NewRoutePage() {
     }
   }
 
-  return <PageShell><main className="cycle-page new-route-page"><header className="page-heading"><div><p className="kicker">Новый трек</p><h1>Нарисуй дорогу.</h1><p>Дай маршруту название и описание — после публикации он появится в ленте и его смогут открыть другие райдеры.</p></div></header><div className="route-builder"><section><RoutePlannerMap points={points} waypoints={waypoints} routing={routing} onAdd={(point) => void updateWaypoints([...waypoints, point])} /><div className="map-toolbar"><span>{routing ? 'Строим путь по дорогам…' : `${waypoints.length} точек · ${routeDistanceKm(points).toFixed(1)} км`}</span><button className="quiet-button" onClick={undoPoint} disabled={!waypoints.length || routing}>Убрать последнюю</button></div></section><section className="form-card"><p className="kicker">Детали</p><h2>Расскажи про маршрут</h2><form className="cycle-form" onSubmit={(event) => void submit(event)}><label>Название<input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Петля до Медеу" maxLength={120} /></label><label>Регион<input value={region} onChange={(event) => setRegion(event.target.value)} placeholder="Алматы" maxLength={80} /></label><label>Сложность<select value={difficulty} onChange={(event) => setDifficulty(event.target.value as Difficulty)}><option value="easy">Лёгкий</option><option value="moderate">Средний</option><option value="hard">Сложный</option></select></label><label>Набор высоты, м<input type="number" min="0" value={elevation} onChange={(event) => setElevation(event.target.value)} /></label><label>Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Покрытие, вода, на что обратить внимание" maxLength={1000} /></label><button className="signal-button" disabled={busy || routing}>{busy ? 'Сохраняем и публикуем…' : 'Опубликовать маршрут в ленте'}</button></form>{message && <p className="form-note" role="alert">{message}</p>}</section></div></main></PageShell>;
+  return <PageShell><main className="cycle-page new-route-page"><header className="page-heading"><div><p className="kicker">Новый веломаршрут</p><h1>Нарисуй удобную дорогу.</h1><p>Поставь точки на карте — велосипедный профиль построит путь по подходящим дорогам и велоинфраструктуре, а расстояние и набор высоты посчитаются автоматически.</p></div></header><div className="route-builder"><section><RoutePlannerMap points={points} waypoints={waypoints} routing={routing} onAdd={(point) => void updateWaypoints([...waypoints, point])} /><div className="map-toolbar"><span>{routing ? 'Строим велосипедный путь…' : `${waypoints.length} точек · ${routeDistanceKm(points).toFixed(1)} км${durationMinutes ? ` · ≈ ${durationMinutes} мин` : ''}`}</span><button type="button" className="quiet-button" onClick={undoPoint} disabled={!waypoints.length || routing}>Убрать последнюю</button></div></section><section className="form-card"><p className="kicker">Детали</p><h2>Расскажи про маршрут</h2><form className="cycle-form" onSubmit={(event) => void submit(event)}><label>Название<input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Петля до Медеу" maxLength={120} /></label><label className="city-form-field">Город<CityAutocomplete value={region} onChange={setRegion} /></label><label>Сложность<select value={difficulty} onChange={(event) => setDifficulty(event.target.value as Difficulty)}><option value="easy">Лёгкий</option><option value="moderate">Средний</option><option value="hard">Сложный</option></select></label><label>Набор высоты, м<input type="number" min="0" value={elevation} onChange={(event) => setElevation(event.target.value)} /></label><label>Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Покрытие, вода, красивые места и на что обратить внимание" maxLength={1000} /></label><button className="signal-button" disabled={busy || routing}>{busy ? 'Сохраняем и публикуем…' : 'Опубликовать маршрут'}</button></form>{message && <p className="form-note" role="alert">{message}</p>}</section></div></main></PageShell>;
 }

@@ -1,6 +1,7 @@
-import { CircleMarker, MapContainer, Polyline, TileLayer, useMap, ZoomControl } from 'react-leaflet';
+import { CircleMarker, MapContainer, Polyline, useMap, ZoomControl } from 'react-leaflet';
 import { useEffect } from 'react';
 import type { GpsTrackPoint } from '../lib/cyclingModels';
+import { CommunityTileLayer } from './CommunityTileLayer';
 
 const almaty: [number, number] = [43.2389, 76.8897];
 
@@ -25,7 +26,7 @@ export function LiveRecordMap({ track, currentPoint = null, className = 'record-
   const displayedPoint = currentPoint ?? track[track.length - 1] ?? null;
   const positions = track.map((point) => [point.lat, point.lng] as [number, number]);
   return <MapContainer center={displayedPoint ? [displayedPoint.lat, displayedPoint.lng] : almaty} zoom={15} minZoom={4} maxZoom={18} zoomSnap={0.25} zoomDelta={0.5} wheelPxPerZoomLevel={180} touchZoom="center" scrollWheelZoom className={className} zoomControl={false}>
-    <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={18} maxNativeZoom={18} />
+    <CommunityTileLayer />
     <ZoomControl position="bottomright" />
     <KeepMapSized />
     <FollowRider point={displayedPoint} />

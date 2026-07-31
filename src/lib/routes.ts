@@ -1,4 +1,5 @@
 import type { CycleRoute, Difficulty, RoutePoint } from './cyclingModels';
+import { featuredRoutes, findFeaturedRoute } from './featuredRoutes';
 import { supabase } from './supabase';
 
 type NewRoute = { title: string; description: string; points: RoutePoint[]; elevationGain: number; difficulty: Difficulty; region: string };
@@ -10,7 +11,13 @@ function isPoint(value: unknown): value is RoutePoint {
 }
 
 function routeFromRow(row: Record<string, unknown>): CycleRoute {
-  return { ...row, path: Array.isArray(row.path) ? row.path.filter(isPoint) : [] } as CycleRoute;
+  return {
+    ...row,
+    path: Array.isArray(row.path) ? row.path.filter(isPoint) : [],
+    route_kind: 'community',
+    source_name: 'Сообщество Slipstream',
+    popularity_score: 0,
+  } as CycleRoute;
 }
 
 export function routeDistanceKm(points: RoutePoint[]): number {
@@ -30,10 +37,16 @@ export async function loadRoutes(): Promise<CycleRoute[]> {
     .select('id, title, description, path, distance_km, elevation_gain_m, difficulty, region, created_at')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((row) => routeFromRow(row as Record<string, unknown>));
+  return [
+    ...featuredRoutes,
+    ...(data ?? []).map((row) => routeFromRow(row as Record<string, unknown>)),
+  ].sort((first, second) => (second.popularity_score ?? 0) - (first.popularity_score ?? 0)
+    || new Date(second.created_at).getTime() - new Date(first.created_at).getTime());
 }
 
 export async function loadRoute(id: string): Promise<CycleRoute | null> {
+  const featuredRoute = findFeaturedRoute(id);
+  if (featuredRoute) return featuredRoute;
   const { data, error } = await supabase
     .from('routes')
     .select('id, title, description, path, distance_km, elevation_gain_m, difficulty, region, created_at')

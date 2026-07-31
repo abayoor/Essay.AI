@@ -5,6 +5,7 @@ import { BikesPage } from './pages/BikesPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { ConversationPage } from './pages/ConversationPage';
 import { CompetitionsPage } from './pages/CompetitionsPage';
+import { CoachPage } from './pages/CoachPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FeedPage } from './pages/FeedPage';
 import { HomePage } from './pages/HomePage';
@@ -43,6 +44,7 @@ export default function App() {
       <Route path="/marketplace/:id" component={MarketplaceListingPage} />
       <Route path="/marketplace" component={MarketplacePage} />
       <Route path="/competitions" component={CompetitionsPage} />
+      <Route path="/coach" component={CoachPage} />
       <Route path="/record" component={RecordPage} />
       <Route path="/rides/:id" component={RideDetailPage} />
       <Route path="/rides" component={RidesPage} />
