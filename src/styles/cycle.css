@@ -418,6 +418,45 @@
   .record-controls .signal-button, .record-controls .outline-inline-button { min-height: 48px; }
 }
 
+/* Consistent default avatars and visible conversation exit */
+.avatar-fallback {
+  background: linear-gradient(145deg, var(--surface-raised), var(--surface-soft));
+  border-color: color-mix(in srgb, var(--muted) 28%, var(--line));
+  color: var(--muted);
+}
+.avatar-fallback > svg { height: 54%; width: 54%; }
+.conversation-back-button {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: .7rem;
+  font-weight: 850;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 11px;
+  transition: background-color .16s, border-color .16s, color .16s, transform .16s;
+}
+.conversation-back-button:hover {
+  background: color-mix(in srgb, var(--signal) 10%, var(--surface-raised));
+  border-color: color-mix(in srgb, var(--signal) 42%, var(--line));
+  color: var(--signal);
+  transform: translateX(-2px);
+}
+:root[data-theme='dark'] .conversation-back-button {
+  background: #22302c;
+  border-color: #40504b;
+  color: #f2faf7;
+}
+:root[data-theme='dark'] .conversation-back-button:hover { background: #293c37; color: #78dfcf; }
+
+@media (max-width: 560px) {
+  .conversation-back-button { font-size: 0; height: 40px; justify-content: center; padding: 0; width: 40px; }
+}
+
 /* Public landing */
 .landing-full { max-width: 1160px; padding-bottom: 96px; padding-top: 22px; }
 .landing-hero { align-items: center; display: grid; gap: clamp(30px, 6vw, 84px); grid-template-columns: minmax(0, 1.02fr) minmax(360px, .98fr); min-height: min(680px, calc(100dvh - 80px)); padding: 44px 0 76px; }
