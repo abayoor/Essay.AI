@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import coachAnalyze from './api/coach/analyze';
+import aiAssist from './api/ai/assist';
 import routeDirections from './api/routes/directions';
 
 type FetchHandler = { fetch(request: Request): Promise<Response> };
@@ -8,6 +9,7 @@ type FetchHandler = { fetch(request: Request): Promise<Response> };
 function localApiPlugin(): Plugin {
   const handlers = new Map<string, FetchHandler>([
     ['/api/coach/analyze', coachAnalyze],
+    ['/api/ai/assist', aiAssist],
     ['/api/routes/directions', routeDirections],
   ]);
   return {
