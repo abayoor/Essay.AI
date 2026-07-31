@@ -10,7 +10,7 @@ function ClickToAdd({ onAdd, disabled }: { onAdd: (point: RoutePoint) => void; d
 export function RoutePlannerMap({ points, waypoints, onAdd, routing }: { points: RoutePoint[]; waypoints: RoutePoint[]; onAdd: (point: RoutePoint) => void; routing: boolean }) {
   const positions = points.map((point) => [point.lat, point.lng] as [number, number]);
   return (
-    <MapContainer center={[43.2389, 76.8897]} zoom={11} className="route-map planner-map">
+    <MapContainer center={[43.2389, 76.8897]} zoom={11} zoomSnap={0.125} zoomDelta={0.25} wheelPxPerZoomLevel={360} touchZoom="center" scrollWheelZoom className="route-map planner-map">
       <CommunityTileLayer />
       <ClickToAdd onAdd={onAdd} disabled={routing} />
       {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: '#1b8577', weight: 4 }} />}
