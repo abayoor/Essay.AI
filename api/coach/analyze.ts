@@ -1,4 +1,5 @@
 type CoachGoal = 'consistency' | 'endurance' | 'speed' | 'distance';
+type Locale = 'ru' | 'kz' | 'en';
 
 type CoachSummary = {
   ridesCount28Days: number;
@@ -6,16 +7,28 @@ type CoachSummary = {
   durationMinutes28Days: number;
   elevationGainM28Days: number;
   averageSpeedKmh28Days: number | null;
+  longestRideKm28Days: number;
+  averageRideDistanceKm28Days: number;
+  elevationMPer10Km28Days: number;
+  activeDays28Days: number;
   ridesCount7Days: number;
   distanceKm7Days: number;
   durationMinutes7Days: number;
   load7Days: number;
   previousLoad7Days: number;
   loadTrendPercent: number;
+  speedTrendPercent: number | null;
+  acuteChronicRatio: number;
   daysSinceLastRide: number | null;
   readinessScore: number;
-  readinessLabel: string;
   enoughData: boolean;
+  recentRides: {
+    daysAgo: number;
+    distanceKm: number;
+    durationMinutes: number;
+    elevationGainM: number;
+    averageSpeedKmh: number | null;
+  }[];
 };
 
 type SupabaseUser = { id: string };
@@ -59,6 +72,20 @@ function isGoal(value: unknown): value is CoachGoal {
   return value === 'consistency' || value === 'endurance' || value === 'speed' || value === 'distance';
 }
 
+function isLocale(value: unknown): value is Locale {
+  return value === 'ru' || value === 'kz' || value === 'en';
+}
+
+function isRideSample(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  const item = value as Record<string, unknown>;
+  return finiteNumber(item.daysAgo, 0, 10000)
+    && finiteNumber(item.distanceKm, 0, 10000)
+    && finiteNumber(item.durationMinutes, 0, 10000)
+    && finiteNumber(item.elevationGainM, 0, 100000)
+    && (item.averageSpeedKmh === null || finiteNumber(item.averageSpeedKmh, 0, 150));
+}
+
 function isSummary(value: unknown): value is CoachSummary {
   if (typeof value !== 'object' || value === null) return false;
   const item = value as Record<string, unknown>;
@@ -67,17 +94,24 @@ function isSummary(value: unknown): value is CoachSummary {
     && finiteNumber(item.durationMinutes28Days, 0, 100000)
     && finiteNumber(item.elevationGainM28Days, 0, 1000000)
     && (item.averageSpeedKmh28Days === null || finiteNumber(item.averageSpeedKmh28Days, 0, 150))
+    && finiteNumber(item.longestRideKm28Days, 0, 10000)
+    && finiteNumber(item.averageRideDistanceKm28Days, 0, 10000)
+    && finiteNumber(item.elevationMPer10Km28Days, 0, 100000)
+    && finiteNumber(item.activeDays28Days, 0, 28)
     && finiteNumber(item.ridesCount7Days, 0, 1000)
     && finiteNumber(item.distanceKm7Days, 0, 100000)
     && finiteNumber(item.durationMinutes7Days, 0, 100000)
     && finiteNumber(item.load7Days, 0, 100000)
     && finiteNumber(item.previousLoad7Days, 0, 100000)
     && finiteNumber(item.loadTrendPercent, -100, 10000)
+    && (item.speedTrendPercent === null || finiteNumber(item.speedTrendPercent, -100, 10000))
+    && finiteNumber(item.acuteChronicRatio, 0, 100)
     && (item.daysSinceLastRide === null || finiteNumber(item.daysSinceLastRide, 0, 10000))
     && finiteNumber(item.readinessScore, 0, 100)
-    && typeof item.readinessLabel === 'string'
-    && item.readinessLabel.length <= 80
-    && typeof item.enoughData === 'boolean';
+    && typeof item.enoughData === 'boolean'
+    && Array.isArray(item.recentRides)
+    && item.recentRides.length <= 6
+    && item.recentRides.every(isRideSample);
 }
 
 function responseText(payload: unknown): string | null {
@@ -104,6 +138,7 @@ const coachSchema = {
     headline: { type: 'string' },
     summary: { type: 'string' },
     readinessExplanation: { type: 'string' },
+    trainingInsight: { type: 'string' },
     nextWorkout: {
       type: 'object',
       additionalProperties: false,
@@ -115,6 +150,24 @@ const coachSchema = {
       },
       required: ['title', 'durationMinutes', 'intensity', 'description'],
     },
+    weeklyPlan: {
+      type: 'array',
+      minItems: 3,
+      maxItems: 3,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          order: { type: 'integer', minimum: 1, maximum: 3 },
+          title: { type: 'string' },
+          durationMinutes: { type: 'integer', minimum: 15, maximum: 180 },
+          intensity: { type: 'string', enum: ['recovery', 'easy', 'moderate', 'hard'] },
+          description: { type: 'string' },
+          purpose: { type: 'string' },
+        },
+        required: ['order', 'title', 'durationMinutes', 'intensity', 'description', 'purpose'],
+      },
+    },
     focus: {
       type: 'array',
       items: { type: 'string' },
@@ -122,19 +175,26 @@ const coachSchema = {
       maxItems: 3,
     },
     caution: { type: 'string' },
+    watchMetric: { type: 'string' },
+    confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
   },
-  required: ['headline', 'summary', 'readinessExplanation', 'nextWorkout', 'focus', 'caution'],
+  required: ['headline', 'summary', 'readinessExplanation', 'trainingInsight', 'nextWorkout', 'weeklyPlan', 'focus', 'watchMetric', 'confidence', 'caution'],
 };
+
+async function safetyIdentifier(userId: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(userId));
+  return `slipstream_${Array.from(new Uint8Array(digest)).slice(0, 12).map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+}
 
 async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Метод не поддерживается.' }, 405);
   try {
     const accessToken = bearerToken(request);
-    await authenticatedUser(accessToken);
+    const user = await authenticatedUser(accessToken);
     const body: unknown = await request.json().catch(() => null);
     if (typeof body !== 'object' || body === null) return json({ error: 'Некорректный запрос.' }, 400);
     const input = body as Record<string, unknown>;
-    if (!isSummary(input.summary) || !isGoal(input.goal) || !finiteNumber(input.feeling, 1, 5)) {
+    if (!isSummary(input.summary) || !isGoal(input.goal) || !finiteNumber(input.feeling, 1, 5) || !isLocale(input.locale)) {
       return json({ error: 'Не удалось проверить показатели тренировки.' }, 400);
     }
 
@@ -153,18 +213,22 @@ async function handler(request: Request): Promise<Response> {
       body: JSON.stringify({
         model,
         store: false,
-        reasoning: { effort: 'low' },
-        max_output_tokens: 1100,
+        safety_identifier: await safetyIdentifier(user.id),
+        reasoning: { effort: 'high' },
+        max_output_tokens: 2200,
         input: [
           {
             role: 'system',
             content: [
-              'Ты — осторожный ИИ-велотренер Slipstream. Отвечай на русском языке.',
-              'Анализируй только переданные агрегированные показатели, не выдумывай пульс, сон, диагнозы или медицинские факты.',
-              'Дай конкретную, возрастно-нейтральную и безопасную спортивную рекомендацию.',
-              'Если данных мало или самочувствие низкое, прямо снижай интенсивность.',
-              'При боли, головокружении или плохом самочувствии советуй прекратить тренировку и обратиться к взрослому или врачу.',
-              'Не предлагай экстремальные нагрузки, препараты, диеты или способы скрыть травму.',
+              'You are Slipstream’s evidence-based and safety-first cycling coach.',
+              'Use only the supplied privacy-preserving ride metrics. Never invent heart rate, sleep, power, diagnoses, injuries, or medical facts.',
+              'Compare the last 7 days with the previous 7 days, the 28-day baseline, acute-to-baseline load, speed trend, climbing density, longest ride, active days, recent ride samples, current feeling, and selected goal.',
+              'Identify the most important pattern and explain which exact supplied numbers support it. Avoid generic praise.',
+              'Design one immediately actionable workout and a three-session weekly progression with intensity, duration, purpose, recovery spacing, warm-up, main set, and cool-down where relevant.',
+              'Do not increase the longest session or weekly load aggressively. If data is limited, confidence must be low and the plan conservative.',
+              'If feeling is low, load spiked, or recovery is uncertain, reduce intensity. Never recommend extreme loads, supplements, diets, medication, or hiding pain.',
+              'For pain, dizziness, breathing difficulty, or feeling unwell, advise stopping and contacting a trusted adult or clinician.',
+              'Return all user-facing text in the requested language: ru = Russian, kz = Kazakh, en = English.',
             ].join(' '),
           },
           {
@@ -172,12 +236,13 @@ async function handler(request: Request): Promise<Response> {
             content: JSON.stringify({
               goal: input.goal,
               feeling: input.feeling,
+              responseLanguage: input.locale,
               metrics: input.summary,
             }),
           },
         ],
         text: {
-          verbosity: 'low',
+          verbosity: 'medium',
           format: {
             type: 'json_schema',
             name: 'cycling_coach_advice',

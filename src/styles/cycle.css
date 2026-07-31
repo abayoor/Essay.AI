@@ -556,6 +556,120 @@
 .coach-history-card strong { font-family: 'JetBrains Mono', monospace; font-size: .78rem; margin-top: 4px; }
 .coach-disclaimer { color: var(--muted); font-size: .67rem; line-height: 1.5; margin: 14px auto 0; max-width: 840px; text-align: center; }
 
+/* Unified 2026 product system */
+.cycle-shell { background: radial-gradient(circle at 8% -10%, color-mix(in srgb, var(--signal) 9%, transparent), transparent 34%), var(--fog); color: var(--ink); }
+.cycle-header { backdrop-filter: blur(18px); background: color-mix(in srgb, var(--fog) 82%, transparent); border-bottom: 1px solid var(--line); max-width: none; padding: 12px max(24px, calc((100vw - 1280px) / 2)); position: sticky; top: 0; z-index: 1900; }
+.cycle-brand { letter-spacing: -.045em; }
+.header-preferences select, .header-preferences button { background: var(--surface); border-radius: 10px; color: var(--ink); }
+.header-preferences select option { background: var(--surface); color: var(--ink); }
+.cycle-page, .landing-page { max-width: 1280px; padding-top: clamp(24px, 4vw, 48px); }
+.page-heading h1 { font-size: clamp(2.5rem, 5.2vw, 4.6rem); letter-spacing: -.055em; }
+.header-cta, .signal-button, .outline-button, .outline-inline-button { border-radius: 12px; min-height: 42px; transition: background-color .16s, border-color .16s, color .16s, transform .16s; }
+.signal-button, .header-cta { background: var(--signal); border-color: var(--signal); color: var(--on-signal) !important; box-shadow: 0 7px 18px color-mix(in srgb, var(--signal) 18%, transparent); }
+.signal-button:hover, .header-cta:hover { background: var(--signal-strong); border-color: var(--signal-strong); transform: translateY(-1px); }
+.outline-inline-button:hover, .outline-button:hover { background: var(--surface-soft); border-color: color-mix(in srgb, var(--signal) 40%, var(--line)); color: var(--signal); }
+.metric-card, .bike-mini, .bike-card, .form-card, .empty-panel, .route-preview, .route-description, .rider-profile-header, .post-card, .conversations-list, .content-management-grid > section { background: var(--surface); border-color: var(--line); border-radius: 18px; box-shadow: 0 8px 24px rgba(11, 30, 26, .045); }
+.metric-card, .bike-mini, .bike-card, .route-preview, .post-card { transition: border-color .16s, box-shadow .16s, transform .16s; }
+.metric-card:hover, .bike-mini:hover, .route-preview:hover { border-color: color-mix(in srgb, var(--signal) 42%, var(--line)); box-shadow: 0 14px 34px rgba(11, 30, 26, .09); transform: translateY(-2px); }
+.cycle-form input, .cycle-form select, .cycle-form textarea, .comment-form input, .message-composer textarea, .marketplace-search input { background: var(--surface-raised); border-color: var(--line); border-radius: 12px; color: var(--ink); }
+.cycle-form input:focus, .cycle-form select:focus, .cycle-form textarea:focus, .comment-form input:focus { border-color: var(--signal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 14%, transparent); outline: 0; }
+.route-sketch { background: var(--surface-soft); }
+.route-sketch .grid { background-image: linear-gradient(color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px); }
+.route-preview-go, .start-navigation-button { background: var(--signal); color: var(--on-signal); }
+.map-quick-searches button { background: color-mix(in srgb, var(--surface-raised) 94%, transparent); border-color: var(--line); color: var(--ink); }
+.navigation-instruction-card, .navigation-bottom-sheet { background: color-mix(in srgb, var(--surface-raised) 96%, transparent); border-color: var(--line); color: var(--ink); }
+.navigation-turn { color: var(--on-signal); }
+.navigation-stop-button { background: var(--ink); color: var(--fog); }
+.global-city-map.navigation-active { background: var(--fog); }
+.messages-hero, .dashboard-coach-teaser, .coach-readiness-card { box-shadow: 0 18px 46px rgba(6, 22, 19, .17); }
+.coach-insight { align-items: center; background: color-mix(in srgb, var(--signal) 8%, var(--surface)); border: 1px solid color-mix(in srgb, var(--signal) 20%, var(--line)); border-radius: 16px; display: grid; gap: 12px; grid-template-columns: auto minmax(0, 1fr) auto; margin: 20px 0 0; padding: 15px; }
+.coach-insight > svg { color: var(--signal); }
+.coach-insight > div { display: grid; gap: 4px; }
+.coach-insight strong { font-size: .75rem; }
+.coach-insight p { color: var(--muted); font-size: .72rem; line-height: 1.5; }
+.coach-insight > span { background: var(--surface); border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: .59rem; font-weight: 800; padding: 7px 9px; white-space: nowrap; }
+.coach-week-plan { border-top: 1px solid var(--line); margin-top: 23px; padding-top: 22px; }
+.coach-week-plan .section-heading { margin-bottom: 12px; }
+.coach-week-plan .kicker { align-items: center; display: flex; gap: 5px; }
+.coach-week-plan h3 { font-size: 1.3rem; margin-top: 4px; }
+.coach-week-plan > div:last-child { display: grid; gap: 8px; }
+.coach-week-plan article { align-items: center; background: var(--surface-soft); border: 1px solid transparent; border-radius: 14px; display: grid; gap: 11px; grid-template-columns: auto minmax(0, 1fr) auto; padding: 13px; }
+.coach-week-plan article > span { align-items: center; background: var(--signal); border-radius: 50%; color: var(--on-signal); display: flex; font-family: 'JetBrains Mono', monospace; font-size: .7rem; font-weight: 800; height: 30px; justify-content: center; width: 30px; }
+.coach-week-plan article > div { display: grid; gap: 3px; }
+.coach-week-plan article small { color: var(--signal); font-size: .58rem; font-weight: 750; }
+.coach-week-plan article strong { font-size: .78rem; }
+.coach-week-plan article p { color: var(--muted); font-size: .66rem; line-height: 1.45; }
+.coach-week-plan article b { font-family: 'JetBrains Mono', monospace; font-size: .68rem; white-space: nowrap; }
+.coach-watch-metric { align-items: center; background: color-mix(in srgb, #6f5aa8 8%, var(--surface)); border-radius: 12px; color: var(--muted); display: flex; font-size: .69rem; gap: 7px; line-height: 1.45; margin: 15px 0; padding: 11px; }
+.coach-watch-metric svg { color: #8c78c2; flex: 0 0 auto; }
+.coach-watch-metric strong { color: var(--ink); }
+
+/* Stable contrast for brand surfaces in both themes. */
+.landing-final-cta,
+.persistent-navigation-bar { background: #10211d; color: #f7fffd; }
+.landing-final-cta .landing-main-cta,
+.main-nav-record,
+.cycle-header .main-nav-record,
+.place-category-tabs button.active,
+.map-quick-searches button:hover,
+.route-preview-go,
+.start-navigation-button { color: var(--on-signal) !important; }
+.persistent-navigation-resume { background: #f7fffd; color: #10211d; }
+
+:root[data-theme='dark'] .cycle-shell { background: radial-gradient(circle at 12% -8%, rgba(82, 208, 188, .12), transparent 34%), var(--fog); }
+:root[data-theme='dark'] .cycle-header { background: rgba(9, 17, 15, .82); }
+:root[data-theme='dark'] .map-quick-searches button,
+:root[data-theme='dark'] .navigation-instruction-card,
+:root[data-theme='dark'] .navigation-bottom-sheet,
+:root[data-theme='dark'] .conversation-header,
+:root[data-theme='dark'] .conversation-surface .message-composer { background: color-mix(in srgb, var(--surface-raised) 94%, transparent); color: var(--ink); }
+:root[data-theme='dark'] .global-route-panel, :root[data-theme='dark'] .rider-location-strip, :root[data-theme='dark'] .global-map-search .map-place-search, :root[data-theme='dark'] .global-map-search .map-search-results { background: color-mix(in srgb, var(--surface-raised) 96%, transparent); color: var(--ink); }
+:root[data-theme='dark'] .leaflet-tile-pane { filter: brightness(.72) contrast(1.08) saturate(.72); }
+:root[data-theme='dark'] .leaflet-control-zoom a, :root[data-theme='dark'] .leaflet-popup-content-wrapper, :root[data-theme='dark'] .leaflet-popup-tip { background: var(--surface-raised); color: var(--ink); }
+:root[data-theme='dark'] .empty-chat-art { background: linear-gradient(145deg, #132823, #17221f); }
+:root[data-theme='dark'] .empty-chat-art i, :root[data-theme='dark'] .empty-chat-art em { background: var(--surface-raised); color: var(--ink); }
+:root[data-theme='dark'] .hero-map-stat,
+:root[data-theme='dark'] .visual-group p,
+:root[data-theme='dark'] .visual-safety section,
+:root[data-theme='dark'] .visual-marketplace article,
+:root[data-theme='dark'] .gallery-nav,
+:root[data-theme='dark'] .wallpaper-trigger,
+:root[data-theme='dark'] .wallpaper-popover,
+:root[data-theme='dark'] .conversation-surface .message-bubble:not(.mine) {
+  background: var(--surface-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}
+:root[data-theme='dark'] .visual-hero,
+:root[data-theme='dark'] .visual-group,
+:root[data-theme='dark'] .visual-safety,
+:root[data-theme='dark'] .visual-marketplace,
+:root[data-theme='dark'] .visual-strava,
+:root[data-theme='dark'] .conversation-surface,
+:root[data-theme='dark'] .wallpaper-linen::before,
+:root[data-theme='dark'] .wallpaper-contours::before { background: var(--surface-soft); }
+:root[data-theme='dark'] .visual-strava p { color: var(--ink); }
+:root[data-theme='dark'] .conversation-surface::before { opacity: .18; }
+:root[data-theme='dark'] .wallpaper-trigger:hover { background: color-mix(in srgb, var(--signal) 12%, var(--surface-raised)); }
+:root[data-theme='dark'] .form-note-success,
+:root[data-theme='dark'] .listing-price span,
+:root[data-theme='dark'] .listing-sold-note {
+  background: color-mix(in srgb, var(--signal) 14%, var(--surface));
+  color: var(--signal);
+}
+:root[data-theme='dark'] .leader-row { background: color-mix(in srgb, var(--signal) 14%, var(--surface-raised)); }
+:root[data-theme='dark'] .wallpaper-preview-clean { background: var(--surface-soft); }
+:root[data-theme='dark'] img:not(.leaflet-tile) { opacity: .94; }
+
+@media (max-width: 680px) {
+  .cycle-header { padding: 10px 15px; }
+  .cycle-page, .landing-page { padding-left: 16px; padding-right: 16px; }
+  .coach-insight { align-items: start; grid-template-columns: auto 1fr; }
+  .coach-insight > span { grid-column: 2; justify-self: start; }
+  .coach-week-plan article { align-items: start; grid-template-columns: auto minmax(0, 1fr); }
+  .coach-week-plan article b { grid-column: 2; }
+}
+
 @media (max-width: 900px) {
   .coach-overview, .coach-controls { grid-template-columns: 1fr; }
   .coach-controls { gap: 22px; }

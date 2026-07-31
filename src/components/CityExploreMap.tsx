@@ -24,6 +24,9 @@ import {
 import { MapContainer, Marker, Polyline, Popup, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import { useLocation } from 'wouter';
 import { clearMapNavigation, loadMapNavigation, saveMapNavigation } from '../lib/activeNavigation';
+import type { LocaleText } from '../lib/localized';
+import { useLocaleText } from '../lib/localized';
+import { usePreferences } from '../lib/preferences';
 import type { RoutePoint } from '../lib/cyclingModels';
 import { routeCyclingWaypoints, type CyclingRoutePreference, type CyclingRouteResult } from '../lib/directions';
 import { reverseMapLocation, searchMapPlaces, type MapPlace, type ResolvedMapLocation } from '../lib/places';
@@ -98,9 +101,9 @@ function routeProgress(points: RoutePoint[], rider: RoutePoint): RouteProgress {
   return { closestIndex, distanceFromRouteM: closestDistance, remainingM };
 }
 
-function nextNavigationInstruction(points: RoutePoint[], progress: RouteProgress): { text: string; distanceM: number; turn: 'left' | 'right' | 'straight' | 'finish' } {
+function nextNavigationInstruction(points: RoutePoint[], progress: RouteProgress, text: LocaleText): { text: string; distanceM: number; turn: 'left' | 'right' | 'straight' | 'finish' } {
   if (progress.remainingM < 30 || progress.closestIndex >= points.length - 2) {
-    return { text: 'Вы прибыли', distanceM: 0, turn: 'finish' };
+    return { text: text('Вы прибыли', 'Сіз келдіңіз', 'You have arrived'), distanceM: 0, turn: 'finish' };
   }
 
   let coveredM = distanceMeters(points[progress.closestIndex], points[Math.min(progress.closestIndex + 1, points.length - 1)]);
@@ -113,13 +116,15 @@ function nextNavigationInstruction(points: RoutePoint[], progress: RouteProgress
     if (Math.abs(turnAngle) >= 38) {
       const turn = turnAngle > 0 ? 'right' : 'left';
       return {
-        text: turn === 'right' ? 'Поверните направо' : 'Поверните налево',
+        text: turn === 'right'
+          ? text('Поверните направо', 'Оңға бұрылыңыз', 'Turn right')
+          : text('Поверните налево', 'Солға бұрылыңыз', 'Turn left'),
         distanceM: Math.round(coveredM),
         turn,
       };
     }
   }
-  return { text: 'Продолжайте прямо', distanceM: Math.min(Math.round(progress.remainingM), 900), turn: 'straight' };
+  return { text: text('Продолжайте прямо', 'Тура жүріңіз', 'Continue straight'), distanceM: Math.min(Math.round(progress.remainingM), 900), turn: 'straight' };
 }
 
 function estimatedRideMinutes(route: CyclingRouteResult, distanceKm = route.distanceKm, elevationGainM = route.elevationGainM): number {
@@ -128,13 +133,13 @@ function estimatedRideMinutes(route: CyclingRouteResult, distanceKm = route.dist
   return Math.max(1, Math.ceil(Math.max(route.durationMinutes * (distanceKm / Math.max(route.distanceKm, 0.01)), flatMinutes + climbingMinutes)));
 }
 
-function arrivalTime(minutes: number): string {
-  return new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' })
+function arrivalTime(minutes: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' })
     .format(new Date(Date.now() + minutes * 60_000));
 }
 
-function formatDistance(meters: number): string {
-  return `${Math.max(0, Math.round(meters)).toLocaleString('ru-RU')} м`;
+function formatDistance(meters: number, locale: string): string {
+  return `${Math.max(0, Math.round(meters)).toLocaleString(locale)} м`;
 }
 
 function MapViewport({ focus, route, recenterRequest, navigationActive }: {
@@ -179,14 +184,16 @@ function StartPicker({ enabled, onPick }: { enabled: boolean; onPick: (point: Ro
   return null;
 }
 
-function preferenceCopy(preference: CyclingRoutePreference): { title: string; description: string; icon: typeof Route } {
+function preferenceCopy(preference: CyclingRoutePreference, text: LocaleText): { title: string; description: string; icon: typeof Route } {
   return preference === 'recommended'
-    ? { title: 'Лучший для велосипеда', description: 'Приоритет велодорожек и подходящих улиц', icon: ShieldCheck }
-    : { title: 'Самый короткий', description: 'Минимальная дистанция по уличной сети', icon: Timer };
+    ? { title: text('Лучший для велосипеда', 'Велосипедке ең қолайлы', 'Best for cycling'), description: text('Приоритет велодорожек и подходящих улиц', 'Веложолдар мен қолайлы көшелерге басымдық', 'Prioritizes cycleways and suitable streets'), icon: ShieldCheck }
+    : { title: text('Самый короткий', 'Ең қысқа', 'Shortest'), description: text('Минимальная дистанция по уличной сети', 'Көше желісі бойынша ең қысқа қашықтық', 'Minimum distance on the street network'), icon: Timer };
 }
 
 export function CityExploreMap() {
   const [, navigate] = useLocation();
+  const { locale } = usePreferences();
+  const text = useLocaleText();
   const restoredNavigation = useMemo(() => loadMapNavigation(), []);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MapPlace[]>([]);
@@ -202,7 +209,7 @@ export function CityExploreMap() {
     ...restoredNavigation.destination,
   } : null);
   const [resolvedLocation, setResolvedLocation] = useState<ResolvedMapLocation | null>(null);
-  const [locationStatus, setLocationStatus] = useState('Определяем твоё местоположение…');
+  const [locationStatus, setLocationStatus] = useState(() => text('Определяем твоё местоположение…', 'Орналасқан жеріңді анықтап жатырмыз…', 'Finding your location…'));
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>(() => restoredNavigation ? [{
     preference: restoredNavigation.preference,
     result: restoredNavigation.result,
@@ -230,8 +237,8 @@ export function CityExploreMap() {
   );
 
   const instruction = useMemo(
-    () => activeRoute && progress ? nextNavigationInstruction(activeRoute.result.points, progress) : null,
-    [activeRoute, progress],
+    () => activeRoute && progress ? nextNavigationInstruction(activeRoute.result.points, progress, text) : null,
+    [activeRoute, progress, text],
   );
 
   const navigationRiderIcon = useMemo(() => divIcon({
@@ -243,7 +250,7 @@ export function CityExploreMap() {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setLocationStatus('Геолокация недоступна — нажми на карту, чтобы указать старт.');
+      setLocationStatus(text('Геолокация недоступна — нажми на карту, чтобы указать старт.', 'Геолокация қолжетімсіз — бастау нүктесін картадан таңда.', 'Location is unavailable — tap the map to set a start.'));
       return undefined;
     }
     const watchId = navigator.geolocation.watchPosition((position) => {
@@ -260,21 +267,21 @@ export function CityExploreMap() {
       }
       lastGpsPoint.current = point;
       setRiderLocation(point);
-      setLocationStatus(`GPS ±${Math.round(position.coords.accuracy)} м`);
+      setLocationStatus(`GPS ±${Math.round(position.coords.accuracy)} ${text('м', 'м', 'm')}`);
       if (!hasCenteredOnRider.current) {
         hasCenteredOnRider.current = true;
         setRoutingOrigin((current) => current ?? point);
         void reverseMapLocation(point).then(setResolvedLocation).catch(() => undefined);
       }
     }, () => {
-      setLocationStatus('Разреши геолокацию или нажми на карту, чтобы указать старт.');
+      setLocationStatus(text('Разреши геолокацию или нажми на карту, чтобы указать старт.', 'Геолокацияға рұқсат бер немесе бастау нүктесін картадан таңда.', 'Allow location access or tap the map to set a start.'));
     }, {
       enableHighAccuracy: true,
       maximumAge: 3000,
       timeout: 15000,
     });
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [text]);
 
   useEffect(() => {
     if (!navigationActive) {
@@ -363,7 +370,7 @@ export function CityExploreMap() {
         ? [{ preference: index === 0 ? 'recommended' : 'shortest', result: result.value }]
         : []);
       if (!options.length) {
-        setRouteError('Не удалось построить путь по улицам. Попробуй выбрать другой адрес.');
+        setRouteError(text('Не удалось построить путь по улицам. Попробуй выбрать другой адрес.', 'Көшелермен бағыт құру мүмкін болмады. Басқа мекенжайды таңда.', 'A street route could not be built. Try another address.'));
         return;
       }
       setRouteOptions(options);
@@ -371,7 +378,7 @@ export function CityExploreMap() {
     }).finally(() => {
       if (requestId === routeRequest.current) setRouting(false);
     });
-  }, [destination, navigationSource, routeOptions.length, routingOrigin]);
+  }, [destination, navigationSource, routeOptions.length, routingOrigin, text]);
 
   function chooseDestination(place: MapPlace) {
     clearMapNavigation();
@@ -385,7 +392,7 @@ export function CityExploreMap() {
       setRoutingOrigin(riderLocation);
       setRouteError('');
     } else {
-      setRouteError('Сначала разреши геолокацию или нажми на карту, чтобы указать точку старта.');
+      setRouteError(text('Сначала разреши геолокацию или нажми на карту, чтобы указать точку старта.', 'Алдымен геолокацияға рұқсат бер немесе бастау нүктесін картадан таңда.', 'Allow location access or tap the map to set your start first.'));
     }
   }
 
@@ -393,13 +400,13 @@ export function CityExploreMap() {
     if (riderLocation) return;
     setRiderLocation(point);
     setRoutingOrigin(point);
-    setLocationStatus('Старт указан вручную');
+    setLocationStatus(text('Старт указан вручную', 'Бастау нүктесі қолмен таңдалды', 'Start set manually'));
     void reverseMapLocation(point).then(setResolvedLocation).catch(() => undefined);
   }
 
   function recenterOnRider() {
     if (!riderLocation) {
-      setRouteError('Местоположение ещё не определено. Разреши доступ к геолокации.');
+      setRouteError(text('Местоположение ещё не определено. Разреши доступ к геолокации.', 'Орналасқан жер әлі анықталмады. Геолокацияға рұқсат бер.', 'Your location is not available yet. Allow location access.'));
       return;
     }
     setRoutingOrigin(riderLocation);
@@ -415,7 +422,7 @@ export function CityExploreMap() {
   function saveRoute() {
     if (!activeRoute || !routingOrigin || !destination) return;
     saveMapRouteDraft({
-      title: `Маршрут до ${destination.name}`,
+      title: `${text('Маршрут до', 'Бағыт:', 'Route to')} ${destination.name}`,
       region: resolvedLocation?.city || resolvedLocation?.country || '',
       waypoints: [routingOrigin, { lat: destination.lat, lng: destination.lng }],
       points: activeRoute.result.points,
@@ -445,10 +452,10 @@ export function CityExploreMap() {
     : totalMinutes;
 
   const quickSearches = [
-    { label: 'Кофе', query: 'кофейня', icon: Utensils },
-    { label: 'Парки', query: 'парк', icon: Trees },
-    { label: 'Интересные места', query: 'достопримечательность', icon: Landmark },
-    { label: 'Веломастерские', query: 'веломастерская', icon: Wrench },
+    { label: text('Кофе', 'Кофе', 'Coffee'), query: text('кофейня', 'кофехана', 'coffee shop'), icon: Utensils },
+    { label: text('Парки', 'Саябақтар', 'Parks'), query: text('парк', 'саябақ', 'park'), icon: Trees },
+    { label: text('Интересные места', 'Көрікті жерлер', 'Things to see'), query: text('достопримечательность', 'көрікті жер', 'tourist attraction'), icon: Landmark },
+    { label: text('Веломастерские', 'Велошеберханалар', 'Bike repair'), query: text('веломастерская', 'велошеберхана', 'bike repair'), icon: Wrench },
   ];
 
   return <section className={`city-explore global-city-map${navigationActive ? ' navigation-active' : ''}`}>
@@ -456,14 +463,14 @@ export function CityExploreMap() {
       <div className="global-map-search">
         <div className="map-place-search">
           <Search size={19} aria-hidden="true" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={destination ? 'Куда теперь?' : 'Куда поедем? Адрес или место'} aria-label="Поиск адреса или места" autoComplete="off" />
-          {query && <button type="button" aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={16} /></button>}
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={destination ? text('Куда теперь?', 'Енді қайда?', 'Where next?') : text('Куда поедем? Адрес или место', 'Қайда барамыз? Мекенжай не орын', 'Where to? Address or place')} aria-label={text('Поиск адреса или места', 'Мекенжайды не орынды іздеу', 'Search address or place')} autoComplete="off" />
+          {query && <button type="button" aria-label={text('Очистить поиск', 'Іздеуді тазарту', 'Clear search')} onClick={() => setQuery('')}><X size={16} /></button>}
           {(searching || searchResults.length > 0) && <div className="map-search-results">
-            {searching && <p>Сначала ищем рядом с тобой…</p>}
-            {!searching && searchResults.map((place, index) => <button type="button" key={place.id} onClick={() => chooseDestination(place)}><MapPin size={16} /><span><strong>{place.name}{index === 0 && <em>Рядом</em>}</strong><small>{place.subtitle}</small></span></button>)}
+            {searching && <p>{text('Сначала ищем рядом с тобой…', 'Алдымен маңайыңнан іздейміз…', 'Searching nearby first…')}</p>}
+            {!searching && searchResults.map((place, index) => <button type="button" key={place.id} onClick={() => chooseDestination(place)}><MapPin size={16} /><span><strong>{place.name}{index === 0 && <em>{text('Рядом', 'Жақын', 'Nearby')}</em>}</strong><small>{place.subtitle}</small></span></button>)}
           </div>}
         </div>
-        <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || 'Твоё местоположение'}</strong><small>{locationStatus}</small></div><button type="button" onClick={recenterOnRider} aria-label="Показать моё местоположение"><LocateFixed size={18} /></button></div>
+        <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || text('Твоё местоположение', 'Сенің орналасқан жерің', 'Your location')}</strong><small>{locationStatus}</small></div><button type="button" onClick={recenterOnRider} aria-label={text('Показать моё местоположение', 'Орналасқан жерімді көрсету', 'Show my location')}><LocateFixed size={18} /></button></div>
         {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, query: quickQuery, icon: Icon }) => <button type="button" key={label} onClick={() => setQuery(quickQuery)}><Icon size={14} />{label}</button>)}</div>}
       </div>
       <div className="city-map-canvas global-map-canvas">
@@ -473,57 +480,57 @@ export function CityExploreMap() {
           <StartPicker enabled={!riderLocation} onPick={chooseManualStart} />
           <MapViewport focus={focusPoint} route={visibleRoute} recenterRequest={recenterRequest} navigationActive={navigationActive} />
           <NavigationCamera active={navigationActive} rider={riderLocation} />
-          {riderLocation && <Marker position={[riderLocation.lat, riderLocation.lng]} icon={navigationActive ? navigationRiderIcon : riderIcon} zIndexOffset={1000}><Popup>Твоё текущее местоположение</Popup></Marker>}
+          {riderLocation && <Marker position={[riderLocation.lat, riderLocation.lng]} icon={navigationActive ? navigationRiderIcon : riderIcon} zIndexOffset={1000}><Popup>{text('Твоё текущее местоположение', 'Сенің қазіргі орналасқан жерің', 'Your current location')}</Popup></Marker>}
           {destination && <Marker position={[destination.lat, destination.lng]} icon={destinationIcon} zIndexOffset={900}><Popup><strong>{destination.name}</strong><br />{destination.subtitle}</Popup></Marker>}
           {routeOptions.map((option) => <Polyline key={option.preference} positions={option.result.points.map((point) => [point.lat, point.lng] as [number, number])} pathOptions={{ color: option.preference === 'recommended' ? '#1b8577' : '#6f5aa8', weight: activePreference === option.preference ? (navigationActive ? 9 : 7) : 4, opacity: activePreference === option.preference ? 0.95 : (navigationActive ? 0 : 0.45), lineCap: 'round', lineJoin: 'round' }} eventHandlers={{ click: () => !navigationActive && setActivePreference(option.preference) }} />)}
         </MapContainer>
-        {!riderLocation && <div className="map-start-hint"><MapPin size={16} />Нажми на карту, чтобы указать старт</div>}
+        {!riderLocation && <div className="map-start-hint"><MapPin size={16} />{text('Нажми на карту, чтобы указать старт', 'Бастау нүктесін таңдау үшін картаны бас', 'Tap the map to set a start')}</div>}
 
         {navigationActive && instruction && destination && <div className="navigation-instruction-card" role="status">
           <span className={`navigation-turn ${instruction.turn}`}><Navigation size={30} /></span>
-          <div><strong>{instruction.text}</strong><small>{instruction.distanceM > 0 ? `через ${formatDistance(instruction.distanceM)}` : destination.name}</small></div>
+          <div><strong>{instruction.text}</strong><small>{instruction.distanceM > 0 ? `${text('через', 'кейін', 'in')} ${formatDistance(instruction.distanceM, locale)}` : destination.name}</small></div>
         </div>}
 
         {navigationActive && activeRoute && progress && <div className="navigation-bottom-sheet">
           <div className="navigation-live-metrics">
-            <span><strong>{formatDistance(progress.remainingM)}</strong><small>осталось</small></span>
-            <span><strong>↑ {remainingClimbM} м</strong><small>подъём</small></span>
-            <span><strong>{arrivalTime(remainingMinutes)}</strong><small>прибытие</small></span>
-            <span><strong>{currentSpeedKmh === null ? '—' : currentSpeedKmh.toFixed(1)}</strong><small>км/ч</small></span>
+            <span><strong>{formatDistance(progress.remainingM, locale)}</strong><small>{text('осталось', 'қалды', 'remaining')}</small></span>
+            <span><strong>↑ {remainingClimbM} {text('м', 'м', 'm')}</strong><small>{text('подъём', 'өрлеу', 'climb')}</small></span>
+            <span><strong>{arrivalTime(remainingMinutes, locale)}</strong><small>{text('прибытие', 'келу', 'arrival')}</small></span>
+            <span><strong>{currentSpeedKmh === null ? '—' : currentSpeedKmh.toFixed(1)}</strong><small>{text('км/ч', 'км/сағ', 'km/h')}</small></span>
           </div>
-          {routing && <p className="navigation-rerouting"><RefreshCw size={14} />Перестраиваем маршрут по улицам…</p>}
-          <button type="button" className="navigation-stop-button" onClick={() => setNavigationActive(false)}><Square size={15} />Завершить</button>
+          {routing && <p className="navigation-rerouting"><RefreshCw size={14} />{text('Перестраиваем маршрут по улицам…', 'Бағытты көшелермен қайта құрып жатырмыз…', 'Rerouting on streets…')}</p>}
+          <button type="button" className="navigation-stop-button" onClick={() => setNavigationActive(false)}><Square size={15} />{text('Завершить', 'Аяқтау', 'Finish')}</button>
         </div>}
       </div>
 
       <aside className="city-map-panel global-route-panel">
-        <div className="map-panel-heading"><span><Navigation size={19} /></span><div><p className="kicker">Маршрут по улицам</p><h2>{destination ? destination.name : 'Выбери место'}</h2></div>{destination && <button type="button" className="route-new-destination" onClick={resetRoute}><X size={17} /><span>Новый</span></button>}</div>
+        <div className="map-panel-heading"><span><Navigation size={19} /></span><div><p className="kicker">{text('Маршрут по улицам', 'Көшелермен бағыт', 'Street route')}</p><h2>{destination ? destination.name : text('Выбери место', 'Орынды таңда', 'Choose a place')}</h2></div>{destination && <button type="button" className="route-new-destination" onClick={resetRoute}><X size={17} /><span>{text('Новый', 'Жаңа', 'New')}</span></button>}</div>
         {!destination ? <>
-          <p className="map-panel-copy">Введи в поиск любой адрес, кафе, парк или достопримечательность. Поиск работает по всему миру, а карта открывается вокруг твоей позиции.</p>
-          <div className="map-panel-tip"><Bike size={18} /><span><strong>Твоя позиция показана велосипедом</strong><small>При движении маркер обновляется по GPS.</small></span></div>
-          <div className="map-panel-tip"><Route size={18} /><span><strong>Только реальные улицы</strong><small>Прямая линия не используется: оба варианта проходят по дорожной сети.</small></span></div>
+          <p className="map-panel-copy">{text('Введи любой адрес, кафе, парк или достопримечательность. Сначала покажем места рядом с тобой.', 'Кез келген мекенжайды, кофехананы, саябақты не көрікті жерді енгіз. Алдымен жақын орындарды көрсетеміз.', 'Enter any address, café, park or attraction. Nearby results appear first.')}</p>
+          <div className="map-panel-tip"><Bike size={18} /><span><strong>{text('Твоя позиция показана велосипедом', 'Орналасқан жерің велосипедпен көрсетіледі', 'Your position is shown as a bicycle')}</strong><small>{text('Маркер обновляется по GPS во время движения.', 'Қозғалыс кезінде белгі GPS арқылы жаңарады.', 'The marker updates from GPS while you ride.')}</small></span></div>
+          <div className="map-panel-tip"><Route size={18} /><span><strong>{text('Только реальные улицы', 'Тек нақты көшелер', 'Real streets only')}</strong><small>{text('Оба варианта проходят по дорожной сети.', 'Екі нұсқа да жол желісімен өтеді.', 'Both alternatives follow the street network.')}</small></span></div>
         </> : <>
-          <div className="route-addresses"><div><span className="route-address-marker start">A</span><p><small>Откуда</small><strong>{resolvedLocation?.label || 'Моё местоположение'}</strong></p></div><div><span className="route-address-marker finish">B</span><p><small>Куда</small><strong>{destination.name}</strong></p></div></div>
-          {routing && <p className="route-build-status">Ищем два лучших пути по улицам…</p>}
+          <div className="route-addresses"><div><span className="route-address-marker start">A</span><p><small>{text('Откуда', 'Қайдан', 'From')}</small><strong>{resolvedLocation?.label || text('Моё местоположение', 'Менің орналасқан жерім', 'My location')}</strong></p></div><div><span className="route-address-marker finish">B</span><p><small>{text('Куда', 'Қайда', 'To')}</small><strong>{destination.name}</strong></p></div></div>
+          {routing && <p className="route-build-status">{text('Ищем два лучших пути по улицам…', 'Көшелермен екі үздік бағытты іздеп жатырмыз…', 'Finding the two best street routes…')}</p>}
           {routeError && <p className="form-note" role="alert">{routeError}</p>}
           {routeOptions.length > 0 && <div className="route-option-list">{routeOptions.map((option) => {
-            const copy = preferenceCopy(option.preference);
+            const copy = preferenceCopy(option.preference, text);
             const Icon = copy.icon;
             const duration = estimatedRideMinutes(option.result);
-            return <button type="button" className={activePreference === option.preference ? 'active' : ''} key={option.preference} onClick={() => setActivePreference(option.preference)}><Icon size={19} /><span><strong>{copy.title}</strong><small>{copy.description}</small></span><b>{formatDistance(option.result.distanceKm * 1000)}<small>≈ {duration} мин · ↑ {Math.round(option.result.elevationGainM)} м</small></b></button>;
+            return <button type="button" className={activePreference === option.preference ? 'active' : ''} key={option.preference} onClick={() => setActivePreference(option.preference)}><Icon size={19} /><span><strong>{copy.title}</strong><small>{copy.description}</small></span><b>{formatDistance(option.result.distanceKm * 1000, locale)}<small>≈ {duration} {text('мин', 'мин', 'min')} · ↑ {Math.round(option.result.elevationGainM)} {text('м', 'м', 'm')}</small></b></button>;
           })}</div>}
           {activeRoute && <div className="route-navigation-summary">
-            <span><Route size={17} /><small>Путь</small><strong>{formatDistance(activeRoute.result.distanceKm * 1000)}</strong></span>
-            <span><Mountain size={17} /><small>Подъём</small><strong>{Math.round(activeRoute.result.elevationGainM)} м</strong></span>
-            <span><Clock3 size={17} /><small>В дороге</small><strong>≈ {totalMinutes} мин</strong></span>
-            <span><Gauge size={17} /><small>Прибытие</small><strong>{arrivalTime(totalMinutes)}</strong></span>
+            <span><Route size={17} /><small>{text('Путь', 'Жол', 'Distance')}</small><strong>{formatDistance(activeRoute.result.distanceKm * 1000, locale)}</strong></span>
+            <span><Mountain size={17} /><small>{text('Подъём', 'Өрлеу', 'Climb')}</small><strong>{Math.round(activeRoute.result.elevationGainM)} {text('м', 'м', 'm')}</strong></span>
+            <span><Clock3 size={17} /><small>{text('В дороге', 'Жолда', 'Ride time')}</small><strong>≈ {totalMinutes} {text('мин', 'мин', 'min')}</strong></span>
+            <span><Gauge size={17} /><small>{text('Прибытие', 'Келу', 'Arrival')}</small><strong>{arrivalTime(totalMinutes, locale)}</strong></span>
           </div>}
-          <button type="button" className="start-navigation-button" disabled={!activeRoute || !riderLocation || routing} onClick={startNavigation}><Play size={19} fill="currentColor" />В путь</button>
-          <div className="map-panel-actions global-route-actions"><button type="button" className="outline-inline-button" disabled={!riderLocation || routing} onClick={() => riderLocation && setRoutingOrigin({ ...riderLocation })}><RefreshCw size={16} />Перестроить</button><button type="button" className="signal-button" disabled={!activeRoute || routing} onClick={saveRoute}>Сохранить маршрут</button></div>
-          <button type="button" className="quiet-button map-clear-route" onClick={resetRoute}>Выбрать другое место</button>
+          <button type="button" className="start-navigation-button" disabled={!activeRoute || !riderLocation || routing} onClick={startNavigation}><Play size={19} fill="currentColor" />{text('В путь', 'Жолға шығу', 'Start')}</button>
+          <div className="map-panel-actions global-route-actions"><button type="button" className="outline-inline-button" disabled={!riderLocation || routing} onClick={() => riderLocation && setRoutingOrigin({ ...riderLocation })}><RefreshCw size={16} />{text('Перестроить', 'Қайта құру', 'Reroute')}</button><button type="button" className="signal-button" disabled={!activeRoute || routing} onClick={saveRoute}>{text('Сохранить маршрут', 'Бағытты сақтау', 'Save route')}</button></div>
+          <button type="button" className="quiet-button map-clear-route" onClick={resetRoute}>{text('Выбрать другое место', 'Басқа орынды таңдау', 'Choose another place')}</button>
         </>}
       </aside>
     </div>
-    <small className="map-attribution-note">Карта и адреса: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>. Веломаршруты: openrouteservice / BRouter.</small>
+    <small className="map-attribution-note">{text('Карта и адреса:', 'Карта мен мекенжайлар:', 'Map and addresses:')} <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>. {text('Веломаршруты:', 'Велобағыттар:', 'Bike routing:')} openrouteservice / BRouter.</small>
   </section>;
 }
