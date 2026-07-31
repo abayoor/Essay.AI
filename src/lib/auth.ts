@@ -34,11 +34,14 @@ function callbackUrl(): string {
   return `${window.location.origin}/auth/callback`;
 }
 
-export function signUpWithEmail(email: string, password: string) {
+export function signUpWithEmail(email: string, password: string, username: string) {
   return supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: callbackUrl() },
+    options: {
+      emailRedirectTo: callbackUrl(),
+      data: { username },
+    },
   });
 }
 

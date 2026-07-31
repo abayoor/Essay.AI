@@ -49,6 +49,12 @@ export async function searchPublicProfiles(username: string): Promise<PublicProf
   return (data ?? []) as PublicProfile[];
 }
 
+export async function isUsernameAvailable(username: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('is_username_available', { candidate: username });
+  if (error) throw error;
+  return data === true;
+}
+
 export async function saveRiderProfile(profile: RiderProfileUpdate): Promise<void> {
   const { data } = await supabase.auth.getUser();
   if (!data.user) throw new Error('Войди в аккаунт, чтобы сохранить профиль.');

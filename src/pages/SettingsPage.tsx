@@ -13,6 +13,7 @@ import { loadRiderProfile, saveRiderProfile, uploadAvatar } from '../lib/rider';
 import { deleteMyAccount, deleteMarketplaceListing, loadMyMarketplaceListings, type MarketplaceListing } from '../lib/settings';
 import { loadStravaConnectionStatus, startStravaConnection } from '../lib/strava';
 import { supabase } from '../lib/supabase';
+import { isUsernameConflict, isValidUsername, normalizeUsername } from '../lib/usernames';
 
 const blankProfile: RiderProfile = { full_name: '', avatar_url: null, home_city: '', bio: '', username: 'rider', interests: [], locale: 'ru', theme_preference: 'light' };
 
@@ -44,8 +45,8 @@ export function SettingsPage() {
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const username = profile.username.trim().toLowerCase();
-    if (!/^[a-z0-9][a-z0-9_-]{2,47}$/.test(username)) {
+    const username = normalizeUsername(profile.username);
+    if (!isValidUsername(username)) {
       setMessageTone('error'); setMessage('Никнейм: 3–48 символов, только латиница, цифры, _ и - .');
       return;
     }
@@ -56,7 +57,7 @@ export function SettingsPage() {
       setProfile(nextProfile); setPreferences({ locale: nextProfile.locale, theme: nextProfile.theme_preference });
       setMessageTone('success'); setMessage('Изменения сохранены');
     } catch (error) {
-      setMessageTone('error'); setMessage(error instanceof Error && error.message.includes('duplicate') ? 'Этот никнейм уже занят.' : 'Не удалось сохранить настройки.');
+      setMessageTone('error'); setMessage(isUsernameConflict(error) ? 'Этот никнейм уже занят.' : 'Не удалось сохранить настройки.');
     } finally { setBusy(false); }
   }
 
