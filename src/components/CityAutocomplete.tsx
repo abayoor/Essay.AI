@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { cityLabel, searchCities, type CitySuggestion } from '../lib/cities';
 import { useLocaleText } from '../lib/localized';
+import { usePreferences } from '../lib/preferences';
 
 type CityAutocompleteProps = {
   value: string;
@@ -10,6 +11,7 @@ type CityAutocompleteProps = {
 
 export function CityAutocomplete({ value, onChange, required = false }: CityAutocompleteProps) {
   const text = useLocaleText();
+  const { locale } = usePreferences();
   const listId = useId();
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,7 +28,7 @@ export function CityAutocomplete({ value, onChange, required = false }: CityAuto
     const timer = window.setTimeout(() => {
       setLoading(true);
       setError('');
-      void searchCities(query, controller.signal).then(setSuggestions).catch((requestError: unknown) => {
+      void searchCities(query, locale, controller.signal).then(setSuggestions).catch((requestError: unknown) => {
         if (!(requestError instanceof DOMException && requestError.name === 'AbortError')) {
           setSuggestions([]);
           setError(requestError instanceof Error ? requestError.message : text('Не удалось найти города.', 'Қалаларды табу мүмкін болмады.', 'Could not find cities.'));
@@ -37,7 +39,7 @@ export function CityAutocomplete({ value, onChange, required = false }: CityAuto
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [text, value]);
+  }, [locale, text, value]);
 
   return <div className="city-autocomplete">
     <input required={required} value={value} onChange={(event) => onChange(event.target.value)} placeholder={text('Например, Алматы', 'Мысалы, Алматы', 'For example, Almaty')} maxLength={120} autoComplete="off" aria-autocomplete="list" aria-controls={listId} />

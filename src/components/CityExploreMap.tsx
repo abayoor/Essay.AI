@@ -224,6 +224,7 @@ export function CityExploreMap() {
   const hasCenteredOnRider = useRef(false);
   const lastAutoRerouteAt = useRef(0);
   const lastGpsPoint = useRef<RoutePoint | null>(null);
+  const reverseLookupPoint = useRef<RoutePoint | null>(null);
   const wakeLock = useRef<WakeLockSentinelLike | null>(null);
 
   const activeRoute = useMemo(
@@ -271,7 +272,8 @@ export function CityExploreMap() {
       if (!hasCenteredOnRider.current) {
         hasCenteredOnRider.current = true;
         setRoutingOrigin((current) => current ?? point);
-        void reverseMapLocation(point).then(setResolvedLocation).catch(() => undefined);
+        reverseLookupPoint.current = point;
+        void reverseMapLocation(point, locale).then(setResolvedLocation).catch(() => undefined);
       }
     }, () => {
       setLocationStatus(text('Разреши геолокацию или нажми на карту, чтобы указать старт.', 'Геолокацияға рұқсат бер немесе бастау нүктесін картадан таңда.', 'Allow location access or tap the map to set a start.'));
@@ -281,7 +283,15 @@ export function CityExploreMap() {
       timeout: 15000,
     });
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [text]);
+  }, [locale, text]);
+
+  useEffect(() => {
+    const point = reverseLookupPoint.current;
+    if (!point) return undefined;
+    const controller = new AbortController();
+    void reverseMapLocation(point, locale, controller.signal).then(setResolvedLocation).catch(() => undefined);
+    return () => controller.abort();
+  }, [locale]);
 
   useEffect(() => {
     if (!navigationActive) {
@@ -311,7 +321,7 @@ export function CityExploreMap() {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       setSearching(true);
-      void searchMapPlaces(value, riderLocation, controller.signal)
+      void searchMapPlaces(value, riderLocation, locale, controller.signal)
         .then(setSearchResults)
         .catch((error: unknown) => {
           if (!(error instanceof DOMException && error.name === 'AbortError')) setSearchResults([]);
@@ -322,7 +332,7 @@ export function CityExploreMap() {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [query, riderLocation]);
+  }, [locale, query, riderLocation]);
 
   useEffect(() => {
     if (!navigationActive || !destination || !riderLocation || !progress) return;
@@ -401,7 +411,8 @@ export function CityExploreMap() {
     setRiderLocation(point);
     setRoutingOrigin(point);
     setLocationStatus(text('Старт указан вручную', 'Бастау нүктесі қолмен таңдалды', 'Start set manually'));
-    void reverseMapLocation(point).then(setResolvedLocation).catch(() => undefined);
+    reverseLookupPoint.current = point;
+    void reverseMapLocation(point, locale).then(setResolvedLocation).catch(() => undefined);
   }
 
   function recenterOnRider() {

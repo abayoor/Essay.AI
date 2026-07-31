@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Locale, ThemePreference } from './cyclingModels';
 import { useSession } from './auth';
+import { geocodingLanguage } from './geography';
 import { loadRiderProfile } from './rider';
 
 type Preferences = {
@@ -53,7 +54,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [locale, theme]);
 
   useEffect(() => {
-    document.documentElement.lang = locale;
+    document.documentElement.lang = geocodingLanguage(locale);
     document.documentElement.dataset.theme = theme;
   }, [locale, theme]);
 
