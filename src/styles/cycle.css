@@ -583,6 +583,9 @@
 .map-layer-switcher button:hover { background: color-mix(in srgb, var(--signal) 8%, var(--surface)); color: var(--signal); }
 .map-layer-switcher button:active { transform: scale(.95); }
 .map-layer-switcher button.active { background: var(--signal); color: var(--on-signal); box-shadow: 0 4px 10px color-mix(in srgb, var(--signal) 22%, transparent); }
+.leaflet-container { background: #bcc6be; }
+.leaflet-container.map-style-terrain { background: #26332d; }
+.community-map-tiles { backface-visibility: hidden; }
 .global-leaflet-map .map-layer-switcher { left: 16px; right: auto; top: 126px; }
 .navigation-active .global-leaflet-map .map-layer-switcher { left: auto; right: 16px; top: 16px; }
 .city-map-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; min-height: 610px; padding: 18px; }
@@ -978,6 +981,7 @@
 :root[data-theme='dark'] .conversation-surface .message-composer { background: color-mix(in srgb, var(--surface-raised) 94%, transparent); color: var(--ink); }
 :root[data-theme='dark'] .global-route-panel, :root[data-theme='dark'] .rider-location-strip, :root[data-theme='dark'] .global-map-search .map-place-search, :root[data-theme='dark'] .global-map-search .map-search-results { background: color-mix(in srgb, var(--surface-raised) 96%, transparent); color: var(--ink); }
 :root[data-theme='dark'] .leaflet-tile-pane { filter: brightness(.72) contrast(1.08) saturate(.72); }
+:root[data-theme='dark'] .leaflet-container { background: #17211e; }
 :root[data-theme='dark'] .leaflet-control-zoom a, :root[data-theme='dark'] .leaflet-popup-content-wrapper, :root[data-theme='dark'] .leaflet-popup-tip { background: var(--surface-raised); color: var(--ink); }
 :root[data-theme='dark'] .map-layer-switcher { background: color-mix(in srgb, var(--surface-raised) 94%, transparent); }
 :root[data-theme='dark'] .empty-chat-art { background: linear-gradient(145deg, #132823, #17221f); }
