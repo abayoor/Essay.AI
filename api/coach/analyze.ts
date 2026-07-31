@@ -152,7 +152,6 @@ function geminiResponseText(payload: unknown): string | null {
 
 const coachSchema = {
   type: 'object',
-  additionalProperties: false,
   properties: {
     headline: { type: 'string' },
     summary: { type: 'string' },
@@ -160,7 +159,6 @@ const coachSchema = {
     trainingInsight: { type: 'string' },
     nextWorkout: {
       type: 'object',
-      additionalProperties: false,
       properties: {
         title: { type: 'string' },
         durationMinutes: { type: 'integer', minimum: 15, maximum: 180 },
@@ -175,7 +173,6 @@ const coachSchema = {
       maxItems: 3,
       items: {
         type: 'object',
-        additionalProperties: false,
         properties: {
           order: { type: 'integer', minimum: 1, maximum: 3 },
           title: { type: 'string' },
@@ -199,6 +196,19 @@ const coachSchema = {
   },
   required: ['headline', 'summary', 'readinessExplanation', 'trainingInsight', 'nextWorkout', 'weeklyPlan', 'focus', 'watchMetric', 'confidence', 'caution'],
 };
+
+function withStrictObjects(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withStrictObjects);
+  if (typeof value !== 'object' || value === null) return value;
+
+  const record = Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .map(([key, item]) => [key, withStrictObjects(item)]),
+  );
+  return record.type === 'object' ? { ...record, additionalProperties: false } : record;
+}
+
+const openAiCoachSchema = withStrictObjects(coachSchema);
 
 async function safetyIdentifier(userId: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(userId));
@@ -239,8 +249,8 @@ async function requestGeminiCoach(apiKey: string, input: Record<string, unknown>
         }],
       }],
       generationConfig: {
-        temperature: 0.35,
         maxOutputTokens: 3000,
+        thinkingConfig: { thinkingLevel: 'minimal' },
         responseMimeType: 'application/json',
         responseSchema: coachSchema,
       },
@@ -290,7 +300,7 @@ async function requestOpenAiCoach(apiKey: string, userId: string, input: Record<
           type: 'json_schema',
           name: 'cycling_coach_advice',
           strict: true,
-          schema: coachSchema,
+          schema: openAiCoachSchema,
         },
       },
     }),

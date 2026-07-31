@@ -109,13 +109,18 @@ export function CoachPage() {
         'AI жүктемені терең талдап, апталық жоспарды жаңартты.',
         'AI completed a deeper load analysis and updated the weekly plan.',
       ));
-    } catch {
+    } catch (error) {
       setAiAdvice(null);
-      setMessage(text(
-        'ИИ сейчас недоступен. Расширенный локальный анализ продолжает работать.',
-        'AI қазір қолжетімсіз. Кеңейтілген жергілікті талдау жұмысын жалғастырады.',
-        'AI is unavailable right now. The enhanced on-device analysis is still working.',
-      ));
+      const reason = error instanceof Error ? error.message : text(
+        'ИИ сейчас недоступен.',
+        'AI қазір қолжетімсіз.',
+        'AI is unavailable right now.',
+      );
+      setMessage(`${reason} ${text(
+        'Расширенный локальный анализ продолжает работать.',
+        'Кеңейтілген жергілікті талдау жұмысын жалғастырады.',
+        'The enhanced on-device analysis is still working.',
+      )}`);
     } finally {
       setAiLoading(false);
     }

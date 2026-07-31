@@ -78,7 +78,9 @@ try {
     $metadataJson = @{
         entrypoint_path = 'index.ts'
         name = 'ai'
-        verify_jwt = $true
+        # Authentication is validated inside the function through Supabase Auth.
+        # The legacy gateway verifier can reject newer asymmetric user JWTs.
+        verify_jwt = $false
     } | ConvertTo-Json -Compress
     $metadata = [System.Net.Http.StringContent]::new($metadataJson, [System.Text.Encoding]::UTF8, 'application/json')
     $form.Add($metadata, 'metadata')
@@ -91,6 +93,16 @@ try {
     $body = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
     if (-not $response.IsSuccessStatusCode) {
         throw "Supabase deploy failed with HTTP $([int]$response.StatusCode): $body"
+    }
+
+    $functionResponse = $client.GetAsync("https://api.supabase.com/v1/projects/$projectRef/functions/ai").GetAwaiter().GetResult()
+    $functionBody = $functionResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+    if (-not $functionResponse.IsSuccessStatusCode) {
+        throw "Could not verify the deployed AI function (HTTP $([int]$functionResponse.StatusCode))."
+    }
+    $functionInfo = $functionBody | ConvertFrom-Json
+    if ($functionInfo.status -ne 'ACTIVE' -or $functionInfo.verify_jwt -ne $false) {
+        throw 'The AI function was deployed with an unexpected status or authentication configuration.'
     }
 
     $secretsResponse = $client.GetAsync("https://api.supabase.com/v1/projects/$projectRef/secrets").GetAwaiter().GetResult()

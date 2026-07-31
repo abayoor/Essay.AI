@@ -101,7 +101,9 @@ api_url = "http://127.0.0.1"
 openai_api_key = "env(OPENAI_API_KEY)"
 
 [functions.ai]
-verify_jwt = true
+# The function validates the user token through Supabase Auth itself.
+# Disabling the legacy gateway check keeps newer asymmetric user JWTs working.
+verify_jwt = false
 
 # Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
 # are monitored, and you can view the emails that would have been sent from the web interface.

@@ -15,6 +15,17 @@ function parseEnv(source) {
     }));
 }
 
+function responseText(payload) {
+  if (!payload || typeof payload !== 'object' || !Array.isArray(payload.candidates)) return null;
+  for (const candidate of payload.candidates) {
+    const parts = candidate?.content?.parts;
+    if (!Array.isArray(parts)) continue;
+    const textPart = parts.find((part) => typeof part?.text === 'string');
+    if (textPart) return textPart.text;
+  }
+  return null;
+}
+
 const fileEnv = parseEnv(await readFile('.env', 'utf8').catch(() => ''));
 const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY
   ?? fileEnv.GEMINI_API_KEY ?? fileEnv.GOOGLE_API_KEY;
@@ -29,21 +40,53 @@ if (!apiKey) {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: 'Reply with OK.' }] }],
-        generationConfig: { maxOutputTokens: 16 },
+        systemInstruction: {
+          parts: [{ text: 'Return only JSON matching the supplied schema. Use concise cycling-related test text.' }],
+        },
+        contents: [{ role: 'user', parts: [{ text: 'Prepare a short test cycling insight.' }] }],
+        generationConfig: {
+          maxOutputTokens: 500,
+          thinkingConfig: { thinkingLevel: 'minimal' },
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              text: { type: 'string' },
+              highlights: {
+                type: 'array',
+                minItems: 0,
+                maxItems: 3,
+                items: { type: 'string' },
+              },
+            },
+            required: ['title', 'text', 'highlights'],
+          },
+        },
       }),
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
       const apiError = payload && typeof payload === 'object' && 'error' in payload ? payload.error : null;
-      const message = apiError && typeof apiError === 'object' && 'message' in apiError ? apiError.message : 'Нет описания ошибки.';
+      const message = apiError && typeof apiError === 'object' && 'message' in apiError
+        ? apiError.message
+        : 'Нет описания ошибки.';
       console.error(`Gemini: ошибка ${response.status} для модели ${model}: ${message}`);
       process.exitCode = 1;
     } else {
-      console.log(`Gemini: ключ и модель ${model} работают.`);
+      const text = responseText(payload);
+      const result = text ? JSON.parse(text) : null;
+      if (!result
+        || typeof result.title !== 'string'
+        || typeof result.text !== 'string'
+        || !Array.isArray(result.highlights)
+        || !result.highlights.every((item) => typeof item === 'string')) {
+        throw new Error('структурированный ответ не прошёл проверку');
+      }
+      console.log(`Gemini: ключ, модель ${model} и структурированные ответы работают.`);
     }
   } catch (error) {
-    console.error(`Gemini: не удалось подключиться к API: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);
+    console.error(`Gemini: не удалось выполнить рабочий API-запрос: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);
     process.exitCode = 1;
   }
 }

@@ -26,10 +26,32 @@ function isLocale(value: unknown): value is Locale {
   return value === 'ru' || value === 'kz' || value === 'en';
 }
 
+function supabasePublicKey(): string | null {
+  const publishableKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY');
+  if (publishableKey) return publishableKey;
+
+  const namedKeys = Deno.env.get('SUPABASE_PUBLISHABLE_KEYS');
+  if (namedKeys) {
+    try {
+      const parsed: unknown = JSON.parse(namedKeys);
+      if (isRecord(parsed)) {
+        const defaultKey = parsed.default;
+        if (typeof defaultKey === 'string') return defaultKey;
+        const firstKey = Object.values(parsed).find((value): value is string => typeof value === 'string');
+        if (firstKey) return firstKey;
+      }
+    } catch {
+      // Fall through to the legacy key.
+    }
+  }
+
+  return Deno.env.get('SUPABASE_ANON_KEY');
+}
+
 async function authenticatedUser(request: Request): Promise<boolean> {
   const authorization = request.headers.get('authorization');
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const anonKey = supabasePublicKey();
   if (!authorization?.startsWith('Bearer ') || !supabaseUrl || !anonKey) return false;
   const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: { apikey: anonKey, authorization },
@@ -69,7 +91,6 @@ function geminiError(status: number): string {
 
 const assistSchema = {
   type: 'object',
-  additionalProperties: false,
   properties: {
     title: { type: 'string' },
     text: { type: 'string' },
@@ -92,7 +113,6 @@ const workoutProperties = {
 
 const coachSchema = {
   type: 'object',
-  additionalProperties: false,
   properties: {
     headline: { type: 'string' },
     summary: { type: 'string' },
@@ -100,7 +120,6 @@ const coachSchema = {
     trainingInsight: { type: 'string' },
     nextWorkout: {
       type: 'object',
-      additionalProperties: false,
       properties: workoutProperties,
       required: ['title', 'durationMinutes', 'intensity', 'description'],
     },
@@ -110,7 +129,6 @@ const coachSchema = {
       maxItems: 3,
       items: {
         type: 'object',
-        additionalProperties: false,
         properties: {
           order: { type: 'integer', minimum: 1, maximum: 3 },
           ...workoutProperties,
@@ -176,8 +194,8 @@ async function generate(
         parts: [{ text: JSON.stringify({ locale, ...input }) }],
       }],
       generationConfig: {
-        temperature: 0.35,
         maxOutputTokens,
+        thinkingConfig: { thinkingLevel: 'minimal' },
         responseMimeType: 'application/json',
         responseSchema: schema,
       },

@@ -4,7 +4,6 @@ type SupabaseUser = { id: string };
 
 const outputSchema = {
   type: 'object',
-  additionalProperties: false,
   properties: {
     title: { type: 'string' },
     text: { type: 'string' },
@@ -136,8 +135,8 @@ async function handler(request: Request): Promise<Response> {
           parts: [{ text: JSON.stringify({ task: input.task, locale: input.locale, context: input.context }) }],
         }],
         generationConfig: {
-          temperature: input.task === 'ride_analysis' ? 0.25 : 0.55,
           maxOutputTokens: 1400,
+          thinkingConfig: { thinkingLevel: 'minimal' },
           responseMimeType: 'application/json',
           responseSchema: outputSchema,
         },
