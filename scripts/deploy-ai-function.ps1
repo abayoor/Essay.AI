@@ -68,6 +68,7 @@ if (-not (Test-Path -LiteralPath $functionPath)) {
 $projectRef = (Get-Content -Raw -LiteralPath $projectRefPath).Trim()
 $accessToken = [WindowsCredentialReader]::Read('Supabase CLI:supabase')
 $endpoint = "https://api.supabase.com/v1/projects/$projectRef/functions/deploy?slug=ai"
+$geminiModel = 'gemini-2.5-flash'
 
 Add-Type -AssemblyName System.Net.Http
 $client = [System.Net.Http.HttpClient]::new()
@@ -133,7 +134,30 @@ try {
         $secretPayload = $null
         $secretContent.Dispose()
     }
-    Write-Output 'Supabase Edge Function ai deployed; Gemini secret is present.'
+
+    $modelSecretPayload = ConvertTo-Json -InputObject @(
+        @{ name = 'GEMINI_MODEL'; value = $geminiModel }
+    ) -Compress
+    $modelSecretContent = [System.Net.Http.StringContent]::new(
+        $modelSecretPayload,
+        [System.Text.Encoding]::UTF8,
+        'application/json'
+    )
+    try {
+        $setModelResponse = $client.PostAsync(
+            "https://api.supabase.com/v1/projects/$projectRef/secrets",
+            $modelSecretContent
+        ).GetAwaiter().GetResult()
+        if (-not $setModelResponse.IsSuccessStatusCode) {
+            throw "Could not set GEMINI_MODEL in Supabase Secrets (HTTP $([int]$setModelResponse.StatusCode))."
+        }
+    }
+    finally {
+        $modelSecretContent.Dispose()
+        $modelSecretPayload = $null
+    }
+
+    Write-Output "Supabase Edge Function ai deployed with model $geminiModel; Gemini API key is present."
 }
 finally {
     $form.Dispose()

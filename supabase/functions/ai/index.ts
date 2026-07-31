@@ -221,7 +221,7 @@ Deno.serve(async (request) => {
 
   const apiKey = Deno.env.get('GEMINI_API_KEY') ?? Deno.env.get('GOOGLE_API_KEY');
   if (!apiKey) return json({ error: 'GEMINI_API_KEY не настроен в Supabase Secrets.' }, 503);
-  const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.6-flash';
+  const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.5-flash';
   const body: unknown = await request.json().catch(() => null);
   if (!isRecord(body) || !isLocale(body.locale)) return json({ error: 'Некорректный запрос.' }, 400);
 

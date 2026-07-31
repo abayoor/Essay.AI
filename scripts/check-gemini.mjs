@@ -29,7 +29,7 @@ function responseText(payload) {
 const fileEnv = parseEnv(await readFile('.env', 'utf8').catch(() => ''));
 const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY
   ?? fileEnv.GEMINI_API_KEY ?? fileEnv.GOOGLE_API_KEY;
-const model = process.env.GEMINI_MODEL ?? fileEnv.GEMINI_MODEL ?? 'gemini-3.6-flash';
+const model = process.env.GEMINI_MODEL ?? fileEnv.GEMINI_MODEL ?? 'gemini-2.5-flash';
 
 if (!apiKey) {
   console.error('Gemini: переменная GEMINI_API_KEY не найдена.');
