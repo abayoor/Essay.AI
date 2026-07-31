@@ -15,6 +15,9 @@
     "db:new": "supabase migration new",
     "db:push": "supabase db push",
     "keep-awake:setup": "node --use-system-ca scripts/setup-keep-awake.mjs",
+    "ai:check": "node --use-system-ca scripts/check-gemini.mjs",
+    "ai:deploy": "supabase functions deploy ai --use-api",
+    "ai:deploy:direct": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-ai-function.ps1",
     "cap:sync": "npm run build && cap sync",
     "cap:android": "cap open android"
   },

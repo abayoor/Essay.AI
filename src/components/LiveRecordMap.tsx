@@ -26,7 +26,7 @@ export function LiveRecordMap({ track, currentPoint = null, className = 'record-
   const displayedPoint = currentPoint ?? track[track.length - 1] ?? null;
   const positions = track.map((point) => [point.lat, point.lng] as [number, number]);
   return <MapContainer center={displayedPoint ? [displayedPoint.lat, displayedPoint.lng] : almaty} zoom={15} minZoom={4} maxZoom={18} zoomSnap={0.25} zoomDelta={0.5} wheelPxPerZoomLevel={180} touchZoom="center" scrollWheelZoom className={className} zoomControl={false}>
-    <CommunityTileLayer />
+    <CommunityTileLayer showSwitcher />
     <ZoomControl position="bottomright" />
     <KeepMapSized />
     <FollowRider point={displayedPoint} />

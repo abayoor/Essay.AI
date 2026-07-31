@@ -250,6 +250,14 @@ async function requestGeminiCoach(apiKey: string, input: Record<string, unknown>
   return { text: response.ok ? geminiResponseText(payload) : null, status: response.status };
 }
 
+function geminiFailure(status: number): string {
+  if (status === 400) return 'Gemini отклонил запрос. Проверь GEMINI_MODEL и доступ ключа к этой модели.';
+  if (status === 401 || status === 403) return 'Ключ Gemini недействителен или не имеет доступа к Gemini API.';
+  if (status === 404) return 'Указанная модель Gemini не найдена. Проверь GEMINI_MODEL.';
+  if (status === 429) return 'Квота Gemini закончилась или сервис занят. Проверь лимиты проекта и попробуй позже.';
+  return `Gemini API не ответил (код ${status}).`;
+}
+
 async function requestOpenAiCoach(apiKey: string, userId: string, input: Record<string, unknown>): Promise<{ text: string | null; status: number }> {
   const model = process.env.OPENAI_MODEL ?? 'gpt-5.6';
   const response = await fetch('https://api.openai.com/v1/responses', {
@@ -313,9 +321,11 @@ async function handler(request: Request): Promise<Response> {
       ? await requestGeminiCoach(geminiApiKey, input)
       : await requestOpenAiCoach(openAiApiKey as string, user.id, input);
     if (!aiResult.text) {
-      return json({ error: aiResult.status === 429
-        ? 'ИИ-тренер занят. Попробуй ещё раз немного позже.'
-        : 'ИИ-тренер временно недоступен. Базовый план продолжает работать.' }, 502);
+      return json({ error: geminiApiKey
+        ? geminiFailure(aiResult.status)
+        : aiResult.status === 429
+          ? 'ИИ-тренер занят. Попробуй ещё раз немного позже.'
+          : `OpenAI API не ответил (код ${aiResult.status}). Базовый план продолжает работать.` }, 502);
     }
     const advice: unknown = JSON.parse(aiResult.text);
     if (typeof advice !== 'object' || advice === null) return json({ error: 'ИИ-тренер вернул неполный разбор.' }, 502);

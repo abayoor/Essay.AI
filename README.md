@@ -36,3 +36,5 @@ npm run build
 Для построения маршрутов по велодорогам создай ключ в [OpenRouteService](https://openrouteservice.org/dev/#/signup) и добавь `ORS_API_KEY` в переменные окружения Vercel. Для локальной проверки через `vercel dev` его можно хранить в `.env.local`; файл уже игнорируется Git.
 
 Для Strava нужны `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REDIRECT_URI` и `STRAVA_STATE_SECRET` в переменных окружения Vercel. Callback URL: `https://твой-домен/api/strava/callback`.
+
+Для функций Gemini добавь `GEMINI_API_KEY` в переменные окружения Vercel для Production, Preview и Development, затем запусти новый deployment. Секрет Supabase не доступен обработчикам `api/ai/assist.ts` и `api/coach/analyze.ts`, потому что они выполняются в Vercel. Локальную связку ключа и модели можно безопасно проверить командой `npm run ai:check`.

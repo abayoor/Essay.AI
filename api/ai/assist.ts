@@ -85,6 +85,14 @@ function geminiText(payload: unknown): string | null {
   return null;
 }
 
+function geminiFailure(status: number): string {
+  if (status === 400) return 'Gemini отклонил запрос. Проверь GEMINI_MODEL и доступ ключа к этой модели.';
+  if (status === 401 || status === 403) return 'Ключ Gemini недействителен или не имеет доступа к Gemini API.';
+  if (status === 404) return 'Указанная модель Gemini не найдена. Проверь GEMINI_MODEL.';
+  if (status === 429) return 'Квота Gemini закончилась или сервис занят. Проверь лимиты проекта и попробуй позже.';
+  return `Gemini API не ответил (код ${status}).`;
+}
+
 function taskPrompt(task: AiTask): string {
   if (task === 'post_caption') {
     return 'Create a natural first-person social post for a cycling community. Use only supplied facts. Keep it under 700 characters, avoid clichés, fake emotions, hashtags spam, invented places, speed, weather, achievements, or safety claims. title must be a short internal label, text must be the ready-to-publish caption, highlights must be empty.';
@@ -137,7 +145,7 @@ async function handler(request: Request): Promise<Response> {
     });
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
-      return json({ error: response.status === 429 ? 'Gemini занят. Попробуй немного позже.' : 'Gemini временно недоступен.' }, 502);
+      return json({ error: geminiFailure(response.status) }, 502);
     }
     const text = geminiText(payload);
     if (!text) return json({ error: 'Gemini не смог подготовить ответ.' }, 502);

@@ -1,5 +1,6 @@
 import type { Locale, RideActivity } from './cyclingModels';
 import { localeValue } from './localized';
+import { invokeAi } from './aiGateway';
 
 export type CoachGoal = 'consistency' | 'endurance' | 'speed' | 'distance';
 export type CoachIntensity = 'recovery' | 'easy' | 'moderate' | 'hard';
@@ -334,25 +335,12 @@ export async function requestAiCoachAdvice(
   goal: CoachGoal,
   feeling: number,
   locale: Locale,
-  accessToken: string,
+  _accessToken: string,
 ): Promise<CoachAdvice> {
-  const response = await fetch('/api/coach/analyze', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ summary, goal, feeling, locale }),
-  });
-  const payload: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const fallback = localeValue(locale, {
-      ru: 'ИИ-тренер пока не ответил.',
-      kz: 'AI жаттықтырушы әзірге жауап бермеді.',
-      en: 'The AI coach did not respond.',
-    });
-    const message = typeof payload === 'object' && payload !== null && typeof (payload as Record<string, unknown>).error === 'string'
-      ? (payload as Record<string, string>).error
-      : fallback;
-    throw new Error(message);
-  }
+  const payload = await invokeAi(
+    { mode: 'coach', summary, goal, feeling, locale },
+    { path: '/api/coach/analyze', body: { summary, goal, feeling, locale } },
+  );
   if (!isCoachAdvice(payload)) throw new Error(localeValue(locale, {
     ru: 'ИИ-тренер вернул неполный ответ.',
     kz: 'AI жаттықтырушы толық емес жауап берді.',

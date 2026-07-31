@@ -475,7 +475,7 @@ export function CityExploreMap() {
       </div>
       <div className="city-map-canvas global-map-canvas">
         <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.25} zoomDelta={0.5} wheelPxPerZoomLevel={180} touchZoom="center" scrollWheelZoom zoomControl={false} className="city-leaflet-map global-leaflet-map">
-          <CommunityTileLayer />
+          <CommunityTileLayer showSwitcher />
           {!navigationActive && <ZoomControl position="bottomright" />}
           <StartPicker enabled={!riderLocation} onPick={chooseManualStart} />
           <MapViewport focus={focusPoint} route={visibleRoute} recenterRequest={recenterRequest} navigationActive={navigationActive} />

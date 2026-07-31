@@ -1,4 +1,5 @@
 import type { RidePostStats, RoutePoint } from '../lib/cyclingModels';
+import { useLocaleText } from '../lib/localized';
 
 type Point = { x: number; y: number };
 
@@ -66,21 +67,24 @@ function scaledTrackPath(track: RoutePoint[] | null): string {
   }).join(' ');
 }
 
-function formatDuration(totalSeconds: number): string {
+function durationParts(totalSeconds: number): [number, number] {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  return hours ? `${hours} ч ${minutes} мин` : `${minutes} мин`;
+  return [hours, minutes];
 }
 
 export function RideOverlay({ stats }: { stats: RidePostStats }) {
+  const text = useLocaleText();
   const path = scaledTrackPath(stats.track) || scaledPath(stats.summaryPolyline);
-  return <aside className="ride-overlay" aria-label="Статистика тренировки">
-    <svg viewBox="0 0 180 72" role="img" aria-label="Маршрут тренировки">
+  const [hours, minutes] = durationParts(stats.durationSeconds);
+  const duration = hours ? `${hours} ${text('ч', 'сағ', 'h')} ${minutes} ${text('мин', 'мин', 'min')}` : `${minutes} ${text('мин', 'мин', 'min')}`;
+  return <aside className="ride-overlay" aria-label={text('Статистика тренировки', 'Жаттығу статистикасы', 'Workout statistics')}>
+    <svg viewBox="0 0 180 72" role="img" aria-label={text('Маршрут тренировки', 'Жаттығу бағыты', 'Workout route')}>
       <path className="ride-map-grid" d="M0 18H180M0 36H180M0 54H180M45 0V72M90 0V72M135 0V72" />
       {path ? <path className="ride-map-path" d={path} /> : <path className="ride-map-path placeholder" d="M10 56 C42 12, 72 70, 104 29 S144 55, 170 16" />}
     </svg>
-    <div><strong>{stats.distanceKm.toFixed(1)} км</strong><span>дистанция</span></div>
-    <div><strong>{Math.round(stats.elevationGainM)} м</strong><span>набор</span></div>
-    <div><strong>{formatDuration(stats.durationSeconds)}</strong><span>время</span></div>
+    <div><strong>{stats.distanceKm.toFixed(1)} {text('км', 'км', 'km')}</strong><span>{text('дистанция', 'қашықтық', 'distance')}</span></div>
+    <div><strong>{Math.round(stats.elevationGainM)} {text('м', 'м', 'm')}</strong><span>{text('набор', 'биіктік', 'elevation')}</span></div>
+    <div><strong>{duration}</strong><span>{text('время', 'уақыт', 'time')}</span></div>
   </aside>;
 }
