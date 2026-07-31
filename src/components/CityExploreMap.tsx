@@ -485,7 +485,7 @@ export function CityExploreMap() {
         {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, query: quickQuery, icon: Icon }) => <button type="button" key={label} onClick={() => setQuery(quickQuery)}><Icon size={14} />{label}</button>)}</div>}
       </div>
       <div className="city-map-canvas global-map-canvas">
-        <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.0625} zoomDelta={0.125} wheelPxPerZoomLevel={720} touchZoom="center" scrollWheelZoom zoomControl={false} className="city-leaflet-map global-leaflet-map">
+        <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.125} zoomDelta={0.25} wheelPxPerZoomLevel={360} touchZoom="center" scrollWheelZoom zoomControl={false} className="city-leaflet-map global-leaflet-map">
           <CommunityTileLayer showSwitcher />
           {!navigationActive && <ZoomControl position="bottomright" />}
           <StartPicker enabled={!riderLocation} onPick={chooseManualStart} />

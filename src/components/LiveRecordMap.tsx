@@ -25,7 +25,7 @@ function KeepMapSized() {
 export function LiveRecordMap({ track, currentPoint = null, className = 'record-map' }: { track: GpsTrackPoint[]; currentPoint?: GpsTrackPoint | null; className?: string }) {
   const displayedPoint = currentPoint ?? track[track.length - 1] ?? null;
   const positions = track.map((point) => [point.lat, point.lng] as [number, number]);
-  return <MapContainer center={displayedPoint ? [displayedPoint.lat, displayedPoint.lng] : almaty} zoom={15} minZoom={4} maxZoom={18} zoomSnap={0.0625} zoomDelta={0.125} wheelPxPerZoomLevel={720} touchZoom="center" scrollWheelZoom className={className} zoomControl={false}>
+  return <MapContainer center={displayedPoint ? [displayedPoint.lat, displayedPoint.lng] : almaty} zoom={15} minZoom={4} maxZoom={18} zoomSnap={0.125} zoomDelta={0.25} wheelPxPerZoomLevel={360} touchZoom="center" scrollWheelZoom className={className} zoomControl={false}>
     <CommunityTileLayer showSwitcher />
     <ZoomControl position="bottomright" />
     <KeepMapSized />
