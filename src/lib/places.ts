@@ -48,18 +48,65 @@ async function photonFeatures(url: string, signal?: AbortSignal): Promise<Photon
     : [];
 }
 
+function latinSearchValue(value: string): string {
+  const letters: Record<string, string> = {
+    а: 'a', ә: 'a', б: 'b', в: 'v', г: 'g', ғ: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z',
+    и: 'i', й: 'i', к: 'k', қ: 'k', л: 'l', м: 'm', н: 'n', ң: 'n', о: 'o', ө: 'o', п: 'p',
+    р: 'r', с: 's', т: 't', у: 'u', ұ: 'u', ү: 'u', ф: 'f', х: 'h', һ: 'h', ц: 'ts', ч: 'ch',
+    ш: 'sh', щ: 'sh', ы: 'y', і: 'i', э: 'e', ю: 'yu', я: 'ya', ь: '', ъ: '',
+  };
+  return value
+    .toLocaleLowerCase('ru')
+    .replace(/^(ул\.?|улица|көшесі)\s+/u, '')
+    .split('')
+    .map((letter) => letters[letter] ?? letter)
+    .join('');
+}
+
 export async function searchMapPlaces(query: string, center: RoutePoint | null, signal?: AbortSignal): Promise<MapPlace[]> {
   const value = query.trim();
   if (value.length < 2) return [];
-  const params = new URLSearchParams({ q: value, limit: '10', lang: 'en' });
-  if (center) {
-    params.set('lat', String(center.lat));
-    params.set('lon', String(center.lng));
-    params.set('zoom', '12');
-    params.set('location_bias_scale', '0.25');
+  const globalParams = new URLSearchParams({ q: value, limit: '10' });
+  if (!center) {
+    const features = await photonFeatures(`https://photon.komoot.io/api/?${globalParams.toString()}`, signal);
+    return features.map((feature, index) => photonFeatureToPlace(feature, index, value)).filter((place): place is MapPlace => place !== null);
   }
-  const features = await photonFeatures(`https://photon.komoot.io/api/?${params.toString()}`, signal);
-  return features.map((feature, index) => photonFeatureToPlace(feature, index, value)).filter((place): place is MapPlace => place !== null);
+
+  const latitudeRadius = 0.32;
+  const longitudeRadius = Math.min(0.55, latitudeRadius / Math.max(Math.cos(center.lat * Math.PI / 180), 0.35));
+  const localParams = new URLSearchParams({
+    q: value,
+    limit: '10',
+    lat: String(center.lat),
+    lon: String(center.lng),
+    zoom: '13',
+    location_bias_scale: '0.05',
+    bbox: [
+      center.lng - longitudeRadius,
+      center.lat - latitudeRadius,
+      center.lng + longitudeRadius,
+      center.lat + latitudeRadius,
+    ].map((coordinate) => coordinate.toFixed(6)).join(','),
+  });
+  globalParams.set('lat', String(center.lat));
+  globalParams.set('lon', String(center.lng));
+  globalParams.set('zoom', '11');
+  globalParams.set('location_bias_scale', '0.15');
+
+  const latinValue = latinSearchValue(value);
+  const latinParams = new URLSearchParams(localParams);
+  latinParams.set('q', latinValue);
+  const [localFeatures, latinFeatures, globalFeatures] = await Promise.all([
+    photonFeatures(`https://photon.komoot.io/api/?${localParams.toString()}`, signal),
+    latinValue !== value.toLocaleLowerCase('ru')
+      ? photonFeatures(`https://photon.komoot.io/api/?${latinParams.toString()}`, signal)
+      : Promise.resolve([]),
+    photonFeatures(`https://photon.komoot.io/api/?${globalParams.toString()}`, signal),
+  ]);
+  const places = [...localFeatures, ...latinFeatures, ...globalFeatures]
+    .map((feature, index) => photonFeatureToPlace(feature, index, value))
+    .filter((place): place is MapPlace => place !== null);
+  return places.filter((place, index) => places.findIndex((candidate) => candidate.id === place.id) === index).slice(0, 10);
 }
 
 export async function reverseMapLocation(point: RoutePoint, signal?: AbortSignal): Promise<ResolvedMapLocation> {
@@ -68,7 +115,6 @@ export async function reverseMapLocation(point: RoutePoint, signal?: AbortSignal
     lon: String(point.lng),
     radius: '5',
     limit: '1',
-    lang: 'en',
   });
   const feature = (await photonFeatures(`https://photon.komoot.io/reverse?${params.toString()}`, signal))[0];
   const properties = feature ? featureProperties(feature) : {};

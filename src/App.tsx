@@ -1,4 +1,5 @@
 import { Route, Switch } from 'wouter';
+import { PersistentNavigationBar } from './components/PersistentNavigationBar';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { AuthPage } from './pages/AuthPage';
 import { BikesPage } from './pages/BikesPage';
@@ -29,6 +30,7 @@ import { SettingsPage } from './pages/SettingsPage';
 
 export default function App() {
   return (
+    <>
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/auth/sign-in"><AuthPage mode="sign-in" /></Route>
@@ -59,5 +61,7 @@ export default function App() {
       <Route path="/u/:username" component={PublicProfilePage} />
       <Route component={NotFoundPage} />
     </Switch>
+    <PersistentNavigationBar />
+    </>
   );
 }

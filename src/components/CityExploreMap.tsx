@@ -15,10 +15,15 @@ import {
   ShieldCheck,
   Square,
   Timer,
+  Utensils,
+  Trees,
+  Landmark,
+  Wrench,
   X,
 } from 'lucide-react';
 import { MapContainer, Marker, Polyline, Popup, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import { useLocation } from 'wouter';
+import { clearMapNavigation, loadMapNavigation, saveMapNavigation } from '../lib/activeNavigation';
 import type { RoutePoint } from '../lib/cyclingModels';
 import { routeCyclingWaypoints, type CyclingRoutePreference, type CyclingRouteResult } from '../lib/directions';
 import { reverseMapLocation, searchMapPlaces, type MapPlace, type ResolvedMapLocation } from '../lib/places';
@@ -182,6 +187,7 @@ function preferenceCopy(preference: CyclingRoutePreference): { title: string; de
 
 export function CityExploreMap() {
   const [, navigate] = useLocation();
+  const restoredNavigation = useMemo(() => loadMapNavigation(), []);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MapPlace[]>([]);
   const [searching, setSearching] = useState(false);
@@ -189,14 +195,23 @@ export function CityExploreMap() {
   const [riderHeading, setRiderHeading] = useState(0);
   const [currentSpeedKmh, setCurrentSpeedKmh] = useState<number | null>(null);
   const [routingOrigin, setRoutingOrigin] = useState<RoutePoint | null>(null);
-  const [destination, setDestination] = useState<MapPlace | null>(null);
+  const [destination, setDestination] = useState<MapPlace | null>(() => restoredNavigation ? {
+    id: restoredNavigation.id,
+    name: restoredNavigation.destinationName,
+    subtitle: restoredNavigation.destinationSubtitle,
+    ...restoredNavigation.destination,
+  } : null);
   const [resolvedLocation, setResolvedLocation] = useState<ResolvedMapLocation | null>(null);
   const [locationStatus, setLocationStatus] = useState('Определяем твоё местоположение…');
-  const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
-  const [activePreference, setActivePreference] = useState<CyclingRoutePreference>('recommended');
+  const [routeOptions, setRouteOptions] = useState<RouteOption[]>(() => restoredNavigation ? [{
+    preference: restoredNavigation.preference,
+    result: restoredNavigation.result,
+  }] : []);
+  const [activePreference, setActivePreference] = useState<CyclingRoutePreference>(restoredNavigation?.preference ?? 'recommended');
+  const [navigationSource, setNavigationSource] = useState<'search' | 'popular'>(restoredNavigation?.source ?? 'search');
   const [routing, setRouting] = useState(false);
   const [routeError, setRouteError] = useState('');
-  const [navigationActive, setNavigationActive] = useState(false);
+  const [navigationActive, setNavigationActive] = useState(restoredNavigation?.active ?? false);
   const [recenterRequest, setRecenterRequest] = useState<{ point: RoutePoint; id: number } | null>(null);
   const routeRequest = useRef(0);
   const hasCenteredOnRider = useRef(false);
@@ -304,16 +319,36 @@ export function CityExploreMap() {
 
   useEffect(() => {
     if (!navigationActive || !destination || !riderLocation || !progress) return;
+    if (navigationSource === 'popular') return;
     if (progress.distanceFromRouteM < 55 || Date.now() - lastAutoRerouteAt.current < 15000) return;
     lastAutoRerouteAt.current = Date.now();
     setRoutingOrigin({ ...riderLocation });
-  }, [destination, navigationActive, progress, riderLocation]);
+  }, [destination, navigationActive, navigationSource, progress, riderLocation]);
+
+  useEffect(() => {
+    if (!activeRoute || !destination) return;
+    saveMapNavigation({
+      id: destination.id,
+      destinationName: destination.name,
+      destinationSubtitle: destination.subtitle,
+      destination: { lat: destination.lat, lng: destination.lng },
+      result: activeRoute.result,
+      preference: activeRoute.preference,
+      active: navigationActive,
+      source: navigationSource,
+      savedAt: new Date().toISOString(),
+    });
+  }, [activeRoute, destination, navigationActive, navigationSource]);
 
   useEffect(() => {
     const requestId = ++routeRequest.current;
     setRouteError('');
+    if (navigationSource === 'popular' && routeOptions.length > 0) {
+      setRouting(false);
+      return;
+    }
     if (!routingOrigin || !destination) {
-      setRouteOptions([]);
+      if (!destination) setRouteOptions([]);
       setRouting(false);
       return;
     }
@@ -336,11 +371,14 @@ export function CityExploreMap() {
     }).finally(() => {
       if (requestId === routeRequest.current) setRouting(false);
     });
-  }, [destination, routingOrigin]);
+  }, [destination, navigationSource, routeOptions.length, routingOrigin]);
 
   function chooseDestination(place: MapPlace) {
+    clearMapNavigation();
     setDestination(place);
+    setNavigationSource('search');
     setNavigationActive(false);
+    setRouteOptions([]);
     setQuery('');
     setSearchResults([]);
     if (riderLocation) {
@@ -388,6 +426,7 @@ export function CityExploreMap() {
 
   function resetRoute() {
     setNavigationActive(false);
+    clearMapNavigation();
     setDestination(null);
     setRouteOptions([]);
     setRouteError('');
@@ -405,21 +444,28 @@ export function CityExploreMap() {
     ? estimatedRideMinutes(activeRoute.result, progress.remainingM / 1000, remainingClimbM)
     : totalMinutes;
 
-  return <section className={`city-explore global-city-map${navigationActive ? ' navigation-active' : ''}`}>
-    <div className="global-map-search">
-      <div className="map-place-search">
-        <Search size={19} aria-hidden="true" />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Найти любой адрес или место в мире" aria-label="Поиск адреса или места" autoComplete="off" />
-        {query && <button type="button" aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={16} /></button>}
-        {(searching || searchResults.length > 0) && <div className="map-search-results">
-          {searching && <p>Ищем адрес…</p>}
-          {!searching && searchResults.map((place) => <button type="button" key={place.id} onClick={() => chooseDestination(place)}><MapPin size={16} /><span><strong>{place.name}</strong><small>{place.subtitle}</small></span></button>)}
-        </div>}
-      </div>
-      <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || 'Твоё местоположение'}</strong><small>{locationStatus}</small></div><button type="button" onClick={recenterOnRider} aria-label="Показать моё местоположение"><LocateFixed size={18} /></button></div>
-    </div>
+  const quickSearches = [
+    { label: 'Кофе', query: 'кофейня', icon: Utensils },
+    { label: 'Парки', query: 'парк', icon: Trees },
+    { label: 'Интересные места', query: 'достопримечательность', icon: Landmark },
+    { label: 'Веломастерские', query: 'веломастерская', icon: Wrench },
+  ];
 
+  return <section className={`city-explore global-city-map${navigationActive ? ' navigation-active' : ''}`}>
     <div className="city-map-layout global-map-layout">
+      <div className="global-map-search">
+        <div className="map-place-search">
+          <Search size={19} aria-hidden="true" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={destination ? 'Куда теперь?' : 'Куда поедем? Адрес или место'} aria-label="Поиск адреса или места" autoComplete="off" />
+          {query && <button type="button" aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={16} /></button>}
+          {(searching || searchResults.length > 0) && <div className="map-search-results">
+            {searching && <p>Сначала ищем рядом с тобой…</p>}
+            {!searching && searchResults.map((place, index) => <button type="button" key={place.id} onClick={() => chooseDestination(place)}><MapPin size={16} /><span><strong>{place.name}{index === 0 && <em>Рядом</em>}</strong><small>{place.subtitle}</small></span></button>)}
+          </div>}
+        </div>
+        <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || 'Твоё местоположение'}</strong><small>{locationStatus}</small></div><button type="button" onClick={recenterOnRider} aria-label="Показать моё местоположение"><LocateFixed size={18} /></button></div>
+        {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, query: quickQuery, icon: Icon }) => <button type="button" key={label} onClick={() => setQuery(quickQuery)}><Icon size={14} />{label}</button>)}</div>}
+      </div>
       <div className="city-map-canvas global-map-canvas">
         <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.25} zoomDelta={0.5} wheelPxPerZoomLevel={180} touchZoom="center" scrollWheelZoom zoomControl={false} className="city-leaflet-map global-leaflet-map">
           <CommunityTileLayer />
@@ -451,7 +497,7 @@ export function CityExploreMap() {
       </div>
 
       <aside className="city-map-panel global-route-panel">
-        <div className="map-panel-heading"><span><Navigation size={19} /></span><div><p className="kicker">Маршрут по улицам</p><h2>{destination ? destination.name : 'Куда поедем?'}</h2></div></div>
+        <div className="map-panel-heading"><span><Navigation size={19} /></span><div><p className="kicker">Маршрут по улицам</p><h2>{destination ? destination.name : 'Выбери место'}</h2></div>{destination && <button type="button" className="route-new-destination" onClick={resetRoute}><X size={17} /><span>Новый</span></button>}</div>
         {!destination ? <>
           <p className="map-panel-copy">Введи в поиск любой адрес, кафе, парк или достопримечательность. Поиск работает по всему миру, а карта открывается вокруг твоей позиции.</p>
           <div className="map-panel-tip"><Bike size={18} /><span><strong>Твоя позиция показана велосипедом</strong><small>При движении маркер обновляется по GPS.</small></span></div>

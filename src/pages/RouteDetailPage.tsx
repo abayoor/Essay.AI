@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Navigation } from 'lucide-react';
 import { Link, useLocation, useParams } from 'wouter';
 import { BikeLoader } from '../components/BikeLoader';
 import { ElevationLine } from '../components/ElevationLine';
 import { PageShell } from '../components/PageShell';
 import { RouteMap } from '../components/RouteMap';
 import { useSession } from '../lib/auth';
+import { startCycleRouteNavigation } from '../lib/activeNavigation';
 import type { CycleRoute } from '../lib/cyclingModels';
 import { loadRoute } from '../lib/routes';
 
@@ -19,7 +21,7 @@ export function RouteDetailPage() {
     : 'Пользовательский';
   return <PageShell><main className="cycle-page route-detail">
     <Link className="route-detail-back" href="/map">← К карте и маршрутам</Link>
-    <header className="page-heading route-detail-heading"><div><div className="route-detail-labels"><p className={`difficulty ${route.difficulty}`}>{labels[route.difficulty]}</p>{route.route_kind === 'curated' && <span>Выбор города</span>}</div><h1>{route.title}</h1><p>{route.region || 'Регион не указан'}{route.start_name ? ` · ${route.start_name}${route.end_name && route.end_name !== route.start_name ? ` → ${route.end_name}` : ' · круговой'}` : ''}</p></div><Link className="signal-button" href="/routes/new">Нарисовать свой</Link></header>
+    <header className="page-heading route-detail-heading"><div><div className="route-detail-labels"><p className={`difficulty ${route.difficulty}`}>{labels[route.difficulty]}</p>{route.route_kind === 'curated' && <span>Выбор города</span>}</div><h1>{route.title}</h1><p>{route.region || 'Регион не указан'}{route.start_name ? ` · ${route.start_name}${route.end_name && route.end_name !== route.start_name ? ` → ${route.end_name}` : ' · круговой'}` : ''}</p></div><div className="route-detail-actions"><button type="button" className="signal-button" onClick={() => { if (startCycleRouteNavigation(route)) navigate('/map'); }}><Navigation size={17} />В путь</button><Link className="outline-inline-button" href="/routes/new">Нарисовать свой</Link></div></header>
     <RouteMap points={route.path} className="detail-map" />
     <section className="route-data"><article><span>Дистанция</span><strong>{Number(route.distance_km).toFixed(1)} <small>км</small></strong></article><article><span>Набор высоты</span><strong>{Math.round(Number(route.elevation_gain_m))} <small>м</small></strong></article>{route.duration_minutes ? <article><span>Время в пути</span><strong>≈ {Math.round(route.duration_minutes)} <small>мин</small></strong></article> : <article><span>Точек трека</span><strong>{route.path.length}</strong></article>}<article><span>Сложность</span><strong className="route-difficulty-value">{labels[route.difficulty]}</strong></article></section>
     <div className="route-detail-copy-grid">

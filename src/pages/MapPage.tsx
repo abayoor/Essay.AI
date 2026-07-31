@@ -69,9 +69,9 @@ export function MapPage() {
   const cityRoutes = routes.filter((route) => routeMatchesCity(route, popularCity));
 
   return <PageShell><main className="cycle-page map-page">
-    <header className="page-heading map-page-heading">
-      <div><p className="kicker">Весь мир на велосипеде</p><h1>Найди адрес. Выбери лучший путь.</h1><p>Карта сама открывается вокруг тебя. Ищи любое место в мире и сравнивай самый короткий маршрут с вариантом по велоинфраструктуре.</p></div>
-      <Link className="signal-button" href="/routes/new">Нарисовать свой маршрут</Link>
+    <header className="map-page-heading">
+      <div><p className="kicker">Навигация для велосипеда</p><h1>Куда поедем?</h1><p>Места рядом — первыми. Лучший веломаршрут — в одно нажатие.</p></div>
+      <Link className="outline-inline-button" href="/routes/new">Создать маршрут</Link>
     </header>
 
     <nav className="section-tabs map-section-tabs" aria-label="Разделы карты">
