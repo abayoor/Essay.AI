@@ -1,4 +1,4 @@
-import type { Difficulty, PostComment, PostMediaType, PublicProfile, RidePostStats, RoutePostPreview, SocialPost } from './cyclingModels';
+import type { Difficulty, PostComment, PostMediaType, PublicProfile, RidePostStats, RoutePoint, RoutePostPreview, SocialPost } from './cyclingModels';
 import { loadPublicProfiles } from './rider';
 import { supabase } from './supabase';
 
@@ -51,6 +51,19 @@ function profileById(profiles: PublicProfile[]): Map<string, PublicProfile> {
   return new Map(profiles.map((profile) => [profile.id, profile]));
 }
 
+function isRoutePoint(value: unknown): value is RoutePoint {
+  if (typeof value !== 'object' || value === null) return false;
+  const point = value as Record<string, unknown>;
+  return typeof point.lat === 'number'
+    && typeof point.lng === 'number'
+    && Number.isFinite(point.lat)
+    && Number.isFinite(point.lng)
+    && point.lat >= -90
+    && point.lat <= 90
+    && point.lng >= -180
+    && point.lng <= 180;
+}
+
 function createRideStats(post: PostRow): RidePostStats | null {
   if (post.strava_distance_km === null || post.strava_elevation_gain_m === null || post.strava_duration_seconds === null) return null;
   return {
@@ -58,7 +71,7 @@ function createRideStats(post: PostRow): RidePostStats | null {
     elevationGainM: numberOrZero(post.strava_elevation_gain_m),
     durationSeconds: post.strava_duration_seconds,
     summaryPolyline: post.strava_summary_polyline,
-    track: Array.isArray(post.ride_track) ? post.ride_track.filter((point): point is { lat: number; lng: number } => typeof point === 'object' && point !== null && typeof (point as Record<string, unknown>).lat === 'number' && typeof (point as Record<string, unknown>).lng === 'number') : null,
+    track: Array.isArray(post.ride_track) ? post.ride_track.filter(isRoutePoint) : null,
   };
 }
 
@@ -67,7 +80,7 @@ function isDifficulty(value: string | null): value is Difficulty {
 }
 
 function routePoints(value: unknown): { lat: number; lng: number }[] {
-  return Array.isArray(value) ? value.filter((point): point is { lat: number; lng: number } => typeof point === 'object' && point !== null && typeof (point as Record<string, unknown>).lat === 'number' && typeof (point as Record<string, unknown>).lng === 'number') : [];
+  return Array.isArray(value) ? value.filter(isRoutePoint) : [];
 }
 
 function createRoutePreview(post: PostRow): RoutePostPreview | null {
@@ -136,32 +149,80 @@ export type CreatePostInput = {
   routePreview?: RoutePostPreview;
 };
 
+function decodeSummaryPolyline(value: string): RoutePoint[] {
+  const points: RoutePoint[] = [];
+  let index = 0;
+  let latitude = 0;
+  let longitude = 0;
+
+  function decodeComponent(): number | null {
+    let result = 0;
+    let shift = 0;
+    while (index < value.length) {
+      const code = value.charCodeAt(index);
+      index += 1;
+      if (code < 63 || code > 126) return null;
+      const byte = code - 63;
+      result += (byte & 0x1f) * 2 ** shift;
+      if (!Number.isSafeInteger(result)) return null;
+      if (byte < 0x20) return result % 2 === 1 ? -(result + 1) / 2 : result / 2;
+      shift += 5;
+      if (shift > 50) return null;
+    }
+    return null;
+  }
+
+  while (index < value.length) {
+    const latitudeDelta = decodeComponent();
+    const longitudeDelta = decodeComponent();
+    if (latitudeDelta === null || longitudeDelta === null) return [];
+    latitude += latitudeDelta;
+    longitude += longitudeDelta;
+    if (!Number.isSafeInteger(latitude) || !Number.isSafeInteger(longitude)) return [];
+    const point = { lat: latitude / 1e5, lng: longitude / 1e5 };
+    if (!isRoutePoint(point)) return [];
+    points.push(point);
+    if (points.length > 20_000) return [];
+  }
+  return points;
+}
+
+function normalizeTrack(track: RoutePoint[] | null): RoutePoint[] {
+  if (!track?.length || track.length > 20_000 || track.some((point) => !isRoutePoint(point))) return [];
+  return track.map((point) => ({ lat: point.lat, lng: point.lng }));
+}
+
+function sourceRideTrack(stats: RidePostStats | undefined): RoutePoint[] | null {
+  if (!stats) return null;
+  const recordedTrack = normalizeTrack(stats.track);
+  const source = recordedTrack.length >= 2
+    ? recordedTrack
+    : (stats.summaryPolyline ? decodeSummaryPolyline(stats.summaryPolyline) : []);
+  return source.length >= 2 && source.length <= 20_000 ? source : null;
+}
+
 export async function createPost(input: CreatePostInput): Promise<void> {
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы опубликовать пост.');
 
   const mediaUrl = input.mediaUrl || null;
-  const payload = {
-    user_id: authData.user.id,
-    caption: input.caption.trim(),
-    ride_activity_id: input.rideActivityId ?? null,
-    strava_distance_km: input.rideStats?.distanceKm ?? null,
-    strava_elevation_gain_m: input.rideStats?.elevationGainM ?? null,
-    strava_duration_seconds: input.rideStats?.durationSeconds ?? null,
-    strava_summary_polyline: input.rideStats?.summaryPolyline ?? null,
-    ride_track: input.rideStats?.track ?? null,
-    route_id: input.routePreview?.routeId ?? null,
-    route_title: input.routePreview?.title ?? null,
-    route_description: input.routePreview?.description ?? null,
-    route_path: input.routePreview?.path ?? null,
-    route_distance_km: input.routePreview?.distanceKm ?? null,
-    route_elevation_gain_m: input.routePreview?.elevationGainM ?? null,
-    route_difficulty: input.routePreview?.difficulty ?? null,
-  };
-  let { error } = await supabase.from('posts').insert({ ...payload, media_url: mediaUrl, media_type: mediaUrl ? input.mediaType ?? null : null });
-  if (error?.code === '23502' && !mediaUrl) {
-    ({ error } = await supabase.from('posts').insert({ ...payload, media_url: '', media_type: 'image' }));
-  }
+  const { error } = await supabase.rpc('create_public_post', {
+    p_caption: input.caption.trim(),
+    p_media_url: mediaUrl,
+    p_media_type: mediaUrl ? input.mediaType ?? null : null,
+    p_ride_activity_id: input.rideActivityId ?? null,
+    p_distance_km: input.rideStats?.distanceKm ?? null,
+    p_elevation_gain_m: input.rideStats?.elevationGainM ?? null,
+    p_duration_seconds: input.rideStats?.durationSeconds ?? null,
+    p_ride_track: sourceRideTrack(input.rideStats),
+    p_route_id: input.routePreview?.routeId ?? null,
+    p_route_title: input.routePreview?.title ?? null,
+    p_route_description: input.routePreview?.description ?? null,
+    p_route_path: input.routePreview?.path ?? null,
+    p_route_distance_km: input.routePreview?.distanceKm ?? null,
+    p_route_elevation_gain_m: input.routePreview?.elevationGainM ?? null,
+    p_route_difficulty: input.routePreview?.difficulty ?? null,
+  });
   if (error) throw error;
 }
 

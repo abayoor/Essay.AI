@@ -1,5 +1,5 @@
-import { useEffect, useState, type SyntheticEvent } from 'react';
-import { Bike, Map, Mountain } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
+import { Bike, LoaderCircle, Map, Mountain } from 'lucide-react';
 import { TileLayer, useMap } from 'react-leaflet';
 import { useLocaleText } from '../lib/localized';
 
@@ -30,8 +30,12 @@ const layers: Record<MapLayerStyle, {
 };
 
 function savedLayer(): MapLayerStyle {
-  const value = window.localStorage.getItem(storageKey);
-  return value === 'terrain' || value === 'cycling' ? value : 'standard';
+  try {
+    const value = window.localStorage.getItem(storageKey);
+    return value === 'standard' || value === 'cycling' ? value : 'terrain';
+  } catch {
+    return 'terrain';
+  }
 }
 
 function stopMapEvent(event: SyntheticEvent) {
@@ -51,9 +55,14 @@ function MapBackground({ style }: { style: MapLayerStyle }) {
   return null;
 }
 
+type TileEvent = { tile?: HTMLImageElement };
+
 export function CommunityTileLayer({ showSwitcher = false }: { showSwitcher?: boolean }) {
   const text = useLocaleText();
   const [style, setStyle] = useState<MapLayerStyle>(savedLayer);
+  const [loadingTiles, setLoadingTiles] = useState(0);
+  const [showTileLoading, setShowTileLoading] = useState(false);
+  const pendingTiles = useRef(new Set<HTMLImageElement>());
   const layer = layers[style];
   const options = [
     { value: 'standard' as const, label: text('Обычная', 'Қалыпты', 'Standard'), icon: Map },
@@ -63,8 +72,60 @@ export function CommunityTileLayer({ showSwitcher = false }: { showSwitcher?: bo
 
   function chooseLayer(nextStyle: MapLayerStyle) {
     setStyle(nextStyle);
-    window.localStorage.setItem(storageKey, nextStyle);
+    try { window.localStorage.setItem(storageKey, nextStyle); }
+    catch { /* The selected layer still works when storage is unavailable. */ }
   }
+
+  useEffect(() => {
+    pendingTiles.current.clear();
+    setLoadingTiles(0);
+  }, [style]);
+
+  useEffect(() => {
+    if (loadingTiles === 0) {
+      setShowTileLoading(false);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setShowTileLoading(true), 220);
+    return () => window.clearTimeout(timer);
+  }, [loadingTiles]);
+
+  const tileEvents = useMemo(() => ({
+    tileloadstart: (event: unknown) => {
+      const tile = (event as TileEvent).tile;
+      if (!tile || pendingTiles.current.has(tile)) return;
+      pendingTiles.current.add(tile);
+      setLoadingTiles(pendingTiles.current.size);
+    },
+    tileload: (event: unknown) => {
+      const tile = (event as TileEvent).tile;
+      if (!tile || !pendingTiles.current.delete(tile)) return;
+      setLoadingTiles(pendingTiles.current.size);
+    },
+    tileerror: (event: unknown) => {
+      const tile = (event as TileEvent).tile;
+      if (tile) {
+        tile.style.opacity = '0';
+        tile.setAttribute('aria-hidden', 'true');
+        pendingTiles.current.delete(tile);
+      }
+      setLoadingTiles(pendingTiles.current.size);
+    },
+    tileunload: (event: unknown) => {
+      const tile = (event as TileEvent).tile;
+      if (!tile || !pendingTiles.current.delete(tile)) return;
+      setLoadingTiles(pendingTiles.current.size);
+    },
+  }), []);
+
+  const sharedTileProps = {
+    maxZoom: 20,
+    updateWhenIdle: false,
+    updateWhenZooming: false,
+    updateInterval: 160,
+    keepBuffer: 3,
+    eventHandlers: tileEvents,
+  };
 
   return <>
     <MapBackground style={style} />
@@ -73,13 +134,22 @@ export function CommunityTileLayer({ showSwitcher = false }: { showSwitcher?: bo
       className="community-map-tiles"
       attribution={layer.attribution}
       url={layer.url}
-      maxZoom={20}
       maxNativeZoom={layer.maxNativeZoom}
-      updateWhenIdle={false}
-      updateWhenZooming={false}
-      updateInterval={180}
-      keepBuffer={2}
+      {...sharedTileProps}
     />
+    {style === 'terrain' && <TileLayer
+      key="terrain-hillshade"
+      className="community-map-tiles community-map-hillshade"
+      attribution=""
+      url="https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"
+      maxNativeZoom={20}
+      opacity={0.34}
+      {...sharedTileProps}
+    />}
+    {showTileLoading && <div className="map-tile-loading visible" role="status" aria-live="polite">
+      <LoaderCircle size={14} aria-hidden="true" />
+      <span>{text('Обновляем карту', 'Карта жаңартылуда', 'Updating map')}</span>
+    </div>}
     {showSwitcher && <div
       className="map-layer-switcher leaflet-control"
       role="group"

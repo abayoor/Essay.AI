@@ -1,3 +1,4 @@
+import { ShieldCheck } from 'lucide-react';
 import { Link } from 'wouter';
 import type { GpsTrackPoint, RideRecordingMetrics } from '../lib/cyclingModels';
 import type { SavedRecordedRide } from '../lib/recordedRides';
@@ -61,6 +62,7 @@ export function RideReviewModal(props: RideReviewModalProps) {
         <button className="outline-inline-button" disabled={props.busy} onClick={props.onSave}>{props.savedRide ? 'Сохранить изменения' : 'Сохранить в мои заезды'}</button>
         <button className="signal-button" disabled={props.busy} onClick={props.onPublish}>Опубликовать в Slipstream</button>
       </div>
+      <p className="ride-privacy-note"><ShieldCheck size={16} aria-hidden="true" />При публикации Slipstream удаляет точки в радиусе 200 м вокруг старта и финиша. Если безопасного фрагмента не остаётся, линия маршрута не публикуется.</p>
       {props.savedRide && <p className="ride-saved-note" role="status">Заезд сохранён. <Link href={`/rides/${props.savedRide.id}`}>Открыть его</Link> или поделиться ниже.</p>}
       <section className="ride-share" aria-label="Поделиться тренировкой">
         <p>Поделиться</p>

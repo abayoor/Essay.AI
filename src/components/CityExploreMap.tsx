@@ -1,6 +1,7 @@
 import { divIcon, latLngBounds } from 'leaflet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlertTriangle,
   Bike,
   Clock3,
   Gauge,
@@ -31,7 +32,9 @@ import type { RoutePoint } from '../lib/cyclingModels';
 import { routeCyclingWaypoints, type CyclingRoutePreference, type CyclingRouteResult } from '../lib/directions';
 import { reverseMapLocation, searchMapPlaces, type MapPlace, type ResolvedMapLocation } from '../lib/places';
 import { saveMapRouteDraft } from '../lib/routeDraft';
+import type { HazardReport, HazardType } from '../lib/hazards';
 import { CommunityTileLayer } from './CommunityTileLayer';
+import { HazardLayer } from './HazardLayer';
 
 type RouteOption = {
   preference: CyclingRoutePreference;
@@ -46,6 +49,26 @@ type RouteProgress = {
 
 type WakeLockSentinelLike = {
   release: () => Promise<void>;
+};
+
+type HazardAction = (hazard: HazardReport) => void | Promise<void>;
+
+type CityExploreMapProps = {
+  hazards: readonly HazardReport[];
+  currentUserId: string | null;
+  busyHazardId: string | null;
+  hazardPickMode: boolean;
+  onConfirmHazard: HazardAction;
+  onUnconfirmHazard: HazardAction;
+  onResolveHazard: HazardAction;
+  onOpenHazardReport: () => void;
+  onPickHazardLocation: (point: RoutePoint) => void;
+  onRiderLocationChange: (point: RoutePoint | null) => void;
+};
+
+type RouteSafety = {
+  hazards: HazardReport[];
+  score: number;
 };
 
 const riderIcon = divIcon({
@@ -71,6 +94,46 @@ function distanceMeters(first: RoutePoint, second: RoutePoint): number {
   const value = Math.sin(dLat / 2) ** 2
     + Math.cos(firstLat) * Math.cos(secondLat) * Math.sin(dLng / 2) ** 2;
   return radius * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+}
+
+function pointToSegmentDistanceMeters(point: RoutePoint, start: RoutePoint, end: RoutePoint): number {
+  const latitudeScale = 111_320;
+  const longitudeScale = latitudeScale * Math.max(.05, Math.cos(point.lat * Math.PI / 180));
+  const startX = (start.lng - point.lng) * longitudeScale;
+  const startY = (start.lat - point.lat) * latitudeScale;
+  const endX = (end.lng - point.lng) * longitudeScale;
+  const endY = (end.lat - point.lat) * latitudeScale;
+  const segmentX = endX - startX;
+  const segmentY = endY - startY;
+  const segmentLengthSquared = segmentX ** 2 + segmentY ** 2;
+  if (segmentLengthSquared === 0) return Math.hypot(startX, startY);
+  const projection = Math.max(0, Math.min(1, -(startX * segmentX + startY * segmentY) / segmentLengthSquared));
+  return Math.hypot(startX + projection * segmentX, startY + projection * segmentY);
+}
+
+function nearestRouteDistanceMeters(point: RoutePoint, route: RoutePoint[], fromIndex = 0): number {
+  if (route.length === 0) return Number.POSITIVE_INFINITY;
+  if (route.length === 1) return distanceMeters(point, route[0]);
+  let closest = Number.POSITIVE_INFINITY;
+  for (let index = Math.max(0, fromIndex); index < route.length - 1; index += 1) {
+    closest = Math.min(closest, pointToSegmentDistanceMeters(point, route[index], route[index + 1]));
+    if (closest < 4) break;
+  }
+  return closest;
+}
+
+const hazardPenalty: Record<HazardType, number> = {
+  pothole: 12,
+  no_lighting: 9,
+  glass: 16,
+  aggressive_dogs: 18,
+  road_closed: 34,
+};
+
+function calculateRouteSafety(route: RoutePoint[], hazards: readonly HazardReport[]): RouteSafety {
+  const nearby = hazards.filter((hazard) => nearestRouteDistanceMeters(hazard.location, route) <= 45);
+  const penalty = nearby.reduce((total, hazard) => total + hazardPenalty[hazard.hazardType] + Math.min(8, hazard.confirmations * 2), 0);
+  return { hazards: nearby, score: Math.max(20, 100 - penalty) };
 }
 
 function bearingDegrees(first: RoutePoint, second: RoutePoint): number {
@@ -184,13 +247,47 @@ function StartPicker({ enabled, onPick }: { enabled: boolean; onPick: (point: Ro
   return null;
 }
 
+function HazardPointPicker({ enabled, onPick }: { enabled: boolean; onPick: (point: RoutePoint) => void }) {
+  const map = useMapEvents({
+    click(event) {
+      if (enabled) onPick({ lat: event.latlng.lat, lng: event.latlng.lng });
+    },
+  });
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const container = map.getContainer();
+    function pickMapCenter(event: KeyboardEvent) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      const center = map.getCenter();
+      onPick({ lat: center.lat, lng: center.lng });
+    }
+    container.addEventListener('keydown', pickMapCenter);
+    return () => container.removeEventListener('keydown', pickMapCenter);
+  }, [enabled, map, onPick]);
+
+  return null;
+}
+
 function preferenceCopy(preference: CyclingRoutePreference, text: LocaleText): { title: string; description: string; icon: typeof Route } {
   return preference === 'recommended'
     ? { title: text('Лучший для велосипеда', 'Велосипедке ең қолайлы', 'Best for cycling'), description: text('Приоритет велодорожек и подходящих улиц', 'Веложолдар мен қолайлы көшелерге басымдық', 'Prioritizes cycleways and suitable streets'), icon: ShieldCheck }
     : { title: text('Самый короткий', 'Ең қысқа', 'Shortest'), description: text('Минимальная дистанция по уличной сети', 'Көше желісі бойынша ең қысқа қашықтық', 'Minimum distance on the street network'), icon: Timer };
 }
 
-export function CityExploreMap() {
+export function CityExploreMap({
+  hazards,
+  currentUserId,
+  busyHazardId,
+  hazardPickMode,
+  onConfirmHazard,
+  onUnconfirmHazard,
+  onResolveHazard,
+  onOpenHazardReport,
+  onPickHazardLocation,
+  onRiderLocationChange,
+}: CityExploreMapProps) {
   const [, navigate] = useLocation();
   const { locale } = usePreferences();
   const text = useLocaleText();
@@ -226,6 +323,13 @@ export function CityExploreMap() {
   const lastGpsPoint = useRef<RoutePoint | null>(null);
   const reverseLookupPoint = useRef<RoutePoint | null>(null);
   const wakeLock = useRef<WakeLockSentinelLike | null>(null);
+  const warnedHazards = useRef(new Set<string>());
+  const hazardsRef = useRef(hazards);
+  const riderLocationRef = useRef<RoutePoint | null>(riderLocation);
+  const onRiderLocationChangeRef = useRef(onRiderLocationChange);
+  hazardsRef.current = hazards;
+  riderLocationRef.current = riderLocation;
+  onRiderLocationChangeRef.current = onRiderLocationChange;
 
   const activeRoute = useMemo(
     () => routeOptions.find((option) => option.preference === activePreference) ?? routeOptions[0] ?? null,
@@ -241,6 +345,21 @@ export function CityExploreMap() {
     () => activeRoute && progress ? nextNavigationInstruction(activeRoute.result.points, progress, text) : null,
     [activeRoute, progress, text],
   );
+
+  const routeSafety = useMemo(() => new Map(
+    routeOptions.map((option) => [option.preference, calculateRouteSafety(option.result.points, hazards)]),
+  ), [hazards, routeOptions]);
+
+  const upcomingHazard = useMemo(() => {
+    if (!navigationActive || !activeRoute || !progress || !riderLocation) return null;
+    const candidates = hazards.flatMap((hazard) => {
+      const riderDistanceM = distanceMeters(riderLocation, hazard.location);
+      if (riderDistanceM > 300) return [];
+      const routeDistanceM = nearestRouteDistanceMeters(hazard.location, activeRoute.result.points, progress.closestIndex);
+      return routeDistanceM <= 45 ? [{ hazard, riderDistanceM }] : [];
+    });
+    return candidates.sort((first, second) => first.riderDistanceM - second.riderDistanceM)[0] ?? null;
+  }, [activeRoute, hazards, navigationActive, progress, riderLocation]);
 
   const navigationRiderIcon = useMemo(() => divIcon({
     className: 'navigation-rider-marker',
@@ -267,7 +386,9 @@ export function CityExploreMap() {
         setCurrentSpeedKmh(Math.max(0, position.coords.speed * 3.6));
       }
       lastGpsPoint.current = point;
+      riderLocationRef.current = point;
       setRiderLocation(point);
+      onRiderLocationChangeRef.current(point);
       setLocationStatus(`GPS ±${Math.round(position.coords.accuracy)} ${text('м', 'м', 'm')}`);
       if (!hasCenteredOnRider.current) {
         hasCenteredOnRider.current = true;
@@ -286,6 +407,16 @@ export function CityExploreMap() {
   }, [locale, text]);
 
   useEffect(() => {
+    if (!upcomingHazard || warnedHazards.current.has(upcomingHazard.hazard.id)) return;
+    warnedHazards.current.add(upcomingHazard.hazard.id);
+    if (typeof navigator.vibrate === 'function') navigator.vibrate([140, 80, 140]);
+  }, [upcomingHazard]);
+
+  useEffect(() => {
+    if (!navigationActive) warnedHazards.current.clear();
+  }, [navigationActive]);
+
+  useEffect(() => {
     const point = reverseLookupPoint.current;
     if (!point) return undefined;
     const controller = new AbortController();
@@ -294,20 +425,40 @@ export function CityExploreMap() {
   }, [locale]);
 
   useEffect(() => {
-    if (!navigationActive) {
-      if (wakeLock.current) void wakeLock.current.release().catch(() => undefined);
-      wakeLock.current = null;
-      return undefined;
-    }
+    if (!navigationActive) return undefined;
+    let disposed = false;
     const wakeLockNavigator = navigator as Navigator & {
       wakeLock?: { request: (type: 'screen') => Promise<WakeLockSentinelLike> };
     };
-    void wakeLockNavigator.wakeLock?.request('screen')
-      .then((sentinel) => { wakeLock.current = sentinel; })
-      .catch(() => undefined);
-    return () => {
-      if (wakeLock.current) void wakeLock.current.release().catch(() => undefined);
+
+    async function releaseWakeLock() {
+      const activeLock = wakeLock.current;
       wakeLock.current = null;
+      if (activeLock) await activeLock.release().catch(() => undefined);
+    }
+
+    async function requestWakeLock() {
+      if (disposed || document.visibilityState !== 'visible' || wakeLock.current || !wakeLockNavigator.wakeLock) return;
+      try {
+        const sentinel = await wakeLockNavigator.wakeLock.request('screen');
+        if (disposed) await sentinel.release().catch(() => undefined);
+        else wakeLock.current = sentinel;
+      } catch {
+        // Browsers and low-power modes may refuse a wake lock.
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') void requestWakeLock();
+      else void releaseWakeLock();
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    void requestWakeLock();
+    return () => {
+      disposed = true;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      void releaseWakeLock();
     };
   }, [navigationActive]);
 
@@ -321,7 +472,7 @@ export function CityExploreMap() {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       setSearching(true);
-      void searchMapPlaces(value, riderLocation, locale, controller.signal)
+      void searchMapPlaces(value, riderLocationRef.current, locale, controller.signal)
         .then(setSearchResults)
         .catch((error: unknown) => {
           if (!(error instanceof DOMException && error.name === 'AbortError')) setSearchResults([]);
@@ -332,7 +483,7 @@ export function CityExploreMap() {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [locale, query, riderLocation]);
+  }, [locale, query]);
 
   useEffect(() => {
     if (!navigationActive || !destination || !riderLocation || !progress) return;
@@ -384,7 +535,14 @@ export function CityExploreMap() {
         return;
       }
       setRouteOptions(options);
-      setActivePreference(options.some((option) => option.preference === 'recommended') ? 'recommended' : options[0].preference);
+      const safestOption = options.reduce((safest, option) => {
+        const safestScore = calculateRouteSafety(safest.result.points, hazardsRef.current).score;
+        const optionScore = calculateRouteSafety(option.result.points, hazardsRef.current).score;
+        if (optionScore > safestScore) return option;
+        if (optionScore === safestScore && option.preference === 'recommended') return option;
+        return safest;
+      }, options[0]);
+      setActivePreference(safestOption.preference);
     }).finally(() => {
       if (requestId === routeRequest.current) setRouting(false);
     });
@@ -408,7 +566,9 @@ export function CityExploreMap() {
 
   function chooseManualStart(point: RoutePoint) {
     if (riderLocation) return;
+    riderLocationRef.current = point;
     setRiderLocation(point);
+    onRiderLocationChangeRef.current(point);
     setRoutingOrigin(point);
     setLocationStatus(text('Старт указан вручную', 'Бастау нүктесі қолмен таңдалды', 'Start set manually'));
     reverseLookupPoint.current = point;
@@ -469,7 +629,7 @@ export function CityExploreMap() {
     { label: text('Веломастерские', 'Велошеберханалар', 'Bike repair'), query: text('веломастерская', 'велошеберхана', 'bike repair'), icon: Wrench },
   ];
 
-  return <section className={`city-explore global-city-map${navigationActive ? ' navigation-active' : ''}`}>
+  return <section className={`city-explore global-city-map${navigationActive ? ' navigation-active' : ''}${hazardPickMode ? ' safety-pick-mode' : ''}`}>
     <div className="city-map-layout global-map-layout">
       <div className="global-map-search">
         <div className="map-place-search">
@@ -484,22 +644,40 @@ export function CityExploreMap() {
         <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || text('Твоё местоположение', 'Сенің орналасқан жерің', 'Your location')}</strong><small>{locationStatus}</small></div><button type="button" onClick={recenterOnRider} aria-label={text('Показать моё местоположение', 'Орналасқан жерімді көрсету', 'Show my location')}><LocateFixed size={18} /></button></div>
         {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, query: quickQuery, icon: Icon }) => <button type="button" key={label} onClick={() => setQuery(quickQuery)}><Icon size={14} />{label}</button>)}</div>}
       </div>
-      <div className="city-map-canvas global-map-canvas">
+      <div className="city-map-canvas global-map-canvas" role="region" aria-label={text('Интерактивная велосипедная карта', 'Интерактивті велосипед картасы', 'Interactive cycling map')}>
         <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.125} zoomDelta={0.25} wheelPxPerZoomLevel={360} touchZoom="center" scrollWheelZoom zoomControl={false} className="city-leaflet-map global-leaflet-map">
           <CommunityTileLayer showSwitcher />
           {!navigationActive && <ZoomControl position="bottomright" />}
-          <StartPicker enabled={!riderLocation} onPick={chooseManualStart} />
+          <StartPicker enabled={!riderLocation && !hazardPickMode} onPick={chooseManualStart} />
+          <HazardPointPicker enabled={hazardPickMode} onPick={onPickHazardLocation} />
           <MapViewport focus={focusPoint} route={visibleRoute} recenterRequest={recenterRequest} navigationActive={navigationActive} />
           <NavigationCamera active={navigationActive} rider={riderLocation} />
-          {riderLocation && <Marker position={[riderLocation.lat, riderLocation.lng]} icon={navigationActive ? navigationRiderIcon : riderIcon} zIndexOffset={1000}><Popup>{text('Твоё текущее местоположение', 'Сенің қазіргі орналасқан жерің', 'Your current location')}</Popup></Marker>}
-          {destination && <Marker position={[destination.lat, destination.lng]} icon={destinationIcon} zIndexOffset={900}><Popup><strong>{destination.name}</strong><br />{destination.subtitle}</Popup></Marker>}
-          {routeOptions.map((option) => <Polyline key={option.preference} positions={option.result.points.map((point) => [point.lat, point.lng] as [number, number])} pathOptions={{ color: option.preference === 'recommended' ? '#1b8577' : '#6f5aa8', weight: activePreference === option.preference ? (navigationActive ? 9 : 7) : 4, opacity: activePreference === option.preference ? 0.95 : (navigationActive ? 0 : 0.45), lineCap: 'round', lineJoin: 'round' }} eventHandlers={{ click: () => !navigationActive && setActivePreference(option.preference) }} />)}
+          <HazardLayer
+            hazards={hazards}
+            busyHazardId={busyHazardId}
+            interactive={!hazardPickMode && !navigationActive}
+            canResolve={(hazard) => hazard.reporterId === currentUserId}
+            onConfirm={onConfirmHazard}
+            onUnconfirm={onUnconfirmHazard}
+            onResolve={onResolveHazard}
+          />
+          {riderLocation && <Marker position={[riderLocation.lat, riderLocation.lng]} icon={navigationActive ? navigationRiderIcon : riderIcon} interactive={!hazardPickMode} keyboard={!hazardPickMode} zIndexOffset={1000}><Popup>{text('Твоё текущее местоположение', 'Сенің қазіргі орналасқан жерің', 'Your current location')}</Popup></Marker>}
+          {destination && <Marker position={[destination.lat, destination.lng]} icon={destinationIcon} interactive={!hazardPickMode} keyboard={!hazardPickMode} zIndexOffset={900}><Popup><strong>{destination.name}</strong><br />{destination.subtitle}</Popup></Marker>}
+          {routeOptions.map((option) => <Polyline key={option.preference} positions={option.result.points.map((point) => [point.lat, point.lng] as [number, number])} interactive={!hazardPickMode} pathOptions={{ color: option.preference === 'recommended' ? '#1b8577' : '#6f5aa8', weight: activePreference === option.preference ? (navigationActive ? 9 : 7) : 4, opacity: activePreference === option.preference ? 0.95 : (navigationActive ? 0 : 0.45), lineCap: 'round', lineJoin: 'round' }} eventHandlers={{ click: () => !navigationActive && setActivePreference(option.preference) }} />)}
         </MapContainer>
-        {!riderLocation && <div className="map-start-hint"><MapPin size={16} />{text('Нажми на карту, чтобы указать старт', 'Бастау нүктесін таңдау үшін картаны бас', 'Tap the map to set a start')}</div>}
+        {!riderLocation && !hazardPickMode && <div className="map-start-hint"><MapPin size={16} />{text('Нажми на карту, чтобы указать старт', 'Бастау нүктесін таңдау үшін картаны бас', 'Tap the map to set a start')}</div>}
+        {hazardPickMode && <div className="safety-map-pick-hint" role="status"><MapPin size={17} /><span>{text('Нажми на место или выбери центр карты клавишей Enter', 'Орынды бас немесе Enter арқылы карта ортасын таңда', 'Tap the place or press Enter to use the map center')}</span><button type="button" aria-label={text('Отменить выбор точки', 'Нүкте таңдаудан бас тарту', 'Cancel location picking')} onClick={onOpenHazardReport}><X size={16} aria-hidden="true" /></button></div>}
+        {!hazardPickMode && <button type="button" className={`safety-report-trigger${navigationActive ? ' is-navigation' : ''}`} onClick={onOpenHazardReport}><AlertTriangle size={18} aria-hidden="true" /><span>{text('Сообщить об опасности', 'Қауіп туралы хабарлау', 'Report hazard')}</span></button>}
 
         {navigationActive && instruction && destination && <div className="navigation-instruction-card" role="status">
           <span className={`navigation-turn ${instruction.turn}`}><Navigation size={30} /></span>
           <div><strong>{instruction.text}</strong><small>{instruction.distanceM > 0 ? `${text('через', 'кейін', 'in')} ${formatDistance(instruction.distanceM, locale)}` : destination.name}</small></div>
+        </div>}
+
+        {navigationActive && upcomingHazard && <div className="safety-navigation-warning" role="status" aria-live="polite" aria-label={text('Опасность впереди. Снизь скорость.', 'Алда қауіп бар. Жылдамдықты азайт.', 'Hazard ahead. Slow down.')}>
+          <span aria-hidden="true"><AlertTriangle size={22} /></span>
+          <div aria-hidden="true"><strong>{text('Опасность впереди', 'Алда қауіп бар', 'Hazard ahead')}</strong><small>{Math.round(upcomingHazard.riderDistanceM)} {text('м', 'м', 'm')} · {text('снизь скорость', 'жылдамдықты азайт', 'slow down')}</small></div>
+          <b aria-hidden="true">{upcomingHazard.hazard.confirmations}</b>
         </div>}
 
         {navigationActive && activeRoute && progress && <div className="navigation-bottom-sheet">
@@ -528,13 +706,20 @@ export function CityExploreMap() {
             const copy = preferenceCopy(option.preference, text);
             const Icon = copy.icon;
             const duration = estimatedRideMinutes(option.result);
-            return <button type="button" className={activePreference === option.preference ? 'active' : ''} key={option.preference} onClick={() => setActivePreference(option.preference)}><Icon size={19} /><span><strong>{copy.title}</strong><small>{copy.description}</small></span><b>{formatDistance(option.result.distanceKm * 1000, locale)}<small>≈ {duration} {text('мин', 'мин', 'min')} · ↑ {Math.round(option.result.elevationGainM)} {text('м', 'м', 'm')}</small></b></button>;
+            const safety = routeSafety.get(option.preference) ?? { hazards: [], score: 100 };
+            return <button type="button" aria-pressed={activePreference === option.preference} className={activePreference === option.preference ? 'active' : ''} key={option.preference} onClick={() => setActivePreference(option.preference)}><Icon size={19} /><span><strong>{copy.title}</strong><small>{copy.description}</small><em className={`route-safety-score${safety.score < 70 ? ' is-caution' : ''}`}><ShieldCheck size={12} />{safety.score}/100 · {safety.hazards.length ? `${safety.hazards.length} ${text('опасн.', 'қауіп', 'hazards')}` : text('путь чист', 'жол таза', 'clear')}</em></span><b>{formatDistance(option.result.distanceKm * 1000, locale)}<small>≈ {duration} {text('мин', 'мин', 'min')} · ↑ {Math.round(option.result.elevationGainM)} {text('м', 'м', 'm')}</small></b></button>;
           })}</div>}
           {activeRoute && <div className="route-navigation-summary">
             <span><Route size={17} /><small>{text('Путь', 'Жол', 'Distance')}</small><strong>{formatDistance(activeRoute.result.distanceKm * 1000, locale)}</strong></span>
             <span><Mountain size={17} /><small>{text('Подъём', 'Өрлеу', 'Climb')}</small><strong>{Math.round(activeRoute.result.elevationGainM)} {text('м', 'м', 'm')}</strong></span>
             <span><Clock3 size={17} /><small>{text('В дороге', 'Жолда', 'Ride time')}</small><strong>≈ {totalMinutes} {text('мин', 'мин', 'min')}</strong></span>
             <span><Gauge size={17} /><small>{text('Прибытие', 'Келу', 'Arrival')}</small><strong>{arrivalTime(totalMinutes, locale)}</strong></span>
+          </div>}
+          {activeRoute && <div className={`route-safety-summary${(routeSafety.get(activeRoute.preference)?.score ?? 100) < 70 ? ' is-caution' : ''}`}>
+            <ShieldCheck size={18} aria-hidden="true" />
+            <span><strong>{text('Safety Score', 'Safety Score', 'Safety Score')} {routeSafety.get(activeRoute.preference)?.score ?? 100}/100</strong><small>{(routeSafety.get(activeRoute.preference)?.hazards.length ?? 0) === 0
+              ? text('На пути нет свежих отметок сообщества.', 'Жолда қауымдастықтың жаңа белгілері жоқ.', 'No fresh community reports are on this route.')
+              : text(`Опасностей рядом с путём: ${routeSafety.get(activeRoute.preference)?.hazards.length ?? 0}.`, `Бағыт маңындағы қауіптер: ${routeSafety.get(activeRoute.preference)?.hazards.length ?? 0}.`, `${routeSafety.get(activeRoute.preference)?.hazards.length ?? 0} hazards are close to this route.`)}</small></span>
           </div>}
           <button type="button" className="start-navigation-button" disabled={!activeRoute || !riderLocation || routing} onClick={startNavigation}><Play size={19} fill="currentColor" />{text('В путь', 'Жолға шығу', 'Start')}</button>
           <div className="map-panel-actions global-route-actions"><button type="button" className="outline-inline-button" disabled={!riderLocation || routing} onClick={() => riderLocation && setRoutingOrigin({ ...riderLocation })}><RefreshCw size={16} />{text('Перестроить', 'Қайта құру', 'Reroute')}</button><button type="button" className="signal-button" disabled={!activeRoute || routing} onClick={saveRoute}>{text('Сохранить маршрут', 'Бағытты сақтау', 'Save route')}</button></div>

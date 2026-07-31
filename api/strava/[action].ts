@@ -27,6 +27,7 @@ type StravaActivity = {
   id: number;
   name: string;
   start_date: string;
+  start_date_local?: string;
   distance: number;
   total_elevation_gain: number;
   moving_time: number;
@@ -210,7 +211,7 @@ async function activities(request: Request, settings: ServerConfig): Promise<Res
   return json({ activities: source.map((activity) => ({
     id: activity.id,
     name: activity.name,
-    startDate: activity.start_date,
+    startDate: activity.start_date_local ?? activity.start_date,
     distanceKm: activity.distance / 1000,
     elevationGainM: activity.total_elevation_gain,
     durationSeconds: activity.moving_time,

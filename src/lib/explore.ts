@@ -1,13 +1,5 @@
 import { supabase } from './supabase';
 
-export type HazardOverview = {
-  id: string;
-  hazard_type: 'pothole' | 'no_lighting' | 'glass' | 'aggressive_dogs' | 'road_closed';
-  description: string | null;
-  status: 'active' | 'resolved';
-  upvotes: number;
-};
-
 export type MarketplaceOverview = {
   id: string;
   title: string;
@@ -24,15 +16,10 @@ export type CompetitionOverview = {
   events: { id: string; title: string; event_type: 'race' | 'gran_fondo' | 'club_ride'; event_date: string; location: string | null; registration_url: string | null; description: string | null }[];
 };
 
-export async function loadMapOverview(): Promise<{ hazards: HazardOverview[]; marketplace: MarketplaceOverview[] }> {
-  const [hazardsResult, marketplaceResult] = await Promise.all([
-    supabase.from('hazard_reports').select('id, hazard_type, description, status, upvotes').eq('status', 'active').order('created_at', { ascending: false }).limit(30),
-    supabase.from('marketplace_listings').select('id, title, description, price, category, condition, city, photos').eq('status', 'active').order('created_at', { ascending: false }).limit(24),
-  ]);
-  if (hazardsResult.error) throw hazardsResult.error;
+export async function loadMapOverview(): Promise<{ marketplace: MarketplaceOverview[] }> {
+  const marketplaceResult = await supabase.from('marketplace_listings').select('id, title, description, price, category, condition, city, photos').eq('status', 'active').order('created_at', { ascending: false }).limit(24);
   if (marketplaceResult.error) throw marketplaceResult.error;
   return {
-    hazards: (hazardsResult.data ?? []) as HazardOverview[],
     marketplace: (marketplaceResult.data ?? []) as MarketplaceOverview[],
   };
 }

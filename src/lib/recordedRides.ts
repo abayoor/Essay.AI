@@ -68,6 +68,14 @@ function rideFromRow(row: RideRow): RideActivity {
 
 const rideFields = 'id, title, description, distance_km, duration_seconds, moving_time_seconds, elevation_gain_m, avg_speed_kmh, max_speed_kmh, pace_min_per_km, ride_date, created_at, gps_track';
 
+function localDateKey(timestamp: number): string {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function limitStoredTrack(track: GpsTrackPoint[], limit = 2500): GpsTrackPoint[] {
   if (track.length <= limit) return track;
   const lastIndex = track.length - 1;
@@ -94,7 +102,7 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
     distance_km: savedMetrics.distanceKm,
     duration_seconds: Math.max(1, Math.round(savedMetrics.elapsedTimeSeconds)),
     elevation_gain_m: savedMetrics.elevationGainM,
-    ride_date: new Date(track[0].timestamp).toISOString().slice(0, 10),
+    ride_date: localDateKey(track[0].timestamp),
     source: 'gps',
     gps_track: simplifiedTrack,
     avg_speed_kmh: savedMetrics.averageSpeedKmh,

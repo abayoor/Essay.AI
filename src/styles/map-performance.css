@@ -1,0 +1,96 @@
+.city-leaflet-map,
+.route-map,
+.record-leaflet-map {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(34, 124, 108, .2), transparent 32%),
+    linear-gradient(145deg, #d9e5e1, #c8d8d3);
+}
+
+.community-map-tiles {
+  transition: opacity 180ms ease-out;
+}
+
+.community-map-hillshade {
+  filter: contrast(1.24) saturate(.6);
+  mix-blend-mode: multiply;
+}
+
+.map-style-terrain .community-map-tiles:not(.community-map-hillshade) {
+  filter: contrast(1.06) saturate(1.12);
+}
+
+.map-tile-loading {
+  align-items: center;
+  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(10, 31, 26, .1);
+  color: var(--muted);
+  display: inline-flex;
+  font-size: .67rem;
+  font-weight: 750;
+  gap: 6px;
+  opacity: 0;
+  padding: 7px 10px;
+  pointer-events: none;
+  position: absolute;
+  right: 13px;
+  top: 13px;
+  transform: translateY(-4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  z-index: 700;
+}
+
+.map-tile-loading.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.map-tile-loading svg {
+  animation: slipstream-map-spin .8s linear infinite;
+  color: var(--signal);
+}
+
+.navigation-active .map-tile-loading {
+  display: none;
+}
+
+@keyframes slipstream-map-spin {
+  to { transform: rotate(360deg); }
+}
+
+:root[data-theme='dark'] .city-leaflet-map,
+:root[data-theme='dark'] .route-map,
+:root[data-theme='dark'] .record-leaflet-map {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(65, 161, 143, .2), transparent 32%),
+    linear-gradient(145deg, #17231f, #101916);
+}
+
+:root[data-theme='dark'] .community-map-hillshade {
+  mix-blend-mode: soft-light;
+  opacity: .44 !important;
+}
+
+@media (max-width: 680px) {
+  .map-tile-loading {
+    right: 10px;
+    top: 10px;
+  }
+
+  .map-tile-loading span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-map-tiles,
+  .map-tile-loading {
+    transition: none;
+  }
+
+  .map-tile-loading svg {
+    animation: none;
+  }
+}
