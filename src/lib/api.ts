@@ -38,7 +38,8 @@ export async function apiFetch(path: string, init?: RequestInit, timeoutMs = 30_
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new Error('Сервер не ответил вовремя. Попробуй ещё раз.');
     }
-    throw error;
+    void error;
+    throw new Error('Нет связи с сервером. Проверь интернет и попробуй ещё раз.');
   } finally {
     clearTimeout(timeout);
   }

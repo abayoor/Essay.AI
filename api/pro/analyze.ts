@@ -1,8 +1,6 @@
 import {
   authenticatedUser,
-  assertBillingProviderRateLimit,
   billingConfigured,
-  BillingRateLimitError,
   consumeProAnalysisCredit,
   findProSubscription,
   hasDatabaseProAccess,
@@ -196,7 +194,6 @@ async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Метод не поддерживается.' }, 405);
   try {
     const user = await authenticatedUser(request);
-    await assertBillingProviderRateLimit(user);
     const promotionalAccess = hasUniversalPromoAccess(request)
       || await hasPreviewTesterAccess(user)
       || await hasDatabaseProAccess(user);
@@ -256,13 +253,13 @@ async function handler(request: Request): Promise<Response> {
         },
         contents: [{ role: 'user', parts: [{ text: JSON.stringify(cleanInput) }] }],
         generationConfig: {
-          maxOutputTokens: 4200,
+          maxOutputTokens: 3000,
           thinkingConfig: { thinkingBudget: 0 },
           responseMimeType: 'application/json',
           responseSchema: analysisSchema,
         },
         }),
-      }, 45_000);
+      }, 35_000);
       const payload: unknown = await response.json().catch(() => null);
       if (!response.ok) {
         return json({ error: response.status === 429 ? 'ИИ занят или закончилась квота. Попробуй позже.' : 'ИИ не смог выполнить анализ.' }, 502);
@@ -288,16 +285,6 @@ async function handler(request: Request): Promise<Response> {
           'content-type': 'application/json; charset=utf-8',
           'cache-control': 'private, no-store',
           'retry-after': String(error.retryAfterSeconds),
-        },
-      });
-    }
-    if (error instanceof BillingRateLimitError) {
-      return new Response(JSON.stringify({ error: message }), {
-        status: 429,
-        headers: {
-          'content-type': 'application/json; charset=utf-8',
-          'cache-control': 'private, no-store',
-          'retry-after': '60',
         },
       });
     }

@@ -110,12 +110,19 @@ export async function requestProBikeAnalysis(input: ProRiderInput): Promise<ProB
       ...proPromoRequestHeaders(),
     },
     body: JSON.stringify(input),
-  }, 60_000);
-  const payload: unknown = await response.json().catch(() => null);
+  }, 70_000);
+  const rawPayload = await response.text();
+  const payload: unknown = (() => {
+    try { return JSON.parse(rawPayload); } catch { return null; }
+  })();
   if (!response.ok) {
     const message = isRecord(payload) && typeof payload.error === 'string'
       ? payload.error
-      : 'Не удалось выполнить Pro-анализ.';
+      : response.status === 504
+        ? 'ИИ не успел закончить отчёт. Попробуй ещё раз — данные анкеты не потеряны.'
+        : response.status >= 500
+          ? `Сервер Pro временно недоступен (код ${response.status}). Попробуй ещё раз через минуту.`
+          : `Не удалось запустить Pro-анализ (код ${response.status}). Обнови страницу и повтори.`;
     throw new Error(message);
   }
   if (!isAnalysis(payload)) throw new Error('ИИ вернул неполный анализ. Попробуй ещё раз.');

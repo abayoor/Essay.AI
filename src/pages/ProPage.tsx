@@ -5,8 +5,9 @@ import {
   BrainCircuit,
   Check,
   ChevronRight,
-  CloudSun,
   CreditCard,
+  Droplets,
+  Gauge,
   HeartPulse,
   LockKeyhole,
   Route,
@@ -18,6 +19,7 @@ import {
 import { Link } from 'wouter';
 import { PageShell } from '../components/PageShell';
 import { ProAnalyzer } from '../components/ProAnalyzer';
+import { ProToolkit } from '../components/ProToolkit';
 import { useSession } from '../lib/auth';
 import { useLocaleText } from '../lib/localized';
 import { usePreferences } from '../lib/preferences';
@@ -115,6 +117,36 @@ export function ProPage() {
         'Practical hydration, pre/post-ride food, rest and easy-day guidance based on ride duration.',
       ),
       detail: text('Спортивные рекомендации, не медицинская диагностика', 'Спорттық кеңес, медициналық диагноз емес', 'Training guidance, not medical diagnosis'),
+    },
+    {
+      icon: <Droplets size={22} />,
+      title: text('План воды и питания', 'Су мен тамақ жоспары', 'Hydration and fuel planner'),
+      description: text(
+        'Введи длительность, погоду и интенсивность — получишь воду, количество фляг, углеводы и окно восстановления.',
+        'Ұзақтықты, ауа райын және қарқынды енгіз — су, бөтелке саны, көмірсу және қалпына келу уақытын аласың.',
+        'Enter duration, weather and intensity to get water, bottle count, carbohydrates and a recovery window.',
+      ),
+      detail: text('Мгновенный расчёт перед каждой поездкой', 'Әр сапар алдындағы жедел есеп', 'An instant calculation before every ride'),
+    },
+    {
+      icon: <Gauge size={22} />,
+      title: text('Калькулятор давления', 'Қысым калькуляторы', 'Tire pressure calculator'),
+      description: text(
+        'Стартовое давление отдельно для переднего и заднего колеса с учётом веса, ширины шины, покрытия и бескамерной установки.',
+        'Салмақты, шина енін, жолды және камерасыз орнатуды ескеретін алдыңғы және артқы қысым.',
+        'Starting front and rear pressure based on weight, tire width, surface and tubeless setup.',
+      ),
+      detail: text('Bar и PSI с напоминанием о пределах шины', 'Bar және PSI, шина шегі туралы ескертумен', 'Bar and PSI with tire-limit reminders'),
+    },
+    {
+      icon: <Activity size={22} />,
+      title: text('Готовность к поездке', 'Сапарға дайындық', 'Ride readiness'),
+      description: text(
+        'Быстрая оценка дня по сну, усталости и планируемой нагрузке: ехать по плану, снизить темп или восстановиться.',
+        'Ұйқы, шаршау және жоспарланған жүктеме бойынша күнді бағалау: жоспармен жүру, қарқынды азайту немесе демалу.',
+        'A quick daily check using sleep, fatigue and planned load: ride as planned, ease off or recover.',
+      ),
+      detail: text('Работает без ожидания ответа ИИ', 'AI жауабын күтпей жұмыс істейді', 'Works without waiting for an AI response'),
     },
   ], [text]);
 
@@ -242,7 +274,7 @@ export function ProPage() {
             'One personal cycling assistant for bike choice, training, routes, maintenance and recovery.',
           )}</p>
           <div className="pro-hero-points" aria-label={text('Главные преимущества', 'Негізгі артықшылықтар', 'Key benefits')}>
-            <span><Check size={15} /> {text('Без рекламы', 'Жарнамасыз', 'No ads')}</span>
+            <span><Check size={15} /> {text('4 инструмента Ride Lab', '4 Ride Lab құралы', '4 Ride Lab tools')}</span>
             <span><Check size={15} /> {text('30 полных ИИ-разборов в месяц', 'Айына 30 толық AI талдауы', '30 full AI analyses each month')}</span>
             <span><Check size={15} /> {text('Отмена в любой момент', 'Кез келген уақытта тоқтату', 'Cancel anytime')}</span>
           </div>
@@ -339,6 +371,8 @@ export function ProPage() {
 
       <ProAnalyzer active={active} statusLoading={subscriptionLoading} />
 
+      <ProToolkit active={active} />
+
       <section className="pro-benefits" aria-labelledby="pro-benefits-title">
         <header>
           <p className="pro-eyebrow"><BrainCircuit size={14} /> {text('Внутри Pro', 'Pro ішінде', 'Inside Pro')}</p>
@@ -356,23 +390,6 @@ export function ProPage() {
             <p>{feature.description}</p>
             <small><Check size={13} /> {feature.detail}</small>
           </article>)}
-        </div>
-      </section>
-
-      <section className="pro-weekly-preview">
-        <div>
-          <p className="pro-eyebrow"><Sparkles size={14} /> {text('Следующий этап · план', 'Келесі кезең · жоспар', 'Next phase · roadmap')}</p>
-          <h2>{text('После подключения истории поездок', 'Сапар тарихын қосқаннан кейін', 'After ride history is connected')}</h2>
-          <p>{text(
-            'Это честный preview будущего этапа, а не уже доступные показатели: готовность, погода и прогноз износа появятся после отдельной интеграции данных.',
-            'Бұл қолжетімді көрсеткіштер емес, келесі кезеңнің preview-ы: дайындық, ауа райы және тозу болжамы деректер бөлек қосылғаннан кейін пайда болады.',
-            'This is an honest preview of a future phase, not live metrics: readiness, weather and wear forecasts require a separate data integration.',
-          )}</p>
-        </div>
-        <div className="pro-insight-stack" aria-label={text('Концепт будущих рекомендаций', 'Болашақ ұсыныстар концепті', 'Concept for future insights')}>
-          <article><Activity size={18} /><div><span>{text('Готовность', 'Дайындық', 'Readiness')}</span><strong>82 / 100 · {text('можно добавить темп', 'қарқынды арттыруға болады', 'ready for tempo')}</strong></div></article>
-          <article><CloudSun size={18} /><div><span>{text('Лучшее окно', 'Ең жақсы уақыт', 'Best window')}</span><strong>07:30 · {text('слабый ветер', 'әлсіз жел', 'light wind')}</strong></div></article>
-          <article><Wrench size={18} /><div><span>{text('Велосипед', 'Велосипед', 'Bike')}</span><strong>{text('Смазать цепь через ~35 км', 'Тізбекті ~35 км кейін майлау', 'Lube chain in ~35 km')}</strong></div></article>
         </div>
       </section>
 
