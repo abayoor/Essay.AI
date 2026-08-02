@@ -14,6 +14,8 @@ import {
 } from '../billing/_shared';
 import { corsPreflight, withCors } from '../_cors';
 
+export const maxDuration = 60;
+
 type Experience = 'beginner' | 'intermediate' | 'advanced';
 type RidingStyle = 'city' | 'road' | 'gravel' | 'mountain' | 'touring';
 type PrimaryGoal = 'comfort' | 'fitness' | 'commute' | 'speed' | 'adventure';
