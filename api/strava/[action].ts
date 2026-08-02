@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { corsPreflight, withCors } from '../_cors';
 
 type ServerConfig = {
   clientId: string;
@@ -234,4 +235,9 @@ async function handler(request: Request): Promise<Response> {
   }
 }
 
-export default { fetch: handler };
+export default {
+  async fetch(request: Request): Promise<Response> {
+    return corsPreflight(request, 'GET, OPTIONS')
+      ?? withCors(request, await handler(request), 'GET, OPTIONS');
+  },
+};

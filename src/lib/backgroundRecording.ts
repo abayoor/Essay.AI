@@ -8,11 +8,12 @@ type BackgroundLocationHandlers = {
 };
 
 function toGpsTrackPoint(location: Location): GpsTrackPoint {
+  const rawTimestamp = location.time ?? Date.now();
   return {
     lat: location.latitude,
     lng: location.longitude,
     elevation: location.altitude,
-    timestamp: location.time ?? Date.now(),
+    timestamp: rawTimestamp < 10_000_000_000 ? rawTimestamp * 1000 : rawTimestamp,
     accuracyMeters: location.accuracy,
     altitudeAccuracyMeters: location.altitudeAccuracy,
     speedMps: location.speed,

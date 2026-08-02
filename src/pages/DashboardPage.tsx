@@ -32,6 +32,7 @@ export function DashboardPage() {
     if (!userId) return;
     setError('');
     setReady(false);
+    setProfile(null);
     try {
       const [nextProfile, nextStats, nextBikes, nextRoutes, nextWeekly] = await Promise.all([
         loadRiderProfile(),
@@ -50,13 +51,26 @@ export function DashboardPage() {
     }
   }, [t, userId]);
 
-  useEffect(() => { if (!loading && !session) navigate('/auth/sign-in'); if (session) void refresh(); }, [loading, navigate, refresh, session]);
-  const name = session ? profile?.full_name?.trim() || session.user.email?.split('@')[0] || t('Райдер', 'Райдер', 'Rider') : t('Райдер', 'Райдер', 'Rider');
+  useEffect(() => { if (!loading && !userId) navigate('/auth/sign-in'); if (userId) void refresh(); }, [loading, navigate, refresh, userId]);
+
+  if (loading || !session || !ready) {
+    return <main className="route-loading profile-loading-screen">
+      <BikeLoader label={t('Загружаем твою сводку…', 'Шолуың жүктелуде…', 'Loading your overview…')} />
+    </main>;
+  }
+
+  if (!profile || !stats) {
+    return <PageShell><main className="cycle-page route-loading"><div className="inline-error" role="alert">
+      {error || t('Не удалось загрузить твою велосводку.', 'Велошолуды жүктеу мүмкін болмады.', 'Could not load your cycling overview.')}
+      <button type="button" onClick={() => void refresh()}>{t('Повторить', 'Қайталау', 'Retry')}</button>
+    </div></main></PageShell>;
+  }
+
+  const name = profile.full_name?.trim() || profile.username || t('Райдер', 'Райдер', 'Rider');
   const weeklyPercent = weekly ? Math.min(100, Math.max(0, weekly.distanceKm / weekly.goalKm * 100)) : 0;
 
   return <PageShell><main className="cycle-page dashboard-page">
-    <header className="page-heading"><div><p className="kicker">{t('Твоя сводка', 'Сенің шолуың', 'Your overview')}</p><h1>{t('Привет', 'Сәлем', 'Hello')}, {name}.</h1><p>{profile?.home_city || t('Добавь город в профиле — так маршруты станут ближе.', 'Профильге қалаңды қос — сонда жақын бағыттарды табамыз.', 'Add your city to the profile to find closer routes.')}</p></div><div className="page-heading-actions"><Link className="outline-inline-button" href="/rides">{t('Мои заезды', 'Менің сапарларым', 'My rides')}</Link><Link className="signal-button" href="/record">{t('Записать GPS-заезд', 'GPS сапарын жазу', 'Record GPS ride')}</Link></div></header>
-    {error && <div className="inline-error" role="alert">{error}<button type="button" onClick={() => void refresh()}>{t('Повторить', 'Қайталау', 'Retry')}</button></div>}
+    <header className="page-heading"><div><p className="kicker">{t('Твоя сводка', 'Сенің шолуың', 'Your overview')}</p><h1>{t('Привет', 'Сәлем', 'Hello')}, {name}.</h1><p>{profile?.home_city || t('Добавь город в профиле — так маршруты станут ближе.', 'Профильге қалаңды қос — сонда жақын бағыттарды табамыз.', 'Add your city to the profile to find closer routes.')}</p></div><div className="page-heading-actions"><Link className="pro-inline-button" href="/pro"><Sparkles size={17} />Slipstream PRO · $5</Link><Link className="outline-inline-button" href="/rides">{t('Мои заезды', 'Менің сапарларым', 'My rides')}</Link><Link className="signal-button" href="/record">{t('Записать GPS-заезд', 'GPS сапарын жазу', 'Record GPS ride')}</Link></div></header>
     {session && ready && stats && <section className="dashboard-command-center" aria-label={t('Главное сегодня', 'Бүгінгі бастысы', 'Today at a glance')}>
       <Link className="dashboard-safety-mission" href="/map">
         <span className="dashboard-mission-icon"><ShieldCheck size={26} aria-hidden="true" /></span>

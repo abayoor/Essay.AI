@@ -32,9 +32,9 @@ const layers: Record<MapLayerStyle, {
 function savedLayer(): MapLayerStyle {
   try {
     const value = window.localStorage.getItem(storageKey);
-    return value === 'standard' || value === 'cycling' ? value : 'terrain';
+    return value === 'standard' || value === 'terrain' || value === 'cycling' ? value : 'cycling';
   } catch {
-    return 'terrain';
+    return 'cycling';
   }
 }
 

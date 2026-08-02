@@ -44,8 +44,16 @@ function gpsPoint(value: unknown): value is GpsTrackPoint {
   const point = value as Record<string, unknown>;
   return typeof point.lat === 'number'
     && typeof point.lng === 'number'
+    && Number.isFinite(point.lat)
+    && point.lat >= -90
+    && point.lat <= 90
+    && Number.isFinite(point.lng)
+    && point.lng >= -180
+    && point.lng <= 180
     && (typeof point.elevation === 'number' || point.elevation === null)
-    && typeof point.timestamp === 'number';
+    && typeof point.timestamp === 'number'
+    && Number.isFinite(point.timestamp)
+    && (point.segmentStart === undefined || typeof point.segmentStart === 'boolean');
 }
 
 function rideFromRow(row: RideRow): RideActivity {
@@ -79,10 +87,13 @@ function localDateKey(timestamp: number): string {
 function limitStoredTrack(track: GpsTrackPoint[], limit = 2500): GpsTrackPoint[] {
   if (track.length <= limit) return track;
   const lastIndex = track.length - 1;
-  return Array.from({ length: limit }, (_, index) => {
-    const sourceIndex = Math.round((index * lastIndex) / (limit - 1));
-    return track[sourceIndex];
-  });
+  const selectedIndices = new Set<number>([0, lastIndex]);
+  track.forEach((point, index) => { if (point.segmentStart) selectedIndices.add(index); });
+  const availableSlots = Math.max(0, limit - selectedIndices.size);
+  for (let index = 0; index < availableSlots; index += 1) {
+    selectedIndices.add(Math.round((index * lastIndex) / Math.max(1, availableSlots - 1)));
+  }
+  return [...selectedIndices].sort((first, second) => first - second).slice(0, limit).map((index) => track[index]);
 }
 
 export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<SavedRecordedRide> {
@@ -93,7 +104,13 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
   if (!title) throw new Error('Дай заезду короткое название.');
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы сохранить тренировку.');
-  const simplifiedTrack = limitStoredTrack(simplifyGpsTrack(track)).map(({ lat, lng, elevation, timestamp }) => ({ lat, lng, elevation, timestamp }));
+  const simplifiedTrack = limitStoredTrack(simplifyGpsTrack(track)).map(({ lat, lng, elevation, timestamp, segmentStart }) => ({
+    lat,
+    lng,
+    elevation,
+    timestamp,
+    ...(segmentStart ? { segmentStart: true } : {}),
+  }));
   const savedMetrics = metrics.distanceKm > 0 ? metrics : { ...metrics, distanceKm: .001 };
   const payload = {
     user_id: authData.user.id,

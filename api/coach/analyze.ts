@@ -347,4 +347,10 @@ async function handler(request: Request): Promise<Response> {
   }
 }
 
-export default { fetch: handler };
+export default {
+  async fetch(request: Request): Promise<Response> {
+    return corsPreflight(request, 'POST, OPTIONS')
+      ?? withCors(request, await handler(request), 'POST, OPTIONS');
+  },
+};
+import { corsPreflight, withCors } from '../_cors';

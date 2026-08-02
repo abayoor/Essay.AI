@@ -7,14 +7,14 @@ import { RideReviewModal } from '../components/RideReviewModal';
 import { useSession } from '../lib/auth';
 import { startBackgroundRecording, stopBackgroundRecording, supportsBackgroundRecording } from '../lib/backgroundRecording';
 import type { GpsTrackPoint, RideRecordingMetrics } from '../lib/cyclingModels';
-import { calculateRecordingMetrics, emptyRecordingMetrics } from '../lib/gps';
+import { calculateRecordingMetrics, classifyGpsPoint, emptyRecordingMetrics } from '../lib/gps';
 import { createPost } from '../lib/posts';
 import { saveRecordedRide, type SavedRecordedRide, updateRecordedRide } from '../lib/recordedRides';
 import { shareRide } from '../lib/share';
 import { useTranslations } from '../lib/translations';
 
 type RecordStatus = 'idle' | 'running' | 'paused' | 'finished';
-type GpsStatus = 'idle' | 'locating' | 'ready' | 'paused' | 'denied' | 'error';
+type GpsStatus = 'idle' | 'locating' | 'ready' | 'weak' | 'paused' | 'denied' | 'error';
 type ScreenWakeLock = { release: () => Promise<void> };
 type WakeLockNavigator = Navigator & { wakeLock?: { request: (type: 'screen') => Promise<ScreenWakeLock> } };
 
@@ -50,6 +50,7 @@ export function RecordPage() {
   const [track, setTrack] = useState<GpsTrackPoint[]>([]);
   const [currentPosition, setCurrentPosition] = useState<GpsTrackPoint | null>(null);
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('idle');
+  const [gpsAccuracyM, setGpsAccuracyM] = useState<number | null>(null);
   const [metrics, setMetrics] = useState<RideRecordingMetrics>(emptyRecordingMetrics);
   const [message, setMessage] = useState('');
   const [rideTitle, setRideTitle] = useState(defaultRideTitle);
@@ -68,6 +69,8 @@ export function RecordPage() {
   const trackingActive = useRef(false);
   const nativeTrackingActive = useRef(false);
   const trackingAttempt = useRef(0);
+  const startNewSegment = useRef(true);
+  const lastReliableFixAt = useRef(0);
 
   const activeElapsedSeconds = useCallback((now = Date.now()): number => {
     if (!startedAt.current) return 0;
@@ -76,7 +79,7 @@ export function RecordPage() {
   }, []);
 
   const updateMetrics = useCallback((nextTrack: GpsTrackPoint[], now = Date.now()) => {
-    setMetrics(calculateRecordingMetrics(nextTrack, activeElapsedSeconds(now)));
+    setMetrics(calculateRecordingMetrics(nextTrack, activeElapsedSeconds(now), now));
   }, [activeElapsedSeconds]);
 
   const stopWatching = useCallback(() => {
@@ -112,15 +115,36 @@ export function RecordPage() {
 
   const appendRecordedPoint = useCallback((point: GpsTrackPoint) => {
     if (!trackingActive.current) return;
-    setCurrentPosition(point);
-    setGpsStatus('ready');
+    const accuracyM = point.accuracyMeters ?? Number.POSITIVE_INFINITY;
+    if (Number.isFinite(accuracyM)) setGpsAccuracyM(accuracyM);
     const previous = trackRef.current[trackRef.current.length - 1];
-    if ((point.accuracyMeters ?? Number.POSITIVE_INFINITY) > 45) return;
-    if (previous && point.timestamp - previous.timestamp < 1000) return;
-    const nextTrack = [...trackRef.current, point];
+    const decision = classifyGpsPoint(point, previous);
+    if (decision === 'reject') {
+      const canShowApproximateLocation = Number.isFinite(point.lat) && point.lat >= -90 && point.lat <= 90
+        && Number.isFinite(point.lng) && point.lng >= -180 && point.lng <= 180
+        && Number.isFinite(accuracyM) && accuracyM >= 0 && accuracyM <= 25_000;
+      if (canShowApproximateLocation && accuracyM > 45) {
+        lastReliableFixAt.current = Date.now();
+        setCurrentPosition(point);
+      }
+      setGpsStatus(accuracyM > 45 ? 'weak' : 'locating');
+      return;
+    }
+
+    lastReliableFixAt.current = Date.now();
+    setCurrentPosition(point);
+    setGpsStatus(accuracyM > 25 ? 'weak' : 'ready');
+    setMessage((current) => /gps|геолокац/i.test(current) ? '' : current);
+    if (decision === 'display-only') return;
+
+    const beginsNewSegment = startNewSegment.current
+      || (previous !== undefined && point.timestamp - previous.timestamp > 30_000);
+    const acceptedPoint = beginsNewSegment ? { ...point, segmentStart: true } : point;
+    startNewSegment.current = false;
+    const nextTrack = [...trackRef.current, acceptedPoint];
     trackRef.current = nextTrack;
     setTrack(nextTrack);
-    updateMetrics(nextTrack, point.timestamp);
+    updateMetrics(nextTrack, acceptedPoint.timestamp);
   }, [updateMetrics]);
 
   const receiveLocation = useCallback((position: GeolocationPosition) => {
@@ -140,8 +164,19 @@ export function RecordPage() {
 
   const previewLocation = useCallback((position: GeolocationPosition) => {
     const point = toGpsTrackPoint(position);
+    const accuracyM = point.accuracyMeters ?? Number.POSITIVE_INFINITY;
+    if (Number.isFinite(accuracyM)) setGpsAccuracyM(accuracyM);
+    if (accuracyM > 45) {
+      if (accuracyM <= 25_000) {
+        lastReliableFixAt.current = Date.now();
+        setCurrentPosition(point);
+      }
+      setGpsStatus('weak');
+      return;
+    }
+    lastReliableFixAt.current = Date.now();
     setCurrentPosition(point);
-    setGpsStatus('ready');
+    setGpsStatus(accuracyM > 25 ? 'weak' : 'ready');
   }, []);
 
   const previewLocationError = useCallback((error: GeolocationPositionError) => {
@@ -151,7 +186,7 @@ export function RecordPage() {
   const startPreviewLocation = useCallback(() => {
     if (!navigator.geolocation || previewWatchId.current !== null) return;
     setGpsStatus('locating');
-    previewWatchId.current = navigator.geolocation.watchPosition(previewLocation, previewLocationError, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+    previewWatchId.current = navigator.geolocation.watchPosition(previewLocation, previewLocationError, { enableHighAccuracy: true, maximumAge: 1500, timeout: 20000 });
   }, [previewLocation, previewLocationError]);
 
   const watchLocation = useCallback(() => {
@@ -160,8 +195,9 @@ export function RecordPage() {
       setMessage('Браузер не поддерживает геолокацию.');
       return;
     }
+    if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     setGpsStatus('locating');
-    watchId.current = navigator.geolocation.watchPosition(receiveLocation, handleLocationError, { enableHighAccuracy: true, maximumAge: 3000, timeout: 30000 });
+    watchId.current = navigator.geolocation.watchPosition(receiveLocation, handleLocationError, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
   }, [handleLocationError, receiveLocation]);
 
   const handleBackgroundLocationError = useCallback((backgroundMessage: string) => {
@@ -203,7 +239,11 @@ export function RecordPage() {
   }, [startPreviewLocation, status, stopPreviewLocation]);
   useEffect(() => {
     if (status !== 'running') return undefined;
-    const interval = window.setInterval(() => updateMetrics(trackRef.current), 1000);
+    const interval = window.setInterval(() => {
+      const now = Date.now();
+      updateMetrics(trackRef.current, now);
+      if (lastReliableFixAt.current > 0 && now - lastReliableFixAt.current > 15_000) setGpsStatus('locating');
+    }, 1000);
     return () => window.clearInterval(interval);
   }, [status, updateMetrics]);
   useEffect(() => {
@@ -220,11 +260,13 @@ export function RecordPage() {
     setRideDescription('');
     stopPreviewLocation();
     const initialTrack = currentPosition !== null && Date.now() - currentPosition.timestamp < 30_000 && (currentPosition.accuracyMeters ?? Number.POSITIVE_INFINITY) <= 45
-      ? [currentPosition]
+      ? [{ ...currentPosition, segmentStart: true }]
       : [];
     setTrack(initialTrack);
     setGpsStatus('locating');
     trackRef.current = initialTrack;
+    startNewSegment.current = initialTrack.length === 0;
+    lastReliableFixAt.current = initialTrack.length ? Date.now() : 0;
     startedAt.current = Date.now();
     pausedAt.current = null;
     pausedDuration.current = 0;
@@ -239,6 +281,7 @@ export function RecordPage() {
     void allowScreenSleep();
     setGpsStatus('paused');
     pausedAt.current = Date.now();
+    startNewSegment.current = true;
     setStatus('paused');
     updateMetrics(trackRef.current, pausedAt.current);
   }
@@ -246,6 +289,7 @@ export function RecordPage() {
   function resume() {
     if (pausedAt.current) pausedDuration.current += Date.now() - pausedAt.current;
     pausedAt.current = null;
+    startNewSegment.current = true;
     setStatus('running');
     void startTracking();
     void keepScreenAwake();
@@ -331,6 +375,15 @@ export function RecordPage() {
     }
   }
 
+  const accuracyLabel = gpsAccuracyM !== null ? ` ±${Math.round(gpsAccuracyM)} ${t('meters')}` : '';
+  const gpsLabel = gpsStatus === 'locating' ? t('gpsSearching')
+    : gpsStatus === 'ready' ? (status === 'idle' ? `${t('gpsReady')}${accuracyLabel}` : `${t('gpsPoints')}${track.length}${accuracyLabel}`)
+      : gpsStatus === 'weak' ? `${t('gpsWeak')}${accuracyLabel}`
+        : gpsStatus === 'paused' ? t('gpsPaused')
+          : gpsStatus === 'denied' ? t('gpsDenied')
+            : gpsStatus === 'error' ? t('gpsUnavailable')
+              : t('gpsSearching');
+
   return (
     <PageShell>
       <main className="record-page topographic-hero">
@@ -339,7 +392,7 @@ export function RecordPage() {
           <div><span>{t('recordSpeed')}</span><strong>{metrics.currentSpeedKmh.toFixed(1)} <small>{t('kmh')}</small></strong></div>
           <div><span>{t('recordTime')}</span><strong>{formatTime(metrics.elapsedTimeSeconds)}</strong></div>
         </section>
-        <section className="record-map-slot" aria-label={t('map')}><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`}><LocateFixed size={16} aria-hidden="true" />{gpsStatus === 'locating' && t('gpsSearching')}{gpsStatus === 'ready' && (status === 'idle' ? t('gpsReady') : `${t('gpsPoints')}${track.length}`)}{gpsStatus === 'paused' && t('gpsPaused')}{gpsStatus === 'denied' && t('gpsDenied')}{gpsStatus === 'error' && t('gpsUnavailable')}{gpsStatus === 'idle' && t('gpsSearching')}</p></section>
+        <section className="record-map-slot" aria-label={t('map')}><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`} role="status" aria-live="polite"><LocateFixed size={16} aria-hidden="true" />{gpsLabel}</p></section>
         {supportsBackgroundRecording() && status === 'running' && <p className="record-background-note" role="status">Фоновая GPS-запись включена — можешь заблокировать экран.</p>}
         <section className={`record-controls${status === 'running' ? ' is-recording' : ''}`} aria-label="Управление записью">
           {status === 'idle' && <button className="signal-button record-primary" onClick={start}>{t('startRecording')}</button>}

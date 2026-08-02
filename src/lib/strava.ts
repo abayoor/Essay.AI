@@ -1,4 +1,5 @@
 import type { RidePostStats } from './cyclingModels';
+import { apiFetch } from './api';
 import { supabase } from './supabase';
 
 export type StravaActivity = {
@@ -21,7 +22,7 @@ const activitiesCache = new Map<string, StravaActivity[]>();
 async function authenticatedRequest(path: string): Promise<Response> {
   const { data } = await supabase.auth.getSession();
   if (!data.session) throw new Error('Войди в аккаунт, чтобы подключить Strava.');
-  return fetch(path, { headers: { Authorization: `Bearer ${data.session.access_token}` } });
+  return apiFetch(path, { headers: { Authorization: `Bearer ${data.session.access_token}` } }, 20_000);
 }
 
 async function readApiError(response: Response): Promise<string> {

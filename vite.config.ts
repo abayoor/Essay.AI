@@ -2,6 +2,10 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import coachAnalyze from './api/coach/analyze';
 import aiAssist from './api/ai/assist';
+import billingCheckout from './api/billing/checkout';
+import billingPortal from './api/billing/portal';
+import billingStatus from './api/billing/status';
+import proAnalyze from './api/pro/analyze';
 import routeDirections from './api/routes/directions';
 
 type FetchHandler = { fetch(request: Request): Promise<Response> };
@@ -10,6 +14,10 @@ function localApiPlugin(): Plugin {
   const handlers = new Map<string, FetchHandler>([
     ['/api/coach/analyze', coachAnalyze],
     ['/api/ai/assist', aiAssist],
+    ['/api/billing/checkout', billingCheckout],
+    ['/api/billing/portal', billingPortal],
+    ['/api/billing/status', billingStatus],
+    ['/api/pro/analyze', proAnalyze],
     ['/api/routes/directions', routeDirections],
   ]);
   return {
@@ -53,7 +61,7 @@ function localApiPlugin(): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GEMINI_MODEL', 'OPENAI_API_KEY', 'OPENAI_MODEL', 'ORS_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'].forEach((name) => {
+  ['APP_URL', 'BILLING_ENABLED', 'SUPPORT_EMAIL', 'GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GEMINI_MODEL', 'OPENAI_API_KEY', 'OPENAI_MODEL', 'ORS_API_KEY', 'LEMON_SQUEEZY_API_KEY', 'LEMON_SQUEEZY_STORE_ID', 'LEMON_SQUEEZY_VARIANT_ID', 'LEMON_SQUEEZY_ALLOW_TEST_MODE', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'].forEach((name) => {
     if (!process.env[name] && env[name]) process.env[name] = env[name];
   });
   return {

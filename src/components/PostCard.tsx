@@ -4,7 +4,7 @@ import { Heart, MessageCircle, Send } from 'lucide-react';
 import { Link } from 'wouter';
 import type { SocialPost } from '../lib/cyclingModels';
 import { useLocaleText } from '../lib/localized';
-import { addPostComment, togglePostLike } from '../lib/posts';
+import { addPostComment, loadPost, togglePostLike } from '../lib/posts';
 import { Avatar } from './Avatar';
 import { EmojiPicker } from './EmojiPicker';
 import { RideOverlay } from './RideOverlay';
@@ -14,7 +14,7 @@ type PostCardProps = {
   post: SocialPost;
   viewerId: string;
   onLikeChange: (postId: string, shouldBeLiked: boolean) => void;
-  onRefresh: () => Promise<void>;
+  onPostChange: (post: SocialPost) => void;
 };
 
 type LikeAnimation = {
@@ -43,7 +43,7 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
     && Boolean(target.closest('a, button, input, textarea, select, video, [data-no-double-like]'));
 }
 
-export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardProps) {
+export function PostCard({ post, viewerId, onLikeChange, onPostChange }: PostCardProps) {
   const text = useLocaleText();
   const [comment, setComment] = useState('');
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -83,7 +83,6 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
     setError('');
     try {
       await togglePostLike(post.id, liked);
-      await onRefresh();
     } catch {
       onLikeChange(post.id, liked);
       setError(text(
@@ -110,7 +109,6 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
     setError('');
     try {
       await togglePostLike(post.id, false);
-      await onRefresh();
     } catch {
       onLikeChange(post.id, false);
       setError(text(
@@ -150,7 +148,8 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
     try {
       await addPostComment(post.id, comment);
       setComment('');
-      await onRefresh();
+      const nextPost = await loadPost(post.id);
+      if (nextPost) onPostChange(nextPost);
     } catch {
       setError(text(
         'Не удалось отправить комментарий.',
@@ -171,6 +170,7 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
     ref={cardRef}
     className="post-card"
     id={`post-${post.id}`}
+    aria-labelledby={`post-author-${post.id}`}
     onDoubleClick={handleDoubleClick}
     onPointerUp={handleTouchTap}
   >
@@ -197,11 +197,15 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
 
     <header className="post-author">
       <Link href={`/u/${post.author.username}`}><Avatar profile={post.author} /></Link>
-      <div>
+      <div className="post-author-copy">
         <Link href={`/u/${post.author.username}`}>
-          <strong>{post.author.full_name || post.author.username}</strong>
+          <strong id={`post-author-${post.id}`}>{post.author.full_name || post.author.username}</strong>
         </Link>
-        <span>@{post.author.username} · {formatDate(post.created_at, text('ru-RU', 'kk-KZ', 'en-US'))}</span>
+        <span className="post-author-meta">
+          <span>@{post.author.username}</span>
+          <span aria-hidden="true">·</span>
+          <time dateTime={post.created_at}>{formatDate(post.created_at, text('ru-RU', 'kk-KZ', 'en-US'))}</time>
+        </span>
       </div>
     </header>
 
@@ -209,8 +213,10 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
       {post.media_url && post.media_type === 'image' && <img
         src={post.media_url}
         alt={post.caption || text('Публикация райдера', 'Райдер жазбасы', 'Rider post')}
+        loading="lazy"
+        decoding="async"
       />}
-      {post.media_url && post.media_type === 'video' && <video controls preload="metadata" src={post.media_url} />}
+      {post.media_url && post.media_type === 'video' && <video controls playsInline preload="metadata" src={post.media_url} />}
       {post.rideStats && <RideOverlay stats={post.rideStats} />}
     </div>}
 
@@ -232,7 +238,7 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
             transition={{ type: 'spring', stiffness: 430, damping: 16 }}
           >
             <Heart size={19} fill={liked ? 'currentColor' : 'none'} aria-hidden="true" />
-            <span>{post.likes.length}</span>
+            <span className="like-count">{post.likes.length}</span>
           </motion.button>
           <AnimatePresence>
             {likeBurst && <span className="like-burst" aria-hidden="true">
@@ -259,7 +265,8 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
           aria-controls={`comments-${post.id}`}
         >
           <MessageCircle size={19} aria-hidden="true" />
-          <span>{post.comments.length || ''} {text('комментариев', 'пікір', 'comments')}</span>
+          {post.comments.length > 0 && <span className="post-action-count">{post.comments.length}</span>}
+          <span className="post-action-label">{text('Комментарии', 'Пікірлер', 'Comments')}</span>
         </button>
       </div>
 
@@ -312,7 +319,7 @@ export function PostCard({ post, viewerId, onLikeChange, onRefresh }: PostCardPr
           </form>
         </motion.section>}
       </AnimatePresence>
-      {error && <p className="form-note" role="alert">{error}</p>}
+      {error && <p className="post-inline-error" role="alert">{error}</p>}
     </div>
   </article>;
 }

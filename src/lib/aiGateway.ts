@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { apiFetch } from './api';
 
 function errorMessage(value: unknown): string | null {
   if (typeof value !== 'object' || value === null) return null;
@@ -70,14 +71,14 @@ export async function invokeAi(body: Record<string, unknown>, fallback: AiFallba
   if (!edgeResult.error) return edgeResult.data;
 
   const edgeMessage = await functionErrorMessage(edgeResult.error);
-  const response = await fetch(fallback.path, {
+  const response = await apiFetch(fallback.path, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
     },
     body: JSON.stringify(fallback.body),
-  }).catch(() => null);
+  }, 45_000).catch(() => null);
 
   if (!response) throw new Error(edgeMessage);
   const payload: unknown = await response.json().catch(() => null);

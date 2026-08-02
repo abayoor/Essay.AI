@@ -9,5 +9,5 @@
     "outDir": "node_modules/.cache/slipstream-config",
     "tsBuildInfoFile": "node_modules/.cache/slipstream-config/tsconfig.node.tsbuildinfo"
   },
-  "include": ["vite.config.ts", "api/ai/assist.ts", "api/coach/analyze.ts", "api/routes/directions.ts"]
+  "include": ["vite.config.ts", "api/**/*.ts"]
 }

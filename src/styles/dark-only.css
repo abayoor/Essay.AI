@@ -1,0 +1,24 @@
+/* Final dark-only guard for older feature surfaces that predate theme tokens. */
+.marketplace-card-image,
+.listing-gallery {
+  background: linear-gradient(145deg, #12231f, #0a1512);
+}
+
+.marketplace-condition-badge,
+.marketplace-photo-count,
+.gallery-nav {
+  background: rgba(7, 18, 15, .88);
+  border: 1px solid rgba(141, 174, 164, .24);
+  color: #eef8f5;
+}
+
+.listing-price span,
+.listing-sold-note {
+  background: rgba(82, 208, 188, .12);
+  border: 1px solid rgba(82, 208, 188, .24);
+  color: #6ce5cb;
+}
+
+.listing-gallery-empty {
+  color: #9eb2ac;
+}

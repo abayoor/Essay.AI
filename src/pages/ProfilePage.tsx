@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Bike, BrainCircuit, Grid3X3, Map, MapPin, Mountain, Pencil, Plus, Route, Settings, Wrench } from 'lucide-react';
+import { Bike, BrainCircuit, Grid3X3, Map, MapPin, Mountain, Pencil, Plus, Route, Settings, Sparkles, Wrench } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { Avatar } from '../components/Avatar';
+import { BikeLoader } from '../components/BikeLoader';
 import { PageShell } from '../components/PageShell';
 import { useSession } from '../lib/auth';
 import type { RiderProfile, RiderStats, SocialPost } from '../lib/cyclingModels';
@@ -17,7 +18,7 @@ const blankProfile: RiderProfile = {
   username: 'rider',
   interests: [],
   locale: 'ru',
-  theme_preference: 'light',
+  theme_preference: 'dark',
 };
 
 function ProfilePosts({ posts, text }: { posts: SocialPost[]; text: LocaleText }) {
@@ -63,36 +64,62 @@ function ProfilePosts({ posts, text }: { posts: SocialPost[]; text: LocaleText }
 
 export function ProfilePage() {
   const { session, loading } = useSession();
+  const userId = session?.user.id;
   const [, navigate] = useLocation();
   const text = useLocaleText();
-  const [profile, setProfile] = useState<RiderProfile>(blankProfile);
+  const [profile, setProfile] = useState<RiderProfile | null>(null);
   const [stats, setStats] = useState<RiderStats | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [error, setError] = useState('');
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [nextProfile, nextStats, nextPosts] = await Promise.all([
-      loadRiderProfile(),
-      loadRiderStats(),
-      loadPosts(session?.user.id),
-    ]);
-    setProfile(nextProfile ?? blankProfile);
-    setStats(nextStats);
-    setPosts(nextPosts);
-  }, [session?.user.id]);
-
-  useEffect(() => {
-    if (!loading && !session) navigate('/auth/sign-in');
-    if (session) {
-      void refresh().catch(() => setError(text(
+    setProfileLoading(true);
+    setError('');
+    setProfile(null);
+    try {
+      const [nextProfile, nextStats, nextPosts] = await Promise.all([
+        loadRiderProfile(),
+        loadRiderStats(),
+        loadPosts(userId),
+      ]);
+      setProfile(nextProfile ?? blankProfile);
+      setStats(nextStats);
+      setPosts(nextPosts);
+    } catch {
+      setError(text(
         'Не удалось загрузить профиль.',
         'Профильді жүктеу мүмкін болмады.',
         'Could not load the profile.',
-      )));
+      ));
+    } finally {
+      setProfileLoading(false);
     }
-  }, [loading, navigate, refresh, session, text]);
+  }, [text, userId]);
 
-  const displayName = profile.full_name?.trim() || text('Твой профиль', 'Сенің профилің', 'Your profile');
+  useEffect(() => {
+    if (!loading && !userId) navigate('/auth/sign-in');
+    if (userId) void refresh();
+  }, [loading, navigate, refresh, userId]);
+
+  if (loading || !userId || profileLoading) {
+    return <main className="route-loading profile-loading-screen">
+      <BikeLoader label={text('Загружаем профиль…', 'Профиль жүктелуде…', 'Loading profile…')} />
+    </main>;
+  }
+
+  if (!profile) {
+    return <PageShell>
+      <main className="cycle-page route-loading">
+        <div className="inline-error" role="alert">
+          {error || text('Не удалось загрузить профиль.', 'Профильді жүктеу мүмкін болмады.', 'Could not load the profile.')}
+          <button type="button" onClick={() => void refresh()}>{text('Повторить', 'Қайталау', 'Retry')}</button>
+        </div>
+      </main>
+    </PageShell>;
+  }
+
+  const displayName = profile.full_name?.trim() || profile.username || text('Твой профиль', 'Сенің профилің', 'Your profile');
 
   return (
     <PageShell>
@@ -141,6 +168,7 @@ export function ProfilePage() {
           <Link href="/rides"><span><Bike size={19} /></span><div><strong>{text('Мои заезды', 'Менің сапарларым', 'My rides')}</strong><small>{text('История и статистика', 'Тарих және статистика', 'History and statistics')}</small></div></Link>
           <Link href="/bikes"><span><Wrench size={19} /></span><div><strong>{text('Мой гараж', 'Менің гаражым', 'My garage')}</strong><small>{text('Велосипеды и ТО', 'Велосипедтер және қызмет', 'Bikes and service')}</small></div></Link>
           <Link href="/coach"><span><BrainCircuit size={19} /></span><div><strong>{text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}</strong><small>{text('План с Gemini', 'Gemini жоспары', 'Plan with Gemini')}</small></div></Link>
+          <Link href="/pro"><span><Sparkles size={19} /></span><div><strong>Slipstream Pro</strong><small>{text('Полный ИИ-анализ · $5/месяц', 'Толық AI талдау · $5/ай', 'Full AI analysis · $5/month')}</small></div></Link>
           <Link href="/map"><span><Map size={19} /></span><div><strong>{text('Карта', 'Карта', 'Map')}</strong><small>{text('Маршруты и места', 'Бағыттар мен орындар', 'Routes and places')}</small></div></Link>
           <Link href="/settings"><span><Settings size={19} /></span><div><strong>{text('Настройки', 'Баптаулар', 'Settings')}</strong><small>{text('Профиль и аккаунт', 'Профиль және аккаунт', 'Profile and account')}</small></div></Link>
         </nav>

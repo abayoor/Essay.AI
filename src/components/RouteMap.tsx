@@ -20,13 +20,20 @@ function FitRoute({ positions }: { positions: [number, number][] }) {
 
 export function RouteMap({ points, className = '' }: { points: RoutePoint[]; className?: string }) {
   const positions = points.map((point) => [point.lat, point.lng] as [number, number]);
+  const segments = points.reduce<[number, number][][]>((result, point) => {
+    const segmentStart = 'segmentStart' in point && point.segmentStart === true;
+    if (!result.length || (segmentStart && result[result.length - 1].length > 0)) result.push([]);
+    result[result.length - 1].push([point.lat, point.lng]);
+    return result;
+  }, []);
   const center = positions[0] ?? almaty;
   return (
     <MapContainer center={center} zoom={positions.length ? 12 : 11} scrollWheelZoom={false} className={`route-map ${className}`}>
       <CommunityTileLayer />
       <FitRoute positions={positions} />
-      {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: '#1b8577', weight: 4 }} />}
-      {positions.map((position, index) => <CircleMarker center={position} key={`${position[0]}-${position[1]}`} radius={index === 0 ? 7 : 4} pathOptions={{ color: '#fff', fillColor: index === 0 ? '#3e6f5c' : '#1b8577', fillOpacity: 1, weight: 2 }} />)}
+      {segments.map((segment, index) => segment.length > 1 && <Polyline key={`route-segment-${index}`} positions={segment} pathOptions={{ color: '#52d0bc', weight: 5, lineCap: 'round', lineJoin: 'round' }} />)}
+      {positions[0] && <CircleMarker center={positions[0]} radius={7} pathOptions={{ color: '#fff', fillColor: '#3e6f5c', fillOpacity: 1, weight: 2 }} />}
+      {positions.length > 1 && <CircleMarker center={positions[positions.length - 1]} radius={6} pathOptions={{ color: '#fff', fillColor: '#52d0bc', fillOpacity: 1, weight: 2 }} />}
     </MapContainer>
   );
 }

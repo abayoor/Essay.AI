@@ -24,6 +24,7 @@ import {
 } from '../lib/hazards';
 import { useLocaleText } from '../lib/localized';
 import { loadRoutes } from '../lib/routes';
+import { navigationUpdatedEvent } from '../lib/activeNavigation';
 
 type MapTab = 'places' | 'routes' | 'hazards' | 'marketplace';
 type CityId = 'almaty' | 'astana';
@@ -62,6 +63,12 @@ export function MapPage() {
     { id: 'hazards', label: text('Опасные места', 'Қауіпті орындар', 'Hazards'), icon: AlertTriangle },
     { id: 'marketplace', label: text('Маркет', 'Маркет', 'Market'), icon: ShoppingBag },
   ];
+
+  useEffect(() => {
+    const showSelectedRoute = () => setTab('places');
+    window.addEventListener(navigationUpdatedEvent, showSelectedRoute);
+    return () => window.removeEventListener(navigationUpdatedEvent, showSelectedRoute);
+  }, []);
   const hazardLabels: Record<HazardReport['hazardType'], string> = {
     pothole: text('Яма', 'Шұңқыр', 'Pothole'),
     no_lighting: text('Нет освещения', 'Жарық жоқ', 'No lighting'),

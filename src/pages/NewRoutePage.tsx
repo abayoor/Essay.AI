@@ -19,6 +19,7 @@ export function NewRoutePage() {
   const [, navigate] = useLocation();
   const [points, setPoints] = useState<RoutePoint[]>([]);
   const [waypoints, setWaypoints] = useState<RoutePoint[]>([]);
+  const [snappedWaypoints, setSnappedWaypoints] = useState<RoutePoint[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [region, setRegion] = useState('');
@@ -41,6 +42,7 @@ export function NewRoutePage() {
     setTitle(draft.title);
     setRegion(draft.region);
     setWaypoints(draft.waypoints);
+    setSnappedWaypoints(draft.snappedWaypoints);
     setPoints(draft.points);
     setElevation(String(Math.round(draft.elevationGainM)));
   }, []);
@@ -51,6 +53,7 @@ export function NewRoutePage() {
     const requestId = ++routeRequest.current;
     if (nextWaypoints.length < 2) {
       setPoints(nextWaypoints);
+      setSnappedWaypoints(nextWaypoints);
       setRouting(false);
       return;
     }
@@ -59,12 +62,14 @@ export function NewRoutePage() {
       const result = await routeCyclingWaypoints(nextWaypoints);
       if (requestId === routeRequest.current) {
         setPoints(result.points);
+        setSnappedWaypoints(result.snappedWaypoints);
         setElevation(String(Math.round(result.elevationGainM)));
         setDurationMinutes(Math.round(result.durationMinutes));
       }
     } catch (error) {
       if (requestId === routeRequest.current) {
         setPoints([]);
+        setSnappedWaypoints([]);
         setMessage(error instanceof Error ? error.message : 'Не удалось проложить маршрут по дорогам.');
       }
     } finally {
@@ -132,5 +137,5 @@ export function NewRoutePage() {
     }
   }
 
-  return <PageShell><main className="cycle-page new-route-page"><header className="page-heading"><div><p className="kicker">Новый веломаршрут</p><h1>Нарисуй удобную дорогу.</h1><p>Поставь точки на карте — велосипедный профиль построит путь по подходящим дорогам и велоинфраструктуре, а расстояние и набор высоты посчитаются автоматически.</p></div></header><div className="route-builder"><section><RoutePlannerMap points={points} waypoints={waypoints} routing={routing} onAdd={(point) => void updateWaypoints([...waypoints, point])} /><div className="map-toolbar"><span>{routing ? 'Строим велосипедный путь…' : `${waypoints.length} точек · ${routeDistanceKm(points).toFixed(1)} км${durationMinutes ? ` · ≈ ${durationMinutes} мин` : ''}`}</span><button type="button" className="quiet-button" onClick={undoPoint} disabled={!waypoints.length || routing}>Убрать последнюю</button></div></section><section className="form-card"><p className="kicker">Детали</p><h2>Расскажи про маршрут</h2><form className="cycle-form" onSubmit={(event) => void submit(event)}><label>Название<input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Петля до Медеу" maxLength={120} /></label><label className="city-form-field">Город<CityAutocomplete value={region} onChange={setRegion} /></label><label>Сложность<select value={difficulty} onChange={(event) => setDifficulty(event.target.value as Difficulty)}><option value="easy">Лёгкий</option><option value="moderate">Средний</option><option value="hard">Сложный</option></select></label><label>Набор высоты, м<input type="number" min="0" value={elevation} onChange={(event) => setElevation(event.target.value)} /></label><label>Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Покрытие, вода, красивые места и на что обратить внимание" maxLength={1000} /></label><button type="button" className="ai-assist-button" disabled={aiBusy || routing || points.length < 2} onClick={() => void generateRouteCopy()}><Sparkles size={17} />{aiBusy ? 'Gemini анализирует…' : 'Название и описание с Gemini'}</button><button className="signal-button" disabled={busy || routing}>{busy ? 'Сохраняем и публикуем…' : 'Опубликовать маршрут'}</button></form>{message && <p className="form-note" role="alert">{message}</p>}</section></div></main></PageShell>;
+  return <PageShell><main className="cycle-page new-route-page"><header className="page-heading"><div><p className="kicker">Новый веломаршрут</p><h1>Нарисуй удобную дорогу.</h1><p>Поставь точки на карте — велосипедный профиль построит путь по подходящим дорогам и велоинфраструктуре, а расстояние и набор высоты посчитаются автоматически.</p></div></header><div className="route-builder"><section><RoutePlannerMap points={points} waypoints={waypoints} snappedWaypoints={snappedWaypoints} routing={routing} onAdd={(point) => void updateWaypoints([...waypoints, point])} /><div className="map-toolbar"><span>{routing ? 'Строим велосипедный путь…' : `${waypoints.length} точек · ${routeDistanceKm(points).toFixed(1)} км${durationMinutes ? ` · ≈ ${durationMinutes} мин` : ''}`}</span><button type="button" className="quiet-button" onClick={undoPoint} disabled={!waypoints.length || routing}>Убрать последнюю</button></div></section><section className="form-card"><p className="kicker">Детали</p><h2>Расскажи про маршрут</h2><form className="cycle-form" onSubmit={(event) => void submit(event)}><label>Название<input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Петля до Медеу" maxLength={120} /></label><label className="city-form-field">Город<CityAutocomplete value={region} onChange={setRegion} /></label><label>Сложность<select value={difficulty} onChange={(event) => setDifficulty(event.target.value as Difficulty)}><option value="easy">Лёгкий</option><option value="moderate">Средний</option><option value="hard">Сложный</option></select></label><label>Набор высоты, м<input type="number" min="0" value={elevation} onChange={(event) => setElevation(event.target.value)} /></label><label>Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Покрытие, вода, красивые места и на что обратить внимание" maxLength={1000} /></label><button type="button" className="ai-assist-button" disabled={aiBusy || routing || points.length < 2} onClick={() => void generateRouteCopy()}><Sparkles size={17} />{aiBusy ? 'Gemini анализирует…' : 'Название и описание с Gemini'}</button><button className="signal-button" disabled={busy || routing}>{busy ? 'Сохраняем и публикуем…' : 'Опубликовать маршрут'}</button></form>{message && <p className="form-note" role="alert">{message}</p>}</section></div></main></PageShell>;
 }

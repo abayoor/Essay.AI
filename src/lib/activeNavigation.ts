@@ -23,6 +23,17 @@ function isPoint(value: unknown): value is RoutePoint {
     && typeof (value as Record<string, unknown>).lng === 'number';
 }
 
+function isInstruction(value: unknown): value is CyclingRouteResult['instructions'][number] {
+  if (typeof value !== 'object' || value === null) return false;
+  const instruction = value as Record<string, unknown>;
+  return typeof instruction.pointIndex === 'number'
+    && Number.isInteger(instruction.pointIndex)
+    && (instruction.kind === 'left' || instruction.kind === 'right'
+      || instruction.kind === 'keep-left' || instruction.kind === 'keep-right'
+      || instruction.kind === 'straight' || instruction.kind === 'roundabout'
+      || instruction.kind === 'uturn' || instruction.kind === 'finish');
+}
+
 function notifyNavigationChanged(): void {
   window.dispatchEvent(new Event(navigationUpdatedEvent));
 }
@@ -42,6 +53,14 @@ export function loadMapNavigation(): PersistedMapNavigation | null {
       || typeof result.distanceKm !== 'number'
       || typeof result.elevationGainM !== 'number'
       || typeof result.durationMinutes !== 'number') return null;
+    const snappedWaypoints = Array.isArray(result.snappedWaypoints)
+      && result.snappedWaypoints.length > 0
+      && result.snappedWaypoints.every(isPoint)
+      ? result.snappedWaypoints
+      : [result.points[0], result.points[result.points.length - 1]];
+    const instructions = Array.isArray(result.instructions) && result.instructions.every(isInstruction)
+      ? result.instructions
+      : [];
     return {
       id: typeof item.id === 'string' ? item.id : crypto.randomUUID(),
       destinationName: typeof item.destinationName === 'string' ? item.destinationName : 'Маршрут',
@@ -49,6 +68,8 @@ export function loadMapNavigation(): PersistedMapNavigation | null {
       destination: item.destination,
       result: {
         points: result.points,
+        snappedWaypoints,
+        instructions,
         distanceKm: result.distanceKm,
         elevationGainM: result.elevationGainM,
         durationMinutes: result.durationMinutes,
@@ -63,9 +84,12 @@ export function loadMapNavigation(): PersistedMapNavigation | null {
   }
 }
 
-export function saveMapNavigation(navigation: PersistedMapNavigation): void {
+export function saveMapNavigation(
+  navigation: PersistedMapNavigation,
+  options: { notify?: boolean } = {},
+): void {
   window.localStorage.setItem(navigationStorageKey, JSON.stringify(navigation));
-  notifyNavigationChanged();
+  if (options.notify !== false) notifyNavigationChanged();
 }
 
 export function clearMapNavigation(): void {
@@ -83,6 +107,8 @@ export function navigationFromCycleRoute(route: CycleRoute): PersistedMapNavigat
     destination,
     result: {
       points: route.path,
+      snappedWaypoints: [route.path[0], destination],
+      instructions: [],
       distanceKm: Number(route.distance_km),
       elevationGainM: Number(route.elevation_gain_m),
       durationMinutes: route.duration_minutes ?? Math.max(1, Number(route.distance_km) / 18 * 60),

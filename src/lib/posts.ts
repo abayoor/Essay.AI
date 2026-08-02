@@ -96,12 +96,22 @@ function createRoutePreview(post: PostRow): RoutePostPreview | null {
   };
 }
 
-export async function loadPosts(userId?: string): Promise<SocialPost[]> {
+export type LoadPostsOptions = {
+  before?: string;
+  limit?: number;
+  postId?: string;
+};
+
+export async function loadPosts(userId?: string, options: LoadPostsOptions = {}): Promise<SocialPost[]> {
+  const limit = Math.min(Math.max(options.limit ?? 30, 1), 50);
   let query = supabase
     .from('posts')
     .select('id, user_id, media_url, media_type, caption, created_at, strava_distance_km, strava_elevation_gain_m, strava_duration_seconds, strava_summary_polyline, ride_track, route_id, route_title, route_description, route_path, route_distance_km, route_elevation_gain_m, route_difficulty')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(limit);
   if (userId) query = query.eq('user_id', userId);
+  if (options.before) query = query.lt('created_at', options.before);
+  if (options.postId) query = query.eq('id', options.postId);
   const { data: postData, error: postError } = await query;
   if (postError) throw postError;
 
@@ -120,6 +130,19 @@ export async function loadPosts(userId?: string): Promise<SocialPost[]> {
   const profiles = await loadPublicProfiles([...new Set([...posts.map((post) => post.user_id), ...comments.map((comment) => comment.user_id)])]);
   const profilesById = profileById(profiles);
 
+  const likesByPost = new Map<string, LikeRow[]>();
+  for (const like of likes) {
+    const group = likesByPost.get(like.post_id) ?? [];
+    group.push(like);
+    likesByPost.set(like.post_id, group);
+  }
+  const commentsByPost = new Map<string, CommentRow[]>();
+  for (const comment of comments) {
+    const group = commentsByPost.get(comment.post_id) ?? [];
+    group.push(comment);
+    commentsByPost.set(comment.post_id, group);
+  }
+
   return posts.map((post) => ({
     id: post.id,
     user_id: post.user_id,
@@ -128,9 +151,8 @@ export async function loadPosts(userId?: string): Promise<SocialPost[]> {
     caption: post.caption,
     created_at: post.created_at,
     author: profilesById.get(post.user_id) ?? { ...unknownProfile, id: post.user_id },
-    likes: likes.filter((like) => like.post_id === post.id).map((like) => ({ id: like.id, user_id: like.user_id })),
-    comments: comments
-      .filter((comment) => comment.post_id === post.id)
+    likes: (likesByPost.get(post.id) ?? []).map((like) => ({ id: like.id, user_id: like.user_id })),
+    comments: (commentsByPost.get(post.id) ?? [])
       .map((comment): PostComment => ({
         ...comment,
         author: profilesById.get(comment.user_id) ?? { ...unknownProfile, id: comment.user_id },
@@ -138,6 +160,11 @@ export async function loadPosts(userId?: string): Promise<SocialPost[]> {
     rideStats: createRideStats(post),
     routePreview: createRoutePreview(post),
   }));
+}
+
+export async function loadPost(postId: string): Promise<SocialPost | null> {
+  const [post] = await loadPosts(undefined, { postId, limit: 1 });
+  return post ?? null;
 }
 
 export type CreatePostInput = {

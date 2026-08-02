@@ -9,6 +9,7 @@ export type GpsTrackPoint = RoutePoint & {
   accuracyMeters?: number;
   altitudeAccuracyMeters?: number | null;
   speedMps?: number | null;
+  segmentStart?: boolean;
 };
 
 export type RideRecordingMetrics = {

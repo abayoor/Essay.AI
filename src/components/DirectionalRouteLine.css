@@ -1,0 +1,42 @@
+.slipstream-direction-arrow-marker {
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+}
+
+.slipstream-direction-arrow-marker > span {
+  align-items: center;
+  display: flex;
+  height: 24px;
+  justify-content: center;
+  transform-origin: center;
+  width: 24px;
+}
+
+.slipstream-direction-arrow-marker svg {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .95));
+  height: 21px;
+  overflow: visible;
+  width: 21px;
+}
+
+.slipstream-direction-arrow-marker path {
+  fill: #fff;
+  paint-order: stroke;
+  stroke: #061713;
+  stroke-linejoin: round;
+  stroke-width: 3.5px;
+}
+
+@media (max-width: 680px) {
+  .slipstream-direction-arrow-marker svg {
+    height: 23px;
+    width: 23px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slipstream-direction-arrow-marker > span {
+    transition: none;
+  }
+}

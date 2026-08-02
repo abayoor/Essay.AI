@@ -24,27 +24,23 @@ import {
 } from 'lucide-react';
 import { MapContainer, Marker, Polyline, Popup, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import { useLocation } from 'wouter';
-import { clearMapNavigation, loadMapNavigation, saveMapNavigation } from '../lib/activeNavigation';
+import { clearMapNavigation, loadMapNavigation, navigationUpdatedEvent, saveMapNavigation } from '../lib/activeNavigation';
 import type { LocaleText } from '../lib/localized';
 import { useLocaleText } from '../lib/localized';
 import { usePreferences } from '../lib/preferences';
 import type { RoutePoint } from '../lib/cyclingModels';
-import { routeCyclingWaypoints, type CyclingRoutePreference, type CyclingRouteResult } from '../lib/directions';
+import { routeCyclingWaypoints, type CyclingRouteInstruction, type CyclingRoutePreference, type CyclingRouteResult } from '../lib/directions';
 import { reverseMapLocation, searchMapPlaces, type MapPlace, type ResolvedMapLocation } from '../lib/places';
 import { saveMapRouteDraft } from '../lib/routeDraft';
+import { distanceMeters, distanceToRouteMeters, routeProgress, type RouteProgress } from '../lib/routeProjection';
 import type { HazardReport, HazardType } from '../lib/hazards';
 import { CommunityTileLayer } from './CommunityTileLayer';
+import { DirectionalRouteLine } from './DirectionalRouteLine';
 import { HazardLayer } from './HazardLayer';
 
 type RouteOption = {
   preference: CyclingRoutePreference;
   result: CyclingRouteResult;
-};
-
-type RouteProgress = {
-  closestIndex: number;
-  distanceFromRouteM: number;
-  remainingM: number;
 };
 
 type WakeLockSentinelLike = {
@@ -85,43 +81,6 @@ const destinationIcon = divIcon({
   iconAnchor: [17, 40],
 });
 
-function distanceMeters(first: RoutePoint, second: RoutePoint): number {
-  const radius = 6371000;
-  const firstLat = first.lat * Math.PI / 180;
-  const secondLat = second.lat * Math.PI / 180;
-  const dLat = (second.lat - first.lat) * Math.PI / 180;
-  const dLng = (second.lng - first.lng) * Math.PI / 180;
-  const value = Math.sin(dLat / 2) ** 2
-    + Math.cos(firstLat) * Math.cos(secondLat) * Math.sin(dLng / 2) ** 2;
-  return radius * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
-}
-
-function pointToSegmentDistanceMeters(point: RoutePoint, start: RoutePoint, end: RoutePoint): number {
-  const latitudeScale = 111_320;
-  const longitudeScale = latitudeScale * Math.max(.05, Math.cos(point.lat * Math.PI / 180));
-  const startX = (start.lng - point.lng) * longitudeScale;
-  const startY = (start.lat - point.lat) * latitudeScale;
-  const endX = (end.lng - point.lng) * longitudeScale;
-  const endY = (end.lat - point.lat) * latitudeScale;
-  const segmentX = endX - startX;
-  const segmentY = endY - startY;
-  const segmentLengthSquared = segmentX ** 2 + segmentY ** 2;
-  if (segmentLengthSquared === 0) return Math.hypot(startX, startY);
-  const projection = Math.max(0, Math.min(1, -(startX * segmentX + startY * segmentY) / segmentLengthSquared));
-  return Math.hypot(startX + projection * segmentX, startY + projection * segmentY);
-}
-
-function nearestRouteDistanceMeters(point: RoutePoint, route: RoutePoint[], fromIndex = 0): number {
-  if (route.length === 0) return Number.POSITIVE_INFINITY;
-  if (route.length === 1) return distanceMeters(point, route[0]);
-  let closest = Number.POSITIVE_INFINITY;
-  for (let index = Math.max(0, fromIndex); index < route.length - 1; index += 1) {
-    closest = Math.min(closest, pointToSegmentDistanceMeters(point, route[index], route[index + 1]));
-    if (closest < 4) break;
-  }
-  return closest;
-}
-
 const hazardPenalty: Record<HazardType, number> = {
   pothole: 12,
   no_lighting: 9,
@@ -131,7 +90,7 @@ const hazardPenalty: Record<HazardType, number> = {
 };
 
 function calculateRouteSafety(route: RoutePoint[], hazards: readonly HazardReport[]): RouteSafety {
-  const nearby = hazards.filter((hazard) => nearestRouteDistanceMeters(hazard.location, route) <= 45);
+  const nearby = hazards.filter((hazard) => distanceToRouteMeters(hazard.location, route) <= 45);
   const penalty = nearby.reduce((total, hazard) => total + hazardPenalty[hazard.hazardType] + Math.min(8, hazard.confirmations * 2), 0);
   return { hazards: nearby, score: Math.max(20, 100 - penalty) };
 }
@@ -146,34 +105,100 @@ function bearingDegrees(first: RoutePoint, second: RoutePoint): number {
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
-function routeProgress(points: RoutePoint[], rider: RoutePoint): RouteProgress {
-  let closestIndex = 0;
-  let closestDistance = Number.POSITIVE_INFINITY;
-  points.forEach((point, index) => {
-    const distance = distanceMeters(point, rider);
-    if (distance < closestDistance) {
-      closestDistance = distance;
-      closestIndex = index;
-    }
-  });
-
-  let remainingM = distanceMeters(rider, points[closestIndex] ?? rider);
-  for (let index = closestIndex; index < points.length - 1; index += 1) {
-    remainingM += distanceMeters(points[index], points[index + 1]);
+function distanceToRoutePoint(points: readonly RoutePoint[], progress: RouteProgress, pointIndex: number): number {
+  if (pointIndex <= progress.segmentIndex || pointIndex >= points.length) return 0;
+  let distanceM = distanceMeters(progress.projectedPoint, points[progress.segmentIndex + 1]);
+  for (let index = progress.segmentIndex + 1; index < pointIndex; index += 1) {
+    distanceM += distanceMeters(points[index], points[index + 1]);
   }
-  return { closestIndex, distanceFromRouteM: closestDistance, remainingM };
+  return distanceM;
 }
 
-function nextNavigationInstruction(points: RoutePoint[], progress: RouteProgress, text: LocaleText): { text: string; distanceM: number; turn: 'left' | 'right' | 'straight' | 'finish' } {
-  if (progress.remainingM < 30 || progress.closestIndex >= points.length - 2) {
+function providerInstructionCopy(
+  instruction: CyclingRouteInstruction,
+  distanceM: number,
+  text: LocaleText,
+): { text: string; distanceM: number; turn: 'left' | 'right' | 'straight' | 'finish' } {
+  if (instruction.kind === 'roundabout') {
+    const exit = instruction.exitNumber;
+    return {
+      text: exit
+        ? text(`На круговом движении выберите съезд №${exit}`, `Айналма жолдан №${exit} шығуды таңдаңыз`, `At the roundabout, take exit ${exit}`)
+        : text('Въезжайте на круговое движение', 'Айналма жолға кіріңіз', 'Enter the roundabout'),
+      distanceM,
+      turn: 'right',
+    };
+  }
+  if (instruction.kind === 'uturn') {
+    return { text: text('Развернитесь', 'Кері бұрылыңыз', 'Make a U-turn'), distanceM, turn: 'left' };
+  }
+  if (instruction.kind === 'keep-left' || instruction.kind === 'keep-right') {
+    const keepRight = instruction.kind === 'keep-right';
+    return {
+      text: keepRight
+        ? text('Держитесь правее', 'Оң жақпен жүріңіз', 'Keep right')
+        : text('Держитесь левее', 'Сол жақпен жүріңіз', 'Keep left'),
+      distanceM,
+      turn: keepRight ? 'right' : 'left',
+    };
+  }
+  if (instruction.kind === 'left' || instruction.kind === 'right') {
+    const turnRight = instruction.kind === 'right';
+    return {
+      text: turnRight
+        ? text('Поверните направо', 'Оңға бұрылыңыз', 'Turn right')
+        : text('Поверните налево', 'Солға бұрылыңыз', 'Turn left'),
+      distanceM,
+      turn: instruction.kind,
+    };
+  }
+  if (instruction.kind === 'finish') {
+    return { text: text('Финиш впереди', 'Мәре алда', 'Destination ahead'), distanceM, turn: 'straight' };
+  }
+  return { text: text('Продолжайте прямо', 'Тура жүріңіз', 'Continue straight'), distanceM, turn: 'straight' };
+}
+
+function nextNavigationInstruction(
+  points: RoutePoint[],
+  instructions: readonly CyclingRouteInstruction[],
+  progress: RouteProgress,
+  destinationDistanceM: number | null,
+  text: LocaleText,
+): { text: string; distanceM: number; turn: 'left' | 'right' | 'straight' | 'finish' } {
+  if (progress.remainingM < 30) {
+    if (destinationDistanceM !== null && destinationDistanceM > 35) {
+      return {
+        text: text('Маршрут заканчивается у дороги — дальше к точке назначения', 'Бағыт жолда аяқталады — межелі жерге қарай жалғастырыңыз', 'The street route ends here — continue to the destination'),
+        distanceM: Math.round(destinationDistanceM),
+        turn: 'finish',
+      };
+    }
     return { text: text('Вы прибыли', 'Сіз келдіңіз', 'You have arrived'), distanceM: 0, turn: 'finish' };
   }
 
-  let coveredM = distanceMeters(points[progress.closestIndex], points[Math.min(progress.closestIndex + 1, points.length - 1)]);
-  for (let index = progress.closestIndex + 2; index < points.length - 2 && coveredM < 900; index += 1) {
-    coveredM += distanceMeters(points[index - 1], points[index]);
+  if (instructions.length > 0) {
+    const upcoming = instructions
+      .filter((instruction) => instruction.pointIndex > progress.segmentIndex)
+      .map((instruction) => ({
+        instruction,
+        distanceM: distanceToRoutePoint(points, progress, instruction.pointIndex),
+      }))
+      .sort((first, second) => first.distanceM - second.distanceM)[0];
+    if (upcoming && upcoming.distanceM <= 1_200) {
+      return providerInstructionCopy(upcoming.instruction, Math.round(upcoming.distanceM), text);
+    }
+    return {
+      text: text('Продолжайте прямо', 'Тура жүріңіз', 'Continue straight'),
+      distanceM: Math.min(Math.round(upcoming?.distanceM ?? progress.remainingM), 900),
+      turn: 'straight',
+    };
+  }
+
+  let coveredM = distanceMeters(progress.projectedPoint, points[progress.segmentIndex + 1]);
+  for (let index = progress.segmentIndex + 1; index < points.length - 1 && coveredM < 900; index += 1) {
+    if (index > progress.segmentIndex + 1) coveredM += distanceMeters(points[index - 1], points[index]);
     if (coveredM < 35) continue;
-    const before = bearingDegrees(points[Math.max(progress.closestIndex, index - 2)], points[index]);
+    const before = bearingDegrees(points[Math.max(progress.segmentIndex, index - 2)], points[index]);
     const after = bearingDegrees(points[index], points[Math.min(points.length - 1, index + 2)]);
     const turnAngle = ((after - before + 540) % 360) - 180;
     if (Math.abs(turnAngle) >= 38) {
@@ -203,6 +228,13 @@ function arrivalTime(minutes: number, locale: string): string {
 
 function formatDistance(meters: number, locale: string): string {
   return `${Math.max(0, Math.round(meters)).toLocaleString(locale)} м`;
+}
+
+function sampleRouteAnchors(points: readonly RoutePoint[], maximum = 24): RoutePoint[] {
+  if (points.length <= maximum) return points.slice();
+  return Array.from({ length: maximum }, (_, index) => (
+    points[Math.round(index * (points.length - 1) / (maximum - 1))]
+  ));
 }
 
 function MapViewport({ focus, route, recenterRequest, navigationActive }: {
@@ -273,7 +305,7 @@ function HazardPointPicker({ enabled, onPick }: { enabled: boolean; onPick: (poi
 function preferenceCopy(preference: CyclingRoutePreference, text: LocaleText): { title: string; description: string; icon: typeof Route } {
   return preference === 'recommended'
     ? { title: text('Лучший для велосипеда', 'Велосипедке ең қолайлы', 'Best for cycling'), description: text('Приоритет велодорожек и подходящих улиц', 'Веложолдар мен қолайлы көшелерге басымдық', 'Prioritizes cycleways and suitable streets'), icon: ShieldCheck }
-    : { title: text('Самый короткий', 'Ең қысқа', 'Shortest'), description: text('Минимальная дистанция по уличной сети', 'Көше желісі бойынша ең қысқа қашықтық', 'Minimum distance on the street network'), icon: Timer };
+    : { title: text('Более прямой', 'Тура бағыт', 'More direct'), description: text('Быстрый велопрофиль без ступеней и автомагистралей', 'Баспалдақсыз және автомагистральсыз жылдам велобағыт', 'Fast bike profile without steps or motorways'), icon: Timer };
 }
 
 export function CityExploreMap({
@@ -307,6 +339,7 @@ export function CityExploreMap({
   } : null);
   const [resolvedLocation, setResolvedLocation] = useState<ResolvedMapLocation | null>(null);
   const [locationStatus, setLocationStatus] = useState(() => text('Определяем твоё местоположение…', 'Орналасқан жеріңді анықтап жатырмыз…', 'Finding your location…'));
+  const [locationAttempt, setLocationAttempt] = useState(0);
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>(() => restoredNavigation ? [{
     preference: restoredNavigation.preference,
     result: restoredNavigation.result,
@@ -320,7 +353,14 @@ export function CityExploreMap({
   const routeRequest = useRef(0);
   const hasCenteredOnRider = useRef(false);
   const lastAutoRerouteAt = useRef(0);
+  const offRouteSince = useRef<number | null>(null);
   const lastGpsPoint = useRef<RoutePoint | null>(null);
+  const lastGpsTimestamp = useRef(0);
+  const lastNavigationFixAt = useRef(0);
+  const lastGpsAccuracyM = useRef(Number.POSITIVE_INFINITY);
+  const distanceAlongRouteM = useRef<number | null>(navigationActive ? 0 : null);
+  const progressRoutePoints = useRef<RoutePoint[] | null>(null);
+  const popularRematchAttempted = useRef(false);
   const reverseLookupPoint = useRef<RoutePoint | null>(null);
   const wakeLock = useRef<WakeLockSentinelLike | null>(null);
   const warnedHazards = useRef(new Set<string>());
@@ -331,19 +371,72 @@ export function CityExploreMap({
   riderLocationRef.current = riderLocation;
   onRiderLocationChangeRef.current = onRiderLocationChange;
 
+  useEffect(() => {
+    const restoreSelectedRoute = () => {
+      const navigation = loadMapNavigation();
+      if (!navigation) return;
+      routeRequest.current += 1;
+      setRouting(false);
+      setRouteError('');
+      setDestination({
+        id: navigation.id,
+        name: navigation.destinationName,
+        subtitle: navigation.destinationSubtitle,
+        ...navigation.destination,
+      });
+      setRouteOptions([{ preference: navigation.preference, result: navigation.result }]);
+      setActivePreference(navigation.preference);
+      setNavigationSource(navigation.source);
+      setNavigationActive(navigation.active);
+      distanceAlongRouteM.current = navigation.active ? 0 : null;
+      progressRoutePoints.current = null;
+      popularRematchAttempted.current = false;
+    };
+    window.addEventListener(navigationUpdatedEvent, restoreSelectedRoute);
+    return () => window.removeEventListener(navigationUpdatedEvent, restoreSelectedRoute);
+  }, []);
+
   const activeRoute = useMemo(
     () => routeOptions.find((option) => option.preference === activePreference) ?? routeOptions[0] ?? null,
     [activePreference, routeOptions],
   );
+  const activeSnappedWaypoints = activeRoute?.result.snappedWaypoints ?? [];
+  const activeRoutePoints = activeRoute?.result.points ?? [];
+  const snappedDestination = activeSnappedWaypoints[activeSnappedWaypoints.length - 1]
+    ?? activeRoutePoints[activeRoutePoints.length - 1]
+    ?? null;
+  const destinationRoadGapM = destination && snappedDestination
+    ? distanceMeters(snappedDestination, destination)
+    : 0;
+  const directDestinationDistanceM = destination && riderLocation
+    ? distanceMeters(riderLocation, destination)
+    : null;
 
-  const progress = useMemo(
-    () => activeRoute && riderLocation ? routeProgress(activeRoute.result.points, riderLocation) : null,
-    [activeRoute, riderLocation],
-  );
+  const progress = useMemo(() => {
+    if (!activeRoute || !riderLocation) return null;
+    const routePoints = activeRoute.result.points;
+    if (!navigationActive || progressRoutePoints.current !== routePoints) {
+      progressRoutePoints.current = routePoints;
+      distanceAlongRouteM.current = navigationActive ? 0 : null;
+    }
+    return routeProgress(routePoints, riderLocation, navigationActive ? distanceAlongRouteM.current : null);
+  }, [activeRoute, navigationActive, riderLocation]);
+
+  useEffect(() => {
+    if (!navigationActive || !progress) {
+      distanceAlongRouteM.current = null;
+      return;
+    }
+    const acceptableGpsDistanceM = Math.max(45, Math.min(100, lastGpsAccuracyM.current * 1.5));
+    if (progress.distanceFromRouteM > acceptableGpsDistanceM) return;
+    distanceAlongRouteM.current = Math.max(distanceAlongRouteM.current ?? 0, progress.distanceAlongRouteM);
+  }, [navigationActive, progress]);
 
   const instruction = useMemo(
-    () => activeRoute && progress ? nextNavigationInstruction(activeRoute.result.points, progress, text) : null,
-    [activeRoute, progress, text],
+    () => activeRoute && progress
+      ? nextNavigationInstruction(activeRoute.result.points, activeRoute.result.instructions, progress, directDestinationDistanceM, text)
+      : null,
+    [activeRoute, directDestinationDistanceM, progress, text],
   );
 
   const routeSafety = useMemo(() => new Map(
@@ -355,7 +448,7 @@ export function CityExploreMap({
     const candidates = hazards.flatMap((hazard) => {
       const riderDistanceM = distanceMeters(riderLocation, hazard.location);
       if (riderDistanceM > 300) return [];
-      const routeDistanceM = nearestRouteDistanceMeters(hazard.location, activeRoute.result.points, progress.closestIndex);
+      const routeDistanceM = distanceToRouteMeters(hazard.location, activeRoute.result.points, progress.segmentIndex);
       return routeDistanceM <= 45 ? [{ hazard, riderDistanceM }] : [];
     });
     return candidates.sort((first, second) => first.riderDistanceM - second.riderDistanceM)[0] ?? null;
@@ -363,9 +456,9 @@ export function CityExploreMap({
 
   const navigationRiderIcon = useMemo(() => divIcon({
     className: 'navigation-rider-marker',
-    html: `<span aria-hidden="true" style="transform:rotate(${Math.round(riderHeading)}deg)">➤</span>`,
-    iconSize: [52, 52],
-    iconAnchor: [26, 26],
+    html: `<span aria-hidden="true" style="--rider-heading:${Math.round(riderHeading)}deg"><svg viewBox="0 0 48 48" focusable="false"><path d="M24 4 39 40 24 33 9 40 24 4Z" /></svg></span>`,
+    iconSize: [64, 64],
+    iconAnchor: [32, 32],
   }), [riderHeading]);
 
   useEffect(() => {
@@ -373,38 +466,98 @@ export function CityExploreMap({
       setLocationStatus(text('Геолокация недоступна — нажми на карту, чтобы указать старт.', 'Геолокация қолжетімсіз — бастау нүктесін картадан таңда.', 'Location is unavailable — tap the map to set a start.'));
       return undefined;
     }
-    const watchId = navigator.geolocation.watchPosition((position) => {
-      const point = { lat: position.coords.latitude, lng: position.coords.longitude };
-      const movedM = lastGpsPoint.current ? distanceMeters(lastGpsPoint.current, point) : 0;
+    const receivePosition = (position: GeolocationPosition) => {
+      const rawPoint = { lat: position.coords.latitude, lng: position.coords.longitude };
+      const accuracyM = position.coords.accuracy;
+      if (!Number.isFinite(rawPoint.lat) || !Number.isFinite(rawPoint.lng)
+        || rawPoint.lat < -90 || rawPoint.lat > 90 || rawPoint.lng < -180 || rawPoint.lng > 180
+        || !Number.isFinite(accuracyM) || accuracyM < 0 || accuracyM > 25_000) {
+        lastGpsAccuracyM.current = Number.isFinite(accuracyM) ? accuracyM : Number.POSITIVE_INFINITY;
+        setLocationStatus(text('GPS-сигнал слишком слабый…', 'GPS сигналы тым әлсіз…', 'GPS signal is too weak…'));
+        return;
+      }
+
+      const previousPoint = lastGpsPoint.current;
+      const fixTimestamp = position.timestamp > 10_000_000_000 ? position.timestamp : Date.now();
+      if (lastGpsTimestamp.current > 0 && fixTimestamp < lastGpsTimestamp.current - 1_000) return;
+      const intervalSeconds = lastGpsTimestamp.current > 0 ? (fixTimestamp - lastGpsTimestamp.current) / 1000 : 0;
+      const rawMovedM = previousPoint ? distanceMeters(previousPoint, rawPoint) : 0;
+      const impliedSpeedKmh = intervalSeconds > 0 ? rawMovedM / intervalSeconds * 3.6 : 0;
+      const reportedSpeedKmh = typeof position.coords.speed === 'number' && Number.isFinite(position.coords.speed) && position.coords.speed >= 0
+        ? position.coords.speed * 3.6
+        : null;
+      const previousAccuracyM = lastGpsAccuracyM.current;
+      if (previousPoint && previousAccuracyM <= 150 && accuracyM <= 150 && intervalSeconds > 0 && impliedSpeedKmh > 100
+        && (reportedSpeedKmh === null || Math.abs(impliedSpeedKmh - reportedSpeedKmh) > 30)) {
+        setLocationStatus(text('Уточняем GPS после скачка…', 'GPS секірісінен кейін нақтылануда…', 'Refining GPS after a jump…'));
+        return;
+      }
+
+      const shouldSmooth = previousPoint && previousAccuracyM <= 100 && accuracyM <= 100;
+      const smoothingWeight = accuracyM <= 25 ? 1 : Math.max(.45, 1 - (accuracyM - 25) / 100);
+      const point = shouldSmooth ? {
+        lat: previousPoint.lat + (rawPoint.lat - previousPoint.lat) * smoothingWeight,
+        lng: previousPoint.lng + (rawPoint.lng - previousPoint.lng) * smoothingWeight,
+      } : rawPoint;
+      const movedM = previousPoint ? distanceMeters(previousPoint, point) : 0;
       const gpsHeading = position.coords.heading;
       if (typeof gpsHeading === 'number' && Number.isFinite(gpsHeading)) {
         setRiderHeading(gpsHeading);
-      } else if (lastGpsPoint.current && movedM > 2) {
-        setRiderHeading(bearingDegrees(lastGpsPoint.current, point));
+      } else if (previousPoint && movedM > Math.max(3, accuracyM * .15)) {
+        setRiderHeading(bearingDegrees(previousPoint, point));
       }
-      if (typeof position.coords.speed === 'number' && Number.isFinite(position.coords.speed)) {
-        setCurrentSpeedKmh(Math.max(0, position.coords.speed * 3.6));
+      if (reportedSpeedKmh !== null) {
+        setCurrentSpeedKmh(Math.max(0, Math.min(100, reportedSpeedKmh)));
+      } else if (intervalSeconds > 0) {
+        setCurrentSpeedKmh(Math.max(0, Math.min(100, movedM / intervalSeconds * 3.6)));
       }
+      lastGpsAccuracyM.current = accuracyM;
       lastGpsPoint.current = point;
+      lastGpsTimestamp.current = fixTimestamp;
+      lastNavigationFixAt.current = Date.now();
       riderLocationRef.current = point;
       setRiderLocation(point);
       onRiderLocationChangeRef.current(point);
-      setLocationStatus(`GPS ±${Math.round(position.coords.accuracy)} ${text('м', 'м', 'm')}`);
+      const accuracyLabel = accuracyM >= 1_000
+        ? `${(accuracyM / 1_000).toFixed(1)} ${text('км', 'км', 'km')}`
+        : `${Math.round(accuracyM)} ${text('м', 'м', 'm')}`;
+      setLocationStatus(`${accuracyM > 100 ? text('Примерная позиция', 'Шамамен орналасқан жер', 'Approximate location') : accuracyM > 45 ? text('Слабый GPS', 'GPS сигналы әлсіз', 'Weak GPS') : 'GPS'} ±${accuracyLabel}`);
       if (!hasCenteredOnRider.current) {
         hasCenteredOnRider.current = true;
         setRoutingOrigin((current) => current ?? point);
         reverseLookupPoint.current = point;
         void reverseMapLocation(point, locale).then(setResolvedLocation).catch(() => undefined);
       }
-    }, () => {
-      setLocationStatus(text('Разреши геолокацию или нажми на карту, чтобы указать старт.', 'Геолокацияға рұқсат бер немесе бастау нүктесін картадан таңда.', 'Allow location access or tap the map to set a start.'));
-    }, {
+    };
+    const handleLocationError = (error: GeolocationPositionError) => {
+      if (error.code === error.PERMISSION_DENIED) {
+        setLocationStatus(text('Разреши геолокацию в настройках устройства.', 'Құрылғы баптауларында геолокацияға рұқсат бер.', 'Allow location access in your device settings.'));
+      } else if (!riderLocationRef.current) {
+        setLocationStatus(text('Ищем GPS-сигнал…', 'GPS сигналын іздеп жатырмыз…', 'Searching for GPS signal…'));
+      }
+    };
+    navigator.geolocation.getCurrentPosition(receivePosition, handleLocationError, {
+      enableHighAccuracy: false,
+      maximumAge: 30_000,
+      timeout: 8_000,
+    });
+    const watchId = navigator.geolocation.watchPosition(receivePosition, handleLocationError, {
       enableHighAccuracy: true,
-      maximumAge: 3000,
-      timeout: 15000,
+      maximumAge: 5_000,
+      timeout: 30_000,
     });
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [locale, text]);
+  }, [locale, locationAttempt, text]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (lastNavigationFixAt.current > 0 && Date.now() - lastNavigationFixAt.current > 15_000) {
+        setCurrentSpeedKmh(0);
+        setLocationStatus(text('GPS временно потерян — ищем сигнал…', 'GPS уақытша жоғалды — сигнал ізделуде…', 'GPS temporarily lost — searching…'));
+      }
+    }, 3_000);
+    return () => window.clearInterval(interval);
+  }, [text]);
 
   useEffect(() => {
     if (!upcomingHazard || warnedHazards.current.has(upcomingHazard.hazard.id)) return;
@@ -486,10 +639,24 @@ export function CityExploreMap({
   }, [locale, query]);
 
   useEffect(() => {
-    if (!navigationActive || !destination || !riderLocation || !progress) return;
-    if (navigationSource === 'popular') return;
-    if (progress.distanceFromRouteM < 55 || Date.now() - lastAutoRerouteAt.current < 15000) return;
-    lastAutoRerouteAt.current = Date.now();
+    if (!navigationActive || !destination || !riderLocation || !progress || navigationSource === 'popular') {
+      offRouteSince.current = null;
+      return;
+    }
+    const accuracyM = lastGpsAccuracyM.current;
+    const rerouteDistanceM = Math.max(55, Math.min(100, accuracyM * 1.5));
+    if (!Number.isFinite(accuracyM) || accuracyM > 100 || progress.distanceFromRouteM <= rerouteDistanceM) {
+      offRouteSince.current = null;
+      return;
+    }
+    const now = Date.now();
+    if (offRouteSince.current === null) {
+      offRouteSince.current = now;
+      return;
+    }
+    if (now - offRouteSince.current < 4_000 || now - lastAutoRerouteAt.current < 15_000) return;
+    offRouteSince.current = null;
+    lastAutoRerouteAt.current = now;
     setRoutingOrigin({ ...riderLocation });
   }, [destination, navigationActive, navigationSource, progress, riderLocation]);
 
@@ -505,16 +672,36 @@ export function CityExploreMap({
       active: navigationActive,
       source: navigationSource,
       savedAt: new Date().toISOString(),
-    });
+    }, { notify: false });
   }, [activeRoute, destination, navigationActive, navigationSource]);
 
   useEffect(() => {
-    const requestId = ++routeRequest.current;
-    setRouteError('');
-    if (navigationSource === 'popular' && routeOptions.length > 0) {
-      setRouting(false);
+    if (navigationSource === 'popular') {
+      if (popularRematchAttempted.current) return;
+      popularRematchAttempted.current = true;
+      const storedRoute = routeOptions[0];
+      if (!storedRoute || storedRoute.result.points.length < 2) return;
+      const requestId = ++routeRequest.current;
+      setRouteError('');
+      setRouting(true);
+      void routeCyclingWaypoints(sampleRouteAnchors(storedRoute.result.points), 'recommended')
+        .then((result) => {
+          if (requestId !== routeRequest.current) return;
+          setRouteOptions([{ preference: 'recommended', result }]);
+          setActivePreference('recommended');
+        })
+        .catch(() => {
+          if (requestId === routeRequest.current) {
+            setRouteError(text('Этот старый маршрут не удалось полностью привязать к улицам — показываем сохранённую линию.', 'Бұл ескі бағытты көшелерге толық байланыстыру мүмкін болмады — сақталған сызық көрсетіледі.', 'This older route could not be fully matched to streets, so its saved line remains visible.'));
+          }
+        })
+        .finally(() => {
+          if (requestId === routeRequest.current) setRouting(false);
+        });
       return;
     }
+    const requestId = ++routeRequest.current;
+    setRouteError('');
     if (!routingOrigin || !destination) {
       if (!destination) setRouteOptions([]);
       setRouting(false);
@@ -546,7 +733,7 @@ export function CityExploreMap({
     }).finally(() => {
       if (requestId === routeRequest.current) setRouting(false);
     });
-  }, [destination, navigationSource, routeOptions.length, routingOrigin, text]);
+  }, [destination, navigationSource, routingOrigin, text]);
 
   function chooseDestination(place: MapPlace) {
     clearMapNavigation();
@@ -577,7 +764,8 @@ export function CityExploreMap({
 
   function recenterOnRider() {
     if (!riderLocation) {
-      setRouteError(text('Местоположение ещё не определено. Разреши доступ к геолокации.', 'Орналасқан жер әлі анықталмады. Геолокацияға рұқсат бер.', 'Your location is not available yet. Allow location access.'));
+      setLocationStatus(text('Повторно ищем GPS…', 'GPS қайта ізделуде…', 'Trying GPS again…'));
+      setLocationAttempt((current) => current + 1);
       return;
     }
     setRoutingOrigin(riderLocation);
@@ -596,6 +784,7 @@ export function CityExploreMap({
       title: `${text('Маршрут до', 'Бағыт:', 'Route to')} ${destination.name}`,
       region: resolvedLocation?.city || resolvedLocation?.country || '',
       waypoints: [routingOrigin, { lat: destination.lat, lng: destination.lng }],
+      snappedWaypoints: activeRoute.result.snappedWaypoints,
       points: activeRoute.result.points,
       elevationGainM: activeRoute.result.elevationGainM,
     });
@@ -619,8 +808,13 @@ export function CityExploreMap({
     : 1;
   const remainingClimbM = activeRoute ? Math.round(activeRoute.result.elevationGainM * remainingRatio) : 0;
   const remainingMinutes = activeRoute && progress
-    ? estimatedRideMinutes(activeRoute.result, progress.remainingM / 1000, remainingClimbM)
+    ? estimatedRideMinutes(activeRoute.result, (progress.remainingM + destinationRoadGapM) / 1000, remainingClimbM)
     : totalMinutes;
+  const displayedRemainingM = progress
+    ? progress.remainingM + (progress.remainingM < 30 && directDestinationDistanceM !== null
+      ? directDestinationDistanceM
+      : destinationRoadGapM)
+    : 0;
 
   const quickSearches = [
     { label: text('Кофе', 'Кофе', 'Coffee'), query: text('кофейня', 'кофехана', 'coffee shop'), icon: Utensils },
@@ -663,7 +857,30 @@ export function CityExploreMap({
           />
           {riderLocation && <Marker position={[riderLocation.lat, riderLocation.lng]} icon={navigationActive ? navigationRiderIcon : riderIcon} interactive={!hazardPickMode} keyboard={!hazardPickMode} zIndexOffset={1000}><Popup>{text('Твоё текущее местоположение', 'Сенің қазіргі орналасқан жерің', 'Your current location')}</Popup></Marker>}
           {destination && <Marker position={[destination.lat, destination.lng]} icon={destinationIcon} interactive={!hazardPickMode} keyboard={!hazardPickMode} zIndexOffset={900}><Popup><strong>{destination.name}</strong><br />{destination.subtitle}</Popup></Marker>}
-          {routeOptions.map((option) => <Polyline key={option.preference} positions={option.result.points.map((point) => [point.lat, point.lng] as [number, number])} interactive={!hazardPickMode} pathOptions={{ color: option.preference === 'recommended' ? '#1b8577' : '#6f5aa8', weight: activePreference === option.preference ? (navigationActive ? 9 : 7) : 4, opacity: activePreference === option.preference ? 0.95 : (navigationActive ? 0 : 0.45), lineCap: 'round', lineJoin: 'round' }} eventHandlers={{ click: () => !navigationActive && setActivePreference(option.preference) }} />)}
+          {destination && snappedDestination && destinationRoadGapM >= 8 && <Polyline
+            positions={[[snappedDestination.lat, snappedDestination.lng], [destination.lat, destination.lng]]}
+            interactive={false}
+            pathOptions={{ color: '#f8fbff', opacity: .76, weight: 3, dashArray: '3 7', lineCap: 'round' }}
+          />}
+          {routeOptions.map((option) => activePreference === option.preference
+            ? <DirectionalRouteLine
+              key={option.preference}
+              points={option.result.points}
+              color="#35e0bd"
+              weight={navigationActive ? 9 : 7}
+              opacity={0.98}
+              showArrows
+              maxArrows={navigationActive ? 24 : 16}
+              interactive={!hazardPickMode && !navigationActive}
+              onClick={() => !navigationActive && setActivePreference(option.preference)}
+            />
+            : <Polyline
+              key={option.preference}
+              positions={option.result.points.map((point) => [point.lat, point.lng] as [number, number])}
+              interactive={!hazardPickMode && !navigationActive}
+              pathOptions={{ color: '#9078d6', weight: 4, opacity: navigationActive ? 0 : 0.45, lineCap: 'round', lineJoin: 'round' }}
+              eventHandlers={{ click: () => !navigationActive && setActivePreference(option.preference) }}
+            />)}
         </MapContainer>
         {!riderLocation && !hazardPickMode && <div className="map-start-hint"><MapPin size={16} />{text('Нажми на карту, чтобы указать старт', 'Бастау нүктесін таңдау үшін картаны бас', 'Tap the map to set a start')}</div>}
         {hazardPickMode && <div className="safety-map-pick-hint" role="status"><MapPin size={17} /><span>{text('Нажми на место или выбери центр карты клавишей Enter', 'Орынды бас немесе Enter арқылы карта ортасын таңда', 'Tap the place or press Enter to use the map center')}</span><button type="button" aria-label={text('Отменить выбор точки', 'Нүкте таңдаудан бас тарту', 'Cancel location picking')} onClick={onOpenHazardReport}><X size={16} aria-hidden="true" /></button></div>}
@@ -671,7 +888,7 @@ export function CityExploreMap({
 
         {navigationActive && instruction && destination && <div className="navigation-instruction-card" role="status">
           <span className={`navigation-turn ${instruction.turn}`}><Navigation size={30} /></span>
-          <div><strong>{instruction.text}</strong><small>{instruction.distanceM > 0 ? `${text('через', 'кейін', 'in')} ${formatDistance(instruction.distanceM, locale)}` : destination.name}</small></div>
+          <div><strong>{instruction.text}</strong><small>{instruction.distanceM > 15 ? `${text('через', 'кейін', 'in')} ${formatDistance(instruction.distanceM, locale)}` : instruction.turn === 'finish' ? destination.name : text('сейчас', 'қазір', 'now')}</small></div>
         </div>}
 
         {navigationActive && upcomingHazard && <div className="safety-navigation-warning" role="status" aria-live="polite" aria-label={text('Опасность впереди. Снизь скорость.', 'Алда қауіп бар. Жылдамдықты азайт.', 'Hazard ahead. Slow down.')}>
@@ -682,7 +899,7 @@ export function CityExploreMap({
 
         {navigationActive && activeRoute && progress && <div className="navigation-bottom-sheet">
           <div className="navigation-live-metrics">
-            <span><strong>{formatDistance(progress.remainingM, locale)}</strong><small>{text('осталось', 'қалды', 'remaining')}</small></span>
+            <span><strong>{formatDistance(displayedRemainingM, locale)}</strong><small>{text('осталось', 'қалды', 'remaining')}</small></span>
             <span><strong>↑ {remainingClimbM} {text('м', 'м', 'm')}</strong><small>{text('подъём', 'өрлеу', 'climb')}</small></span>
             <span><strong>{arrivalTime(remainingMinutes, locale)}</strong><small>{text('прибытие', 'келу', 'arrival')}</small></span>
             <span><strong>{currentSpeedKmh === null ? '—' : currentSpeedKmh.toFixed(1)}</strong><small>{text('км/ч', 'км/сағ', 'km/h')}</small></span>
@@ -702,6 +919,7 @@ export function CityExploreMap({
           <div className="route-addresses"><div><span className="route-address-marker start">A</span><p><small>{text('Откуда', 'Қайдан', 'From')}</small><strong>{resolvedLocation?.label || text('Моё местоположение', 'Менің орналасқан жерім', 'My location')}</strong></p></div><div><span className="route-address-marker finish">B</span><p><small>{text('Куда', 'Қайда', 'To')}</small><strong>{destination.name}</strong></p></div></div>
           {routing && <p className="route-build-status">{text('Ищем два лучших пути по улицам…', 'Көшелермен екі үздік бағытты іздеп жатырмыз…', 'Finding the two best street routes…')}</p>}
           {routeError && <p className="form-note" role="alert">{routeError}</p>}
+          {activeRoute && destinationRoadGapM >= 20 && <p className="route-snap-notice" role="status"><MapPin size={15} />{text(`Точка находится в ${Math.round(destinationRoadGapM)} м от доступной дороги. Пунктиром показан последний отрезок.`, `Нүкте қолжетімді жолдан ${Math.round(destinationRoadGapM)} м жерде. Соңғы бөлік үзік сызықпен көрсетілген.`, `The place is ${Math.round(destinationRoadGapM)} m from the nearest routable road. The final link is dashed.`)}</p>}
           {routeOptions.length > 0 && <div className="route-option-list">{routeOptions.map((option) => {
             const copy = preferenceCopy(option.preference, text);
             const Icon = copy.icon;

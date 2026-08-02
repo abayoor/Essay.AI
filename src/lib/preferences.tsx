@@ -16,16 +16,16 @@ const preferencesStorageKey = 'slipstream-preferences';
 function readStoredPreferences(): { locale: Locale; theme: ThemePreference } {
   try {
     const stored = window.localStorage.getItem(preferencesStorageKey);
-    if (!stored) return { locale: 'ru', theme: 'light' };
+    if (!stored) return { locale: 'ru', theme: 'dark' };
     const value: unknown = JSON.parse(stored);
-    if (!value || typeof value !== 'object') return { locale: 'ru', theme: 'light' };
-    const { locale, theme } = value as { locale?: unknown; theme?: unknown };
+    if (!value || typeof value !== 'object') return { locale: 'ru', theme: 'dark' };
+    const { locale } = value as { locale?: unknown };
     return {
       locale: locale === 'kz' || locale === 'en' ? locale : 'ru',
-      theme: theme === 'dark' ? 'dark' : 'light',
+      theme: 'dark',
     };
   } catch {
-    return { locale: 'ru', theme: 'light' };
+    return { locale: 'ru', theme: 'dark' };
   }
 }
 
@@ -33,7 +33,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { session } = useSession();
   const [storedPreferences] = useState(readStoredPreferences);
   const [locale, setLocale] = useState<Locale>(storedPreferences.locale);
-  const [theme, setTheme] = useState<ThemePreference>(storedPreferences.theme);
+  const theme: ThemePreference = 'dark';
   const hasLocalChange = useRef(false);
 
   useEffect(() => {
@@ -44,7 +44,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     void loadRiderProfile().then((profile) => {
       if (!active || !profile || hasLocalChange.current) return;
       setLocale(profile.locale);
-      setTheme(profile.theme_preference);
     }).catch(() => undefined);
     return () => { active = false; };
   }, [session?.user.id]);
@@ -64,7 +63,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setPreferences: (next) => {
       hasLocalChange.current = true;
       setLocale(next.locale);
-      setTheme(next.theme);
     },
   }), [locale, theme]);
 
