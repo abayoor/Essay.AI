@@ -220,7 +220,7 @@ function simplifyGpsSegment(track: GpsTrackPoint[], toleranceMeters: number): Gp
   return track.filter((_point, index) => keep[index] === 1);
 }
 
-export function simplifyGpsTrack(track: GpsTrackPoint[], toleranceMeters = 4): GpsTrackPoint[] {
+export function simplifyGpsTrack(track: GpsTrackPoint[], toleranceMeters = 2): GpsTrackPoint[] {
   return splitGpsTrackSegments(track).flatMap((segment, segmentIndex) => {
     const simplified = simplifyGpsSegment(segment, toleranceMeters);
     return simplified.map((point, pointIndex) => pointIndex === 0 && (segmentIndex > 0 || point.segmentStart)

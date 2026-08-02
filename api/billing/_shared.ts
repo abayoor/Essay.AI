@@ -160,6 +160,11 @@ async function authenticatedRpc(
   return payload;
 }
 
+export async function hasDatabaseProAccess(user: SupabaseUser): Promise<boolean> {
+  const payload = await authenticatedRpc(user, 'has_pro_access', {}, 'Не удалось проверить промо-доступ Pro.');
+  return payload === true;
+}
+
 export async function consumeProAnalysisCredit(
   user: SupabaseUser,
   consentPolicyVersion: '2026-08-01',

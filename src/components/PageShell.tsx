@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   Trophy,
+  UsersRound,
   Wrench,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
@@ -23,6 +24,7 @@ import { usePreferences } from '../lib/preferences';
 import { saveRiderProfile } from '../lib/rider';
 import { supabase } from '../lib/supabase';
 import { useTranslations } from '../lib/translations';
+import { FriendLocationPublisher } from './FriendLocationPublisher';
 
 type MainLinkProps = {
   href: string;
@@ -68,7 +70,7 @@ export function PageShell({ children }: { children: ReactNode }) {
     if (theme !== 'dark') setPreferences({ locale, theme: 'dark' });
   }, [locale, setPreferences, theme]);
 
-  const profileActive = ['/profile', '/pro', '/rides', '/bikes', '/settings'].some((path) => location.startsWith(path));
+  const profileActive = ['/profile', '/pro', '/coach', '/friends', '/competitions', '/rides', '/bikes', '/settings'].some((path) => location.startsWith(path));
   const desktopNavigation = session && <>
     <MainLink
       href="/dashboard"
@@ -129,12 +131,10 @@ export function PageShell({ children }: { children: ReactNode }) {
       icon={<Map size={20} />}
       active={location.startsWith('/map') || location.startsWith('/routes')}
     />
-    <MainLink
-      href="/profile"
-      label={t('profile')}
-      icon={<CircleUserRound size={20} />}
-      active={profileActive}
-    />
+    <button type="button" className={`main-nav-link mobile-profile-trigger${profileActive ? ' active' : ''}`} onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen}>
+      <CircleUserRound size={20} />
+      <span>{t('profile')}</span>
+    </button>
   </>;
 
   const languageSelect = <span className="header-preferences">
@@ -150,6 +150,7 @@ export function PageShell({ children }: { children: ReactNode }) {
   </span>;
 
   return <div className="cycle-shell">
+    <FriendLocationPublisher />
     <header className="cycle-header">
       <Link href={session ? '/dashboard' : '/'} className="cycle-brand">
         <Compass size={20} aria-hidden="true" />
@@ -173,6 +174,10 @@ export function PageShell({ children }: { children: ReactNode }) {
                 <CircleUserRound size={17} />
                 {t('profile')}
               </Link>
+              <Link href="/friends" onClick={() => setProfileOpen(false)}>
+                <UsersRound size={17} />
+                {text('Друзья', 'Достар', 'Friends')}
+              </Link>
               <Link href="/coach" onClick={() => setProfileOpen(false)}>
                 <BrainCircuit size={17} />
                 {text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}
@@ -188,6 +193,10 @@ export function PageShell({ children }: { children: ReactNode }) {
               <Link href="/bikes" onClick={() => setProfileOpen(false)}>
                 <Wrench size={17} />
                 {t('bikesAndService')}
+              </Link>
+              <Link href="/competitions" onClick={() => setProfileOpen(false)}>
+                <Trophy size={17} />
+                {text('Челленджи', 'Челлендждер', 'Challenges')}
               </Link>
               <Link href="/settings" onClick={() => setProfileOpen(false)}>
                 <Settings size={17} />
@@ -232,5 +241,23 @@ export function PageShell({ children }: { children: ReactNode }) {
     {session && <nav className="mobile-main-nav" aria-label={t('dashboard')}>
       {mobileNavigation}
     </nav>}
+    {session && profileOpen && <>
+      <button type="button" className="mobile-profile-backdrop" aria-label={text('Закрыть меню профиля', 'Профиль мәзірін жабу', 'Close profile menu')} onClick={() => setProfileOpen(false)} />
+      <nav className="mobile-profile-sheet" aria-label={text('Меню профиля', 'Профиль мәзірі', 'Profile menu')}>
+        <header><div><span><CircleUserRound size={21} /></span><div><strong>{text('Твой профиль', 'Сенің профилің', 'Your profile')}</strong><small>{text('Все личные разделы', 'Барлық жеке бөлімдер', 'All personal sections')}</small></div></div><button type="button" onClick={() => setProfileOpen(false)} aria-label={text('Закрыть', 'Жабу', 'Close')}>×</button></header>
+        <div className="mobile-profile-grid">
+          <Link href="/profile"><CircleUserRound size={20} /><span>{t('profile')}</span></Link>
+          <Link href="/friends"><UsersRound size={20} /><span>{text('Друзья', 'Достар', 'Friends')}</span></Link>
+          <Link href="/coach"><BrainCircuit size={20} /><span>{text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}</span></Link>
+          <Link href="/pro"><Sparkles size={20} /><span>Slipstream Pro</span></Link>
+          <Link href="/rides"><Bike size={20} /><span>{t('myRides')}</span></Link>
+          <Link href="/bikes"><Wrench size={20} /><span>{t('bikesAndService')}</span></Link>
+          <Link href="/competitions"><Trophy size={20} /><span>{text('Челленджи', 'Челлендждер', 'Challenges')}</span></Link>
+          <Link href="/messages"><MessageCircle size={20} /><span>{t('messages')}</span></Link>
+          <Link href="/settings"><Settings size={20} /><span>{t('settings')}</span></Link>
+        </div>
+        <button type="button" className="mobile-profile-signout" onClick={() => void signOut()}><LogOut size={18} />{t('signOut')}</button>
+      </nav>
+    </>}
   </div>;
 }

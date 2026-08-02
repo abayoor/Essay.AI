@@ -1,4 +1,4 @@
-import { assertBillingProviderRateLimit, authenticatedUser, billingError, findProSubscription, json } from './_shared';
+import { assertBillingProviderRateLimit, authenticatedUser, billingConfigured, billingError, findProSubscription, hasDatabaseProAccess, json } from './_shared';
 import { corsPreflight, withCors } from '../_cors';
 
 async function handler(request: Request): Promise<Response> {
@@ -6,6 +6,18 @@ async function handler(request: Request): Promise<Response> {
   try {
     const user = await authenticatedUser(request);
     await assertBillingProviderRateLimit(user);
+    if (await hasDatabaseProAccess(user)) {
+      return json({ subscription: {
+        id: 'promotional-access',
+        userId: user.id,
+        planKey: 'pro_monthly',
+        status: 'active',
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        source: 'promotion',
+      } });
+    }
+    if (!billingConfigured()) return json({ subscription: null });
     const subscription = await findProSubscription(user.email);
     if (!subscription.id) return json({ subscription: null });
     const mappedStatus = subscription.status === 'on_trial' ? 'trialing'
@@ -22,6 +34,7 @@ async function handler(request: Request): Promise<Response> {
         status: mappedStatus,
         currentPeriodEnd: subscription.endsAt ?? subscription.renewsAt,
         cancelAtPeriodEnd: subscription.status === 'cancelled',
+        source: 'billing',
       },
     });
   } catch (error) {

@@ -36,7 +36,7 @@ export async function startBackgroundRecording({ onLocation, onError }: Backgrou
     backgroundMessage: 'GPS-запись продолжается. Нажми, чтобы вернуться к тренировке.',
     requestPermissions: true,
     stale: false,
-    distanceFilter: 3,
+    distanceFilter: 2,
   }, (location, error) => {
     if (error) {
       onError(errorMessage(error));

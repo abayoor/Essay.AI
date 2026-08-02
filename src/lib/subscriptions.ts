@@ -19,6 +19,7 @@ export type BillingSubscription = {
   status: SubscriptionStatus;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
+  source: 'billing' | 'promotion';
 };
 
 /**
@@ -71,6 +72,7 @@ function parseSubscription(value: unknown): BillingSubscription | null {
     status: value.status,
     currentPeriodEnd: typeof value.currentPeriodEnd === 'string' ? value.currentPeriodEnd : null,
     cancelAtPeriodEnd: value.cancelAtPeriodEnd === true,
+    source: value.source === 'promotion' ? 'promotion' : 'billing',
   };
 }
 
@@ -127,7 +129,6 @@ async function createBillingSession(path: 'checkout' | 'portal', body?: Record<s
 }
 
 export async function loadCurrentSubscription(): Promise<BillingSubscription | null> {
-  if (!billingConfiguration.enabled) return null;
   const token = await accessToken();
   const response = await apiFetch('/api/billing/status', {
     headers: { Authorization: `Bearer ${token}` },
@@ -161,4 +162,24 @@ export async function createProCheckout(locale: 'ru' | 'kz' | 'en'): Promise<str
 
 export async function createBillingPortal(): Promise<string> {
   return createBillingSession('portal');
+}
+
+export async function redeemProPromo(code: string): Promise<BillingSubscription> {
+  const normalized = code.trim();
+  if (!normalized) throw new Error('Введи промокод.');
+  const { data, error } = await supabase.rpc('redeem_pro_promo', { promo_code: normalized });
+  if (error || !Array.isArray(data) || data[0]?.active !== true) {
+    throw new Error('Промокод не найден или больше не действует.');
+  }
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) throw new Error('Войди в аккаунт, чтобы активировать промокод.');
+  return {
+    id: 'promotional-access',
+    userId: authData.user.id,
+    planKey: 'pro_monthly',
+    status: 'active',
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    source: 'promotion',
+  };
 }

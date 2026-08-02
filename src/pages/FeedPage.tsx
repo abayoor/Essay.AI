@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Newspaper, Plus, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Newspaper, Plus, RefreshCw, ShoppingBag, Users } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
+import { MarketplaceCard } from '../components/MarketplaceCard';
 import { PageShell } from '../components/PageShell';
 import { PostCard } from '../components/PostCard';
 import { useSession } from '../lib/auth';
 import type { SocialPost } from '../lib/cyclingModels';
 import { useLocaleText } from '../lib/localized';
+import { loadFriendHub } from '../lib/friends';
+import { loadMarketplaceListings, type MarketplaceListing } from '../lib/marketplace';
 import { loadPosts } from '../lib/posts';
+import { loadRiderProfile } from '../lib/rider';
 import { useTranslations } from '../lib/translations';
 
 const skeletonCards = [0, 1];
 const feedPageSize = 15;
+type FeedTab = 'recommendations' | 'friends' | 'marketplace';
 
 function FeedSkeleton({ label }: { label: string }) {
   return <section className="feed-skeleton" role="status" aria-label={label} aria-live="polite">
@@ -40,6 +45,8 @@ export function FeedPage() {
   const { session, loading } = useSession();
   const [, navigate] = useLocation();
   const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [tab, setTab] = useState<FeedTab>('recommendations');
   const [postsLoading, setPostsLoading] = useState(true);
   const [moreLoading, setMoreLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -51,9 +58,22 @@ export function FeedPage() {
     if (showLoader) setPostsLoading(true);
     try {
       setError('');
-      const nextPosts = await loadPosts(undefined, { limit: feedPageSize });
+      if (tab === 'marketplace') {
+        setListings(await loadMarketplaceListings());
+        setPosts([]);
+        setHasMore(false);
+        return;
+      }
+      const profile = tab === 'recommendations' ? await loadRiderProfile() : null;
+      const friendIds = tab === 'friends' ? (await loadFriendHub()).friends.map((friend) => friend.id) : undefined;
+      const nextPosts = await loadPosts(undefined, {
+        limit: tab === 'recommendations' ? feedPageSize * 3 : feedPageSize,
+        authorIds: friendIds,
+        preferredHomeCity: profile?.home_city,
+      });
       setPosts(nextPosts);
-      setHasMore(nextPosts.length === feedPageSize);
+      setListings([]);
+      setHasMore(tab !== 'recommendations' && nextPosts.length === feedPageSize);
     } catch {
       setError(text(
         'Не удалось загрузить ленту. Проверь соединение и попробуй ещё раз.',
@@ -63,14 +83,15 @@ export function FeedPage() {
     } finally {
       if (showLoader) setPostsLoading(false);
     }
-  }, [text]);
+  }, [tab, text]);
 
   const loadMore = useCallback(async () => {
     const cursor = posts[posts.length - 1]?.created_at;
-    if (!cursor || moreLoading || !hasMore) return;
+    if (tab === 'marketplace' || !cursor || moreLoading || !hasMore) return;
     setMoreLoading(true);
     try {
-      const nextPosts = await loadPosts(undefined, { before: cursor, limit: feedPageSize });
+      const friendIds = tab === 'friends' ? (await loadFriendHub()).friends.map((friend) => friend.id) : undefined;
+      const nextPosts = await loadPosts(undefined, { before: cursor, limit: feedPageSize, authorIds: friendIds });
       setPosts((current) => {
         const known = new Set(current.map((post) => post.id));
         return [...current, ...nextPosts.filter((post) => !known.has(post.id))];
@@ -85,7 +106,7 @@ export function FeedPage() {
     } finally {
       setMoreLoading(false);
     }
-  }, [hasMore, moreLoading, posts, text]);
+  }, [hasMore, moreLoading, posts, tab, text]);
 
   function updateLike(postId: string, shouldBeLiked: boolean) {
     const viewerId = session?.user.id;
@@ -124,6 +145,12 @@ export function FeedPage() {
         </Link>
       </header>
 
+      <nav className="community-feed-tabs" aria-label={text('Разделы сообщества', 'Қауымдастық бөлімдері', 'Community sections')}>
+        <button type="button" className={tab === 'recommendations' ? 'active' : ''} onClick={() => setTab('recommendations')}><Newspaper size={17} />{text('Рекомендации', 'Ұсыныстар', 'For you')}</button>
+        <button type="button" className={tab === 'friends' ? 'active' : ''} onClick={() => setTab('friends')}><Users size={17} />{text('Посты друзей', 'Достар жазбалары', 'Friends')}</button>
+        <button type="button" className={tab === 'marketplace' ? 'active' : ''} onClick={() => setTab('marketplace')}><ShoppingBag size={17} />{text('Маркетплейс', 'Маркетплейс', 'Marketplace')}</button>
+      </nav>
+
       {error && <div className="feed-error" role="alert">
         <AlertTriangle size={22} aria-hidden="true" />
         <p>{error}</p>
@@ -135,6 +162,10 @@ export function FeedPage() {
 
       {postsLoading
         ? <FeedSkeleton label={t('loadFeed')} />
+        : tab === 'marketplace'
+          ? listings.length
+            ? <><div className="community-market-actions"><p>{text('Велосипеды, детали и экипировка от райдеров.', 'Райдерлердің велосипедтері, бөлшектері және жабдықтары.', 'Bikes, parts and gear from riders.')}</p><Link className="signal-button" href="/marketplace/new"><Plus size={17} />{text('Продать', 'Сату', 'Sell')}</Link></div><section className="marketplace-listings">{listings.map((listing) => <MarketplaceCard key={listing.id} listing={listing} />)}</section></>
+            : <section className="empty-panel feed-empty-state"><ShoppingBag size={30} /><h2>{text('Маркет пока пуст', 'Маркет әзірге бос', 'The market is empty')}</h2><p>{text('Размести первое объявление с фотографиями, ценой и описанием.', 'Фотосуреттері, бағасы және сипаттамасы бар алғашқы хабарландыруды орналастыр.', 'Create the first listing with photos, price, and description.')}</p><Link className="signal-button" href="/marketplace/new">{text('Разместить объявление', 'Хабарландыру беру', 'Create listing')}</Link></section>
         : posts.length
           ? <section className="feed-list" aria-label={t('feedTitle')}>
             {posts.map((post) => <PostCard
@@ -149,12 +180,12 @@ export function FeedPage() {
             </button>}
           </section>
           : !error && <section className="empty-panel feed-empty-state">
-            <span aria-hidden="true"><Newspaper size={30} /></span>
-            <h2>{t('emptyFeedTitle')}</h2>
-            <p>{t('emptyFeedDescription')}</p>
-            <Link className="signal-button" href="/posts/new">
-              <Plus size={18} aria-hidden="true" />
-              {t('newPost')}
+            <span aria-hidden="true">{tab === 'friends' ? <Users size={30} /> : <Newspaper size={30} />}</span>
+            <h2>{tab === 'friends' ? text('У друзей пока нет публикаций', 'Достарыңда әзірге жазба жоқ', 'No friend posts yet') : t('emptyFeedTitle')}</h2>
+            <p>{tab === 'friends' ? text('Добавь друзей по нику — их новые поездки появятся здесь.', 'Достарды ник бойынша қос — олардың жаңа сапарлары осында пайда болады.', 'Add friends by username and their new rides will appear here.') : t('emptyFeedDescription')}</p>
+            <Link className="signal-button" href={tab === 'friends' ? '/friends' : '/posts/new'}>
+              {tab === 'friends' ? <Users size={18} /> : <Plus size={18} aria-hidden="true" />}
+              {tab === 'friends' ? text('Найти друзей', 'Достарды табу', 'Find friends') : t('newPost')}
             </Link>
           </section>}
     </main>

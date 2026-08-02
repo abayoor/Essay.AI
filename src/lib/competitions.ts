@@ -32,8 +32,19 @@ export type CompetitionEvent = {
 
 export type CompetitionsOverview = {
   weekly: WeeklyCompetitionProgress;
+  leaderboard: WeeklyLeaderboardEntry[];
   challengeGroups: ChallengeGroupSummary[];
   events: CompetitionEvent[];
+};
+
+export type WeeklyLeaderboardEntry = {
+  rank: number;
+  userId: string;
+  username: string;
+  fullName: string;
+  avatarUrl: string | null;
+  distanceKm: number;
+  rideCount: number;
 };
 
 type RideActivityRow = {
@@ -129,8 +140,9 @@ export async function loadCompetitionsOverview(userId: string, now = new Date())
   if (!userId) throw new Error('A signed-in rider is required.');
 
   const todayKey = dateKey(now);
-  const [weekly, groupsResult, eventsResult] = await Promise.all([
+  const [weekly, leaderboardResult, groupsResult, eventsResult] = await Promise.all([
     loadWeeklyCompetitionProgress(userId, now),
+    supabase.rpc('current_week_distance_leaderboard', { max_rows: 50 }),
     supabase
       .from('challenge_groups')
       .select('id, name, challenge_group_members(count)')
@@ -147,6 +159,9 @@ export async function loadCompetitionsOverview(userId: string, now = new Date())
 
   if (groupsResult.error) throw groupsResult.error;
   if (eventsResult.error) throw eventsResult.error;
+  // Keep the existing challenges usable while a freshly deployed database is
+  // still receiving the leaderboard migration.
+  void supabase.rpc('ensure_previous_week_pro_winner').then(() => undefined);
 
   const groups = (groupsResult.data ?? []) as ChallengeGroupRow[];
   const events = (eventsResult.data ?? []) as EventRow[];
@@ -181,6 +196,23 @@ export async function loadCompetitionsOverview(userId: string, now = new Date())
   );
   return {
     weekly,
+    leaderboard: ((leaderboardResult.error ? [] : leaderboardResult.data ?? []) as {
+      rank: number | string;
+      user_id: string;
+      username: string;
+      full_name: string;
+      avatar_url: string | null;
+      distance_km: number | string;
+      ride_count: number | string;
+    }[]).map((entry) => ({
+      rank: Number(entry.rank),
+      userId: entry.user_id,
+      username: entry.username,
+      fullName: entry.full_name,
+      avatarUrl: entry.avatar_url,
+      distanceKm: Number(entry.distance_km),
+      rideCount: Number(entry.ride_count),
+    })),
     challengeGroups: groups.map((group) => ({
       id: group.id,
       name: group.name,

@@ -3,6 +3,7 @@ import {
   Bike,
   CalendarDays,
   Check,
+  Crown,
   ExternalLink,
   Flag,
   Flame,
@@ -346,6 +347,11 @@ export function CompetitionsPage() {
                 )}</p>
                 <Link className="signal-button" href="/record"><Bike size={17} aria-hidden="true" />{text('Записать заезд', 'Сапарды жазу', 'Record a ride')}</Link>
               </footer>
+            </section>
+
+            <section className="weekly-leaderboard" aria-labelledby="weekly-leaderboard-title">
+              <header><div><p className="kicker">Slipstream Weekly</p><h2 id="weekly-leaderboard-title">{text('Кто проедет больше всех?', 'Кім ең көп жүреді?', 'Who will ride the farthest?')}</h2><p>{text('Победитель недели получает 30 дней Slipstream Pro бесплатно.', 'Апта жеңімпазы 30 күндік Slipstream Pro-ны тегін алады.', 'The weekly winner gets 30 days of Slipstream Pro free.')}</p></div><span><Crown size={20} />PRO</span></header>
+              {overview.leaderboard.length ? <ol>{overview.leaderboard.map((entry) => <li className={entry.userId === userId ? 'is-me' : ''} key={entry.userId}><b>{entry.rank}</b>{entry.avatarUrl ? <img src={entry.avatarUrl} alt="" /> : <span className="leaderboard-avatar">{entry.fullName.slice(0, 1).toUpperCase()}</span>}<div><strong>{entry.fullName}</strong><small>@{entry.username} · {entry.rideCount} {text('заездов', 'сапар', 'rides')}</small></div><em>{formatDistance(locale, entry.distanceKm)} км</em></li>)}</ol> : <div className="competition-empty"><Trophy size={28} /><div><h3>{text('Стань первым участником недели', 'Аптаның алғашқы қатысушысы бол', 'Be the first rider this week')}</h3><p>{text('Сохрани GPS-заезд — километры автоматически появятся здесь.', 'GPS сапарын сақта — километрлер осында автоматты түрде пайда болады.', 'Save a GPS ride and your kilometres will appear here automatically.')}</p></div></div>}
             </section>
 
             <section className="competition-section" aria-labelledby="challenge-groups-title">

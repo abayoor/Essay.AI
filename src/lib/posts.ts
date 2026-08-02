@@ -100,9 +100,21 @@ export type LoadPostsOptions = {
   before?: string;
   limit?: number;
   postId?: string;
+  authorIds?: string[];
+  preferredHomeCity?: string | null;
 };
 
+function locationRecommendationScore(authorCity: string | null, viewerCity: string | null | undefined): number {
+  const authorParts = authorCity?.split(',').map((part) => part.trim().toLocaleLowerCase()).filter(Boolean) ?? [];
+  const viewerParts = viewerCity?.split(',').map((part) => part.trim().toLocaleLowerCase()).filter(Boolean) ?? [];
+  if (!authorParts.length || !viewerParts.length) return 0;
+  if (authorParts.join('|') === viewerParts.join('|')) return 3;
+  if (authorParts[0] === viewerParts[0]) return 2;
+  return authorParts[authorParts.length - 1] === viewerParts[viewerParts.length - 1] ? 1 : 0;
+}
+
 export async function loadPosts(userId?: string, options: LoadPostsOptions = {}): Promise<SocialPost[]> {
+  if (options.authorIds && options.authorIds.length === 0) return [];
   const limit = Math.min(Math.max(options.limit ?? 30, 1), 50);
   let query = supabase
     .from('posts')
@@ -110,6 +122,7 @@ export async function loadPosts(userId?: string, options: LoadPostsOptions = {})
     .order('created_at', { ascending: false })
     .limit(limit);
   if (userId) query = query.eq('user_id', userId);
+  if (options.authorIds) query = query.in('user_id', options.authorIds);
   if (options.before) query = query.lt('created_at', options.before);
   if (options.postId) query = query.eq('id', options.postId);
   const { data: postData, error: postError } = await query;
@@ -143,7 +156,7 @@ export async function loadPosts(userId?: string, options: LoadPostsOptions = {})
     commentsByPost.set(comment.post_id, group);
   }
 
-  return posts.map((post) => ({
+  const result = posts.map((post) => ({
     id: post.id,
     user_id: post.user_id,
     media_url: post.media_url,
@@ -160,6 +173,11 @@ export async function loadPosts(userId?: string, options: LoadPostsOptions = {})
     rideStats: createRideStats(post),
     routePreview: createRoutePreview(post),
   }));
+  return options.preferredHomeCity ? result.sort((first, second) => {
+    const scoreDifference = locationRecommendationScore(second.author.home_city, options.preferredHomeCity)
+      - locationRecommendationScore(first.author.home_city, options.preferredHomeCity);
+    return scoreDifference || second.created_at.localeCompare(first.created_at);
+  }) : result;
 }
 
 export async function loadPost(postId: string): Promise<SocialPost | null> {

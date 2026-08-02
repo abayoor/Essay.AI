@@ -12,6 +12,7 @@ const ConfirmEmailPage = lazy(() => import('./pages/ConfirmEmailPage').then((mod
 const ConversationPage = lazy(() => import('./pages/ConversationPage').then((module) => ({ default: module.ConversationPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const FeedPage = lazy(() => import('./pages/FeedPage').then((module) => ({ default: module.FeedPage })));
+const FriendsPage = lazy(() => import('./pages/FriendsPage').then((module) => ({ default: module.FriendsPage })));
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
 const LegalPage = lazy(() => import('./pages/LegalPage').then((module) => ({ default: module.LegalPage })));
 const MapPage = lazy(() => import('./pages/MapPage').then((module) => ({ default: module.MapPage })));
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/dashboard" component={DashboardPage} />
           <Route path="/bikes" component={BikesPage} />
           <Route path="/feed" component={FeedPage} />
+          <Route path="/friends" component={FriendsPage} />
           <Route path="/map" component={MapPage} />
           <Route path="/marketplace/new" component={NewMarketplaceListingPage} />
           <Route path="/marketplace/:id" component={MarketplaceListingPage} />

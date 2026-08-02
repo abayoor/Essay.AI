@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import {
   Activity,
   Bike,
@@ -27,6 +27,7 @@ import {
   createProCheckout,
   hasActivePro,
   loadCurrentSubscription,
+  redeemProPromo,
   type BillingSubscription,
 } from '../lib/subscriptions';
 import '../styles/pro.css';
@@ -38,7 +39,7 @@ type ProFeature = {
   detail: string;
 };
 
-type BillingAction = 'checkout' | 'portal' | null;
+type BillingAction = 'checkout' | 'portal' | 'promo' | null;
 
 function openBillingUrl(url: string): void {
   window.location.assign(url);
@@ -52,6 +53,7 @@ export function ProPage() {
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [billingAction, setBillingAction] = useState<BillingAction>(null);
   const [message, setMessage] = useState('');
+  const [promoCode, setPromoCode] = useState('');
 
   const features = useMemo<ProFeature[]>(() => [
     {
@@ -122,7 +124,7 @@ export function ProPage() {
     || subscription?.status === 'unpaid';
 
   useEffect(() => {
-    if (!session || !billingConfiguration.enabled) return;
+    if (!session) return;
     let cancelled = false;
     setSubscriptionLoading(true);
     const checkoutSucceeded = new URLSearchParams(window.location.search).get('checkout') === 'success';
@@ -208,6 +210,22 @@ export function ProPage() {
     }
   }
 
+  async function redeemPromo(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    setBillingAction('promo');
+    setMessage('');
+    try {
+      const nextSubscription = await redeemProPromo(promoCode);
+      setSubscription(nextSubscription);
+      setPromoCode('');
+      setMessage(text('Промокод принят — бесплатный Pro активирован.', 'Промокод қабылданды — тегін Pro белсендірілді.', 'Promo accepted — free Pro is active.'));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : text('Не удалось применить промокод.', 'Промокодты қолдану мүмкін болмады.', 'Could not apply the promo code.'));
+    } finally {
+      setBillingAction(null);
+    }
+  }
+
   const renewalDate = subscription?.currentPeriodEnd
     ? new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(subscription.currentPeriodEnd))
     : null;
@@ -256,7 +274,7 @@ export function ProPage() {
             <div><strong>{text('Нужно обновить оплату', 'Төлемді жаңарту керек', 'Payment needs attention')}</strong><span>{text('Pro временно приостановлен — открой управление подпиской.', 'Pro уақытша тоқтатылды — жазылымды басқаруды аш.', 'Pro is paused until you update the subscription.')}</span></div>
           </div> : null}
 
-          {active || needsBillingAttention ? <button className="pro-primary-button" type="button" disabled={!billingConfiguration.checkoutEnabled || billingAction !== null} onClick={() => void openPortal()}>
+          {active && subscription?.source === 'promotion' ? <div className="pro-promo-active"><Sparkles size={18} />{text('Бесплатный Pro активирован', 'Тегін Pro белсендірілді', 'Free Pro activated')}</div> : active || needsBillingAttention ? <button className="pro-primary-button" type="button" disabled={!billingConfiguration.checkoutEnabled || billingAction !== null} onClick={() => void openPortal()}>
             {billingAction === 'portal'
               ? text('Открываем…', 'Ашып жатырмыз…', 'Opening…')
               : billingConfiguration.nativePlatform
@@ -282,6 +300,11 @@ export function ProPage() {
           </button> : <Link className="pro-primary-button" href="/auth/sign-in">
             {text('Войти и подключить Pro', 'Кіру және Pro қосу', 'Sign in to get Pro')} <ChevronRight size={18} />
           </Link>}
+
+          {session && !active && <form className="pro-promo-form" onSubmit={(event) => void redeemPromo(event)}>
+            <label htmlFor="pro-promo-code">{text('Есть промокод?', 'Промокод бар ма?', 'Have a promo code?')}</label>
+            <div><input id="pro-promo-code" value={promoCode} onChange={(event) => setPromoCode(event.target.value)} placeholder={text('Введите код', 'Кодты енгізіңіз', 'Enter code')} maxLength={40} autoComplete="off" /><button type="submit" disabled={billingAction !== null || !promoCode.trim()}>{billingAction === 'promo' ? text('Проверяем…', 'Тексерілуде…', 'Checking…') : text('Применить', 'Қолдану', 'Apply')}</button></div>
+          </form>}
 
           <ul className="pro-trust-list">
             <li><LockKeyhole size={15} /><span><strong>{text('Безопасная оплата', 'Қауіпсіз төлем', 'Secure checkout')}</strong>{text('На защищённой странице платёжного партнёра', 'Төлем серіктесінің қорғалған бетінде', 'On the payment provider’s secure page')}</span></li>

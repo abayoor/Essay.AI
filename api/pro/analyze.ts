@@ -1,9 +1,11 @@
 import {
   authenticatedUser,
   assertBillingProviderRateLimit,
+  billingConfigured,
   BillingRateLimitError,
   consumeProAnalysisCredit,
   findProSubscription,
+  hasDatabaseProAccess,
   fetchWithTimeout,
   finishProAnalysisCredit,
   json,
@@ -193,8 +195,9 @@ async function handler(request: Request): Promise<Response> {
   try {
     const user = await authenticatedUser(request);
     await assertBillingProviderRateLimit(user);
-    const subscription = await findProSubscription(user.email);
-    if (!subscription.active) return json({ error: 'Этот анализ доступен с активной подпиской Slipstream Pro.' }, 403);
+    const promotionalAccess = await hasDatabaseProAccess(user);
+    const subscription = promotionalAccess || !billingConfigured() ? null : await findProSubscription(user.email);
+    if (!promotionalAccess && !subscription?.active) return json({ error: 'Этот анализ доступен с активной подпиской Slipstream Pro.' }, 403);
     const declaredLength = Number(request.headers.get('content-length') ?? 0);
     if (Number.isFinite(declaredLength) && declaredLength > 12_000) {
       return json({ error: 'Анкета слишком большая.' }, 413);
