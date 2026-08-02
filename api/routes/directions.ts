@@ -1,5 +1,5 @@
-import { corsPreflight, withCors } from '../_cors';
-import { authenticatedUser, assertRoutingRateLimit, RoutingRateLimitError } from '../billing/_shared';
+import { corsPreflight, withCors } from '../_cors.js';
+import { authenticatedUser, assertRoutingRateLimit, RoutingRateLimitError } from '../billing/_shared.js';
 
 type RoutePoint = Readonly<{ lat: number; lng: number }>;
 type RoutePreference = 'recommended' | 'shortest';

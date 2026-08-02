@@ -11,8 +11,8 @@ import {
   json,
   ProQuotaError,
   UpstreamTimeoutError,
-} from '../billing/_shared';
-import { corsPreflight, withCors } from '../_cors';
+} from '../billing/_shared.js';
+import { corsPreflight, withCors } from '../_cors.js';
 
 export const maxDuration = 60;
 

@@ -353,4 +353,4 @@ export default {
       ?? withCors(request, await handler(request), 'POST, OPTIONS');
   },
 };
-import { corsPreflight, withCors } from '../_cors';
+import { corsPreflight, withCors } from '../_cors.js';

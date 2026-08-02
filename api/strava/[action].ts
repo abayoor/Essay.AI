@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
-import { corsPreflight, withCors } from '../_cors';
+import { corsPreflight, withCors } from '../_cors.js';
 
 type ServerConfig = {
   clientId: string;

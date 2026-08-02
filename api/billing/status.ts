@@ -1,5 +1,5 @@
-import { assertBillingProviderRateLimit, authenticatedUser, billingConfigured, billingError, findProSubscription, hasDatabaseProAccess, hasPreviewTesterAccess, hasUniversalPromoAccess, json } from './_shared';
-import { corsPreflight, withCors } from '../_cors';
+import { assertBillingProviderRateLimit, authenticatedUser, billingConfigured, billingError, findProSubscription, hasDatabaseProAccess, hasPreviewTesterAccess, hasUniversalPromoAccess, json } from './_shared.js';
+import { corsPreflight, withCors } from '../_cors.js';
 
 async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') return json({ error: 'Метод не поддерживается.' }, 405);

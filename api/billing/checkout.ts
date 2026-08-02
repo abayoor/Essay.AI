@@ -10,8 +10,8 @@ import {
   lemonSqueezyRequest,
   reserveProCheckout,
   validateProBillingProduct,
-} from './_shared';
-import { corsPreflight, withCors } from '../_cors';
+} from './_shared.js';
+import { corsPreflight, withCors } from '../_cors.js';
 
 type CheckoutResponse = {
   data?: {
