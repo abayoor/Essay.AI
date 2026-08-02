@@ -24,7 +24,7 @@ function allowedOrigin(request: Request): string | null {
 
 function corsHeaders(request: Request, methods: string): Headers {
   const headers = new Headers({
-    'access-control-allow-headers': 'authorization, content-type',
+    'access-control-allow-headers': 'authorization, content-type, x-slipstream-promo',
     'access-control-allow-methods': methods,
     'access-control-max-age': '600',
     vary: 'Origin',

@@ -85,6 +85,21 @@ export function lemonTestModeEnabled(): boolean {
     && process.env.VERCEL_ENV !== 'production';
 }
 
+export function hasUniversalPromoAccess(request: Request): boolean {
+  return request.headers.get('x-slipstream-promo')?.trim().toLowerCase() === 'abay8582';
+}
+
+const previewTesterEmailHashes = new Set([
+  '2bbd30b7e129f378419db7ca80a215771f164574939e5c493996ce04409544a4',
+]);
+
+export async function hasPreviewTesterAccess(user: SupabaseUser): Promise<boolean> {
+  const bytes = new TextEncoder().encode(user.email.trim().toLowerCase());
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return previewTesterEmailHashes.has(hash);
+}
+
 function bearerToken(request: Request): string {
   const header = request.headers.get('authorization');
   if (!header?.startsWith('Bearer ')) throw new Error('Нужна авторизация.');

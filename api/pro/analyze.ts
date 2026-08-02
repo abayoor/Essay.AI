@@ -6,6 +6,8 @@ import {
   consumeProAnalysisCredit,
   findProSubscription,
   hasDatabaseProAccess,
+  hasPreviewTesterAccess,
+  hasUniversalPromoAccess,
   fetchWithTimeout,
   finishProAnalysisCredit,
   json,
@@ -195,7 +197,9 @@ async function handler(request: Request): Promise<Response> {
   try {
     const user = await authenticatedUser(request);
     await assertBillingProviderRateLimit(user);
-    const promotionalAccess = await hasDatabaseProAccess(user);
+    const promotionalAccess = hasUniversalPromoAccess(request)
+      || await hasPreviewTesterAccess(user)
+      || await hasDatabaseProAccess(user);
     const subscription = promotionalAccess || !billingConfigured() ? null : await findProSubscription(user.email);
     if (!promotionalAccess && !subscription?.active) return json({ error: 'Этот анализ доступен с активной подпиской Slipstream Pro.' }, 403);
     const declaredLength = Number(request.headers.get('content-length') ?? 0);

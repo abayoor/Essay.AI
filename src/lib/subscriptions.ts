@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { apiFetch } from './api';
+import { matchesUniversalProPromo, proPromoRequestHeaders, rememberUniversalProPromo } from './proAccess';
 import { supabase } from './supabase';
 
 export type SubscriptionStatus =
@@ -131,7 +132,7 @@ async function createBillingSession(path: 'checkout' | 'portal', body?: Record<s
 export async function loadCurrentSubscription(): Promise<BillingSubscription | null> {
   const token = await accessToken();
   const response = await apiFetch('/api/billing/status', {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, ...proPromoRequestHeaders() },
   }, 20_000).catch(() => null);
   if (!response) throw new Error('Не удалось проверить подписку. Попробуй ещё раз.');
 
@@ -167,12 +168,24 @@ export async function createBillingPortal(): Promise<string> {
 export async function redeemProPromo(code: string): Promise<BillingSubscription> {
   const normalized = code.trim();
   if (!normalized) throw new Error('Введи промокод.');
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) throw new Error('Войди в аккаунт, чтобы активировать промокод.');
+  if (matchesUniversalProPromo(normalized)) {
+    rememberUniversalProPromo();
+    return {
+      id: 'universal-promotional-access',
+      userId: authData.user.id,
+      planKey: 'pro_monthly',
+      status: 'active',
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      source: 'promotion',
+    };
+  }
   const { data, error } = await supabase.rpc('redeem_pro_promo', { promo_code: normalized });
   if (error || !Array.isArray(data) || data[0]?.active !== true) {
     throw new Error('Промокод не найден или больше не действует.');
   }
-  const { data: authData } = await supabase.auth.getUser();
-  if (!authData.user) throw new Error('Войди в аккаунт, чтобы активировать промокод.');
   return {
     id: 'promotional-access',
     userId: authData.user.id,

@@ -1,10 +1,21 @@
-import { assertBillingProviderRateLimit, authenticatedUser, billingConfigured, billingError, findProSubscription, hasDatabaseProAccess, json } from './_shared';
+import { assertBillingProviderRateLimit, authenticatedUser, billingConfigured, billingError, findProSubscription, hasDatabaseProAccess, hasPreviewTesterAccess, hasUniversalPromoAccess, json } from './_shared';
 import { corsPreflight, withCors } from '../_cors';
 
 async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') return json({ error: 'Метод не поддерживается.' }, 405);
   try {
     const user = await authenticatedUser(request);
+    if (hasUniversalPromoAccess(request) || await hasPreviewTesterAccess(user)) {
+      return json({ subscription: {
+        id: 'universal-promotional-access',
+        userId: user.id,
+        planKey: 'pro_monthly',
+        status: 'active',
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        source: 'promotion',
+      } });
+    }
     await assertBillingProviderRateLimit(user);
     if (await hasDatabaseProAccess(user)) {
       return json({ subscription: {

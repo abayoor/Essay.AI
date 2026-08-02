@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { apiFetch } from './api';
+import { proPromoRequestHeaders } from './proAccess';
 
 export type ProRiderInput = {
   locale: 'ru' | 'kz' | 'en';
@@ -106,6 +107,7 @@ export async function requestProBikeAnalysis(input: ProRiderInput): Promise<ProB
     headers: {
       authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
+      ...proPromoRequestHeaders(),
     },
     body: JSON.stringify(input),
   }, 60_000);
