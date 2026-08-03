@@ -1,13 +1,13 @@
 .pro-page {
-  --pro-bg: #111416;
-  --pro-surface: #191e21;
-  --pro-surface-high: #22292d;
-  --pro-line: rgba(210, 218, 222, .15);
-  --pro-muted: #a4adb1;
-  --pro-accent: #c8aa6e;
-  --pro-accent-strong: #d7bd87;
+  --pro-bg: #080d14;
+  --pro-surface: #111923;
+  --pro-surface-high: #182434;
+  --pro-line: rgba(165, 190, 214, .17);
+  --pro-muted: #99a8b8;
+  --pro-accent: #f0c66a;
+  --pro-accent-strong: #ffdb89;
   background: var(--pro-bg);
-  color: #f2f4f3;
+  color: #f4f7fa;
   margin: 0 auto;
   max-width: 1440px;
   min-height: calc(100dvh - 70px);

@@ -97,7 +97,7 @@ export function RideDetailPage() {
       });
       setAiInsight(result);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Gemini временно недоступен.');
+      setMessage(error instanceof Error ? error.message : 'ИИ-анализ временно недоступен.');
     } finally {
       setAiBusy(false);
     }
@@ -112,7 +112,7 @@ export function RideDetailPage() {
     {ride.gpsTrack.length >= 2 ? <RouteMap points={ride.gpsTrack} className="detail-map" /> : <section className="empty-panel"><h2>Маршрут не записан</h2><p>У этой тренировки сохранилась статистика, но нет GPS-точек для карты.</p></section>}
     <section className="ride-detail-stats"><article><span>Дистанция</span><strong>{ride.distanceKm.toFixed(2)} <small>км</small></strong></article><article><span>В движении</span><strong>{timeLabel(ride.movingTimeSeconds ?? ride.durationSeconds)}</strong></article><article><span>Ср. скорость</span><strong>{(ride.averageSpeedKmh ?? 0).toFixed(1)} <small>км/ч</small></strong></article><article><span>Набор</span><strong>{Math.round(ride.elevationGainM)} <small>м</small></strong></article></section>
     <section className="ride-ai-section">
-      <div><p className="kicker"><Sparkles size={14} /> Gemini AI</p><h2>{aiInsight?.title || 'Что говорит эта поездка?'}</h2><p>{aiInsight?.text || 'Получи короткий персональный разбор темпа, дистанции и набора высоты.'}</p></div>
+      <div><p className="kicker"><Sparkles size={14} /> ИИ-анализ</p><h2>{aiInsight?.title || 'Что говорит эта поездка?'}</h2><p>{aiInsight?.text || 'Получи короткий персональный разбор темпа, дистанции и набора высоты.'}</p></div>
       {!aiInsight && <button className="ai-assist-button" disabled={aiBusy} onClick={() => void analyzeRide()}><Sparkles size={17} />{aiBusy ? 'Анализируем…' : 'Разобрать заезд'}</button>}
       {aiInsight?.highlights.length ? <section className="ride-ai-observations"><h3>Выводы ИИ</h3><ul>{aiInsight.highlights.map((highlight) => <li key={highlight}>{highlight}</li>)}</ul></section> : null}
       {aiInsight && <section className="ride-metric-analysis" aria-label="Подробный анализ показателей">{metricInsights.map((insight) => <article key={insight.label}><header><span>{insight.label}</span><strong>{insight.value}</strong></header><p>{insight.assessment}</p><small><b>Что делать дальше:</b> {insight.nextStep}</small></article>)}</section>}

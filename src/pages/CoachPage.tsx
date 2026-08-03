@@ -174,7 +174,7 @@ export function CoachPage() {
       </section>
 
       <section className={`coach-advice-card coach-intensity-${advice.nextWorkout.intensity}`}>
-        <header><div><p className="kicker">{advice.source === 'ai' ? text('Углублённый разбор ИИ', 'AI терең талдауы', 'Deep AI analysis') : text('Расширенный локальный анализ', 'Кеңейтілген жергілікті талдау', 'Enhanced local analysis')}</p><h2>{advice.headline}</h2><p>{advice.summary}</p></div><span className="coach-source-badge">{advice.source === 'ai' ? <><Sparkles size={15} />{advice.provider === 'gemini' ? 'Gemini AI' : 'AI'}</> : <><Gauge size={15} />{text('Расчёт', 'Есеп', 'Local')}</>}</span></header>
+        <header><div><p className="kicker">{advice.source === 'ai' ? text('Углублённый разбор ИИ', 'AI терең талдауы', 'Deep AI analysis') : text('Расширенный локальный анализ', 'Кеңейтілген жергілікті талдау', 'Enhanced local analysis')}</p><h2>{advice.headline}</h2><p>{advice.summary}</p></div><span className="coach-source-badge">{advice.source === 'ai' ? <><Sparkles size={15} />{text('ИИ', 'AI', 'AI')}</> : <><Gauge size={15} />{text('Расчёт', 'Есеп', 'Local')}</>}</span></header>
         <div className="coach-insight"><TrendingUp size={20} /><div><strong>{text('Главный вывод', 'Негізгі қорытынды', 'Key insight')}</strong><p>{advice.trainingInsight}</p></div><span>{confidenceLabel}</span></div>
         <div className="coach-workout">
           <div className="coach-workout-icon"><BatteryCharging size={28} /></div>

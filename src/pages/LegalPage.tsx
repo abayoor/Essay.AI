@@ -44,9 +44,9 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
         {
           title: text('Персональный ИИ-разбор', 'Жеке AI талдауы', 'Personal AI analysis'),
           body: text(
-            'Рост, вес, длина ноги и ответы анкеты отправляются Google Gemini только после отдельного согласия и только для создания запрошенного отчёта. Анкета автоматически не сохраняется; Slipstream сохраняет лишь факт согласия и использование лимита. Не указывай медицинские документы и секретные данные.',
-            'Бой, салмақ, аяқ ұзындығы және сауалнама жауаптары бөлек келісімнен кейін және сұралған есепті жасау үшін ғана Google Gemini-ге жіберіледі. Сауалнама автоматты түрде сақталмайды; Slipstream тек келісім фактісін және лимиттің қолданылуын сақтайды. Медициналық құжаттар мен құпия деректерді жазба.',
-            'Height, weight, inseam, and form answers are sent to Google Gemini only after separate consent and only to create the requested report. The form is not automatically saved; Slipstream stores only the consent record and quota usage. Do not enter medical records or secrets.',
+            'Рост, вес, длина ноги и ответы анкеты отправляются модели ИИ Google только после отдельного согласия и только для создания запрошенного отчёта. Анкета автоматически не сохраняется; Slipstream сохраняет лишь факт согласия и использование лимита. Не указывай медицинские документы и секретные данные.',
+            'Бой, салмақ, аяқ ұзындығы және сауалнама жауаптары бөлек келісімнен кейін және сұралған есепті жасау үшін ғана Google AI моделіне жіберіледі. Сауалнама автоматты түрде сақталмайды; Slipstream тек келісім фактісін және лимиттің қолданылуын сақтайды. Медициналық құжаттар мен құпия деректерді жазба.',
+            'Height, weight, inseam, and form answers are sent to Google AI only after separate consent and only to create the requested report. The form is not automatically saved; Slipstream stores only the consent record and quota usage. Do not enter medical records or secrets.',
           ),
         },
         {

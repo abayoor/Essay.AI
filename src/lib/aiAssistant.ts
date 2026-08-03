@@ -25,6 +25,6 @@ export async function requestAiAssist(task: AiAssistTask, locale: Locale, contex
     { mode: 'assist', task, locale, context },
     { path: '/api/ai/assist', body: { task, locale, context } },
   );
-  if (!isResult(payload)) throw new Error('Gemini вернул неполный ответ.');
+  if (!isResult(payload)) throw new Error('ИИ-сервис вернул неполный ответ.');
   return payload;
 }

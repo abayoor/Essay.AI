@@ -261,11 +261,11 @@ async function requestGeminiCoach(apiKey: string, input: Record<string, unknown>
 }
 
 function geminiFailure(status: number): string {
-  if (status === 400) return 'Gemini отклонил запрос. Проверь GEMINI_MODEL и доступ ключа к этой модели.';
-  if (status === 401 || status === 403) return 'Ключ Gemini недействителен или не имеет доступа к Gemini API.';
-  if (status === 404) return 'Указанная модель Gemini не найдена. Проверь GEMINI_MODEL.';
-  if (status === 429) return 'Квота Gemini закончилась или сервис занят. Проверь лимиты проекта и попробуй позже.';
-  return `Gemini API не ответил (код ${status}).`;
+  if (status === 400) return 'ИИ-сервис отклонил запрос. Попробуй изменить данные.';
+  if (status === 401 || status === 403) return 'ИИ-сервис временно недоступен из-за ошибки доступа.';
+  if (status === 404) return 'ИИ-модель временно недоступна.';
+  if (status === 429) return 'ИИ-сервис занят. Попробуй ещё раз немного позже.';
+  return `ИИ-сервис не ответил (код ${status}).`;
 }
 
 async function requestOpenAiCoach(apiKey: string, userId: string, input: Record<string, unknown>): Promise<{ text: string | null; status: number }> {

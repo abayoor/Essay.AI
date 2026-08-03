@@ -1,24 +1,24 @@
-/* Slipstream "Graphite + Alpine" palette.
+/* Slipstream "Midnight + Electric Blue" palette.
    Neutral surfaces carry the interface; color is reserved for actions and meaning. */
 :root,
 :root[data-theme='dark'] {
-  --fog: #111416;
-  --surface: #191e21;
-  --surface-soft: #22292d;
-  --surface-raised: #1f262a;
-  --ink: #f2f4f3;
-  --muted: #a4adb1;
-  --line: rgba(210, 218, 222, .15);
-  --signal: #6fae9f;
-  --signal-strong: #86c1b3;
-  --on-signal: #101817;
-  --brand: #769fba;
-  --brand-strong: #8ab4ca;
-  --on-brand: #0e171c;
-  --premium: #c8aa6e;
-  --moss: #648e7f;
-  --steel: #94a4ad;
-  --danger: #d86f72;
+  --fog: #080d14;
+  --surface: #111923;
+  --surface-soft: #182434;
+  --surface-raised: #15202c;
+  --ink: #f4f7fa;
+  --muted: #99a8b8;
+  --line: rgba(165, 190, 214, .17);
+  --signal: #26bfa2;
+  --signal-strong: #42d2b5;
+  --on-signal: #061713;
+  --brand: #2f6fda;
+  --brand-strong: #4785ed;
+  --on-brand: #ffffff;
+  --premium: #f0c66a;
+  --moss: #3e9c7c;
+  --steel: #7f9bb3;
+  --danger: #e27078;
   background: var(--fog);
 }
 
@@ -83,7 +83,7 @@ textarea:focus-visible {
 .pro-inline-button:hover {
   background: color-mix(in srgb, var(--premium) 18%, var(--surface));
   border-color: color-mix(in srgb, var(--premium) 48%, var(--line));
-  color: #d7bd87;
+  color: #ffdb89;
   filter: none;
 }
 
@@ -219,13 +219,13 @@ textarea:focus-visible {
 }
 
 .pro-page {
-  --pro-bg: #111416;
-  --pro-surface: #191e21;
-  --pro-surface-high: #22292d;
-  --pro-line: rgba(210, 218, 222, .15);
-  --pro-muted: #a4adb1;
-  --pro-accent: #c8aa6e;
-  --pro-accent-strong: #d7bd87;
+  --pro-bg: #080d14;
+  --pro-surface: #111923;
+  --pro-surface-high: #182434;
+  --pro-line: rgba(165, 190, 214, .17);
+  --pro-muted: #99a8b8;
+  --pro-accent: #f0c66a;
+  --pro-accent-strong: #ffdb89;
   background: var(--pro-bg);
 }
 

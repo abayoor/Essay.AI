@@ -85,11 +85,11 @@ function geminiText(payload: unknown): string | null {
 }
 
 function geminiFailure(status: number): string {
-  if (status === 400) return 'Gemini отклонил запрос. Проверь GEMINI_MODEL и доступ ключа к этой модели.';
-  if (status === 401 || status === 403) return 'Ключ Gemini недействителен или не имеет доступа к Gemini API.';
-  if (status === 404) return 'Указанная модель Gemini не найдена. Проверь GEMINI_MODEL.';
-  if (status === 429) return 'Квота Gemini закончилась или сервис занят. Проверь лимиты проекта и попробуй позже.';
-  return `Gemini API не ответил (код ${status}).`;
+  if (status === 400) return 'ИИ-сервис отклонил запрос. Попробуй изменить данные.';
+  if (status === 401 || status === 403) return 'ИИ-сервис временно недоступен из-за ошибки доступа.';
+  if (status === 404) return 'ИИ-модель временно недоступна.';
+  if (status === 429) return 'ИИ-сервис занят. Попробуй ещё раз немного позже.';
+  return `ИИ-сервис не ответил (код ${status}).`;
 }
 
 function taskPrompt(task: AiTask): string {
@@ -122,7 +122,7 @@ async function handler(request: Request): Promise<Response> {
     }
 
     const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
-    if (!apiKey) return json({ error: 'Gemini ещё не подключён на сервере.' }, 503);
+    if (!apiKey) return json({ error: 'ИИ-сервис ещё не подключён на сервере.' }, 503);
     const model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
@@ -155,9 +155,9 @@ async function handler(request: Request): Promise<Response> {
       return json({ error: geminiFailure(response.status) }, 502);
     }
     const text = geminiText(payload);
-    if (!text) return json({ error: 'Gemini не смог подготовить ответ.' }, 502);
+    if (!text) return json({ error: 'ИИ не смог подготовить ответ.' }, 502);
     const result: unknown = JSON.parse(text);
-    if (typeof result !== 'object' || result === null) return json({ error: 'Gemini вернул неполный ответ.' }, 502);
+    if (typeof result !== 'object' || result === null) return json({ error: 'ИИ-сервис вернул неполный ответ.' }, 502);
     return json({ ...(result as object), provider: 'gemini' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Внутренняя ошибка сервера.';

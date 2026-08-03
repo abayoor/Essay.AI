@@ -399,9 +399,9 @@ export function ProPage() {
       <section className="pro-privacy">
         <ShieldCheck size={25} />
         <div><h2>{text('Твои данные остаются твоими', 'Деректерің өзіңе тиесілі', 'Your data stays yours')}</h2><p>{text(
-          'Анкета отправляется Google Gemini только после отдельного согласия и сейчас не сохраняется автоматически. Платёжные реквизиты Slipstream не хранит — ими управляет платёжный партнёр.',
-          'Сауалнама жеке келісімнен кейін ғана Google Gemini-ге жіберіледі және қазір автоматты түрде сақталмайды. Slipstream төлем деректерін сақтамайды — оларды төлем серіктесі басқарады.',
-          'The form is sent to Google Gemini only after separate consent and is not currently auto-saved. Slipstream does not store card details; the payment provider handles them.',
+          'Анкета отправляется модели ИИ Google только после отдельного согласия и сейчас не сохраняется автоматически. Платёжные реквизиты Slipstream не хранит — ими управляет платёжный партнёр.',
+          'Сауалнама жеке келісімнен кейін ғана Google AI моделіне жіберіледі және қазір автоматты түрде сақталмайды. Slipstream төлем деректерін сақтамайды — оларды төлем серіктесі басқарады.',
+          'The form is sent to Google AI only after separate consent and is not currently auto-saved. Slipstream does not store card details; the payment provider handles them.',
         )}</p></div>
       </section>
 

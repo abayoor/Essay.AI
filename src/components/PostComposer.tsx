@@ -41,9 +41,9 @@ export function PostComposer({ onPublished }: PostComposerProps) {
         hasMedia: Boolean(file),
       });
       setCaption(result.text);
-      setMessage(locale === 'en' ? 'Gemini prepared a draft. You can edit it.' : locale === 'kz' ? 'Gemini нобай дайындады. Оны өзгерте аласың.' : 'Gemini подготовил черновик. Его можно изменить.');
+      setMessage(locale === 'en' ? 'AI prepared a draft. You can edit it.' : locale === 'kz' ? 'AI нобай дайындады. Оны өзгерте аласың.' : 'ИИ подготовил черновик. Его можно изменить.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Gemini временно недоступен.');
+      setMessage(error instanceof Error ? error.message : 'ИИ-помощник временно недоступен.');
     } finally {
       setAiBusy(false);
     }
@@ -90,7 +90,7 @@ export function PostComposer({ onPublished }: PostComposerProps) {
     <div className="strava-import"><div><strong>Тренировка из Strava</strong><span>{selectedActivity ? formatActivity(selectedActivity) : 'Импортируй статистику и линию маршрута в пост.'}</span></div><button type="button" className="outline-inline-button" disabled={loadingActivities} onClick={() => void importActivities()}>{loadingActivities ? 'Загружаем…' : 'Импортировать из Strava'}</button></div>
     {activities.length > 0 && <label>Выбери тренировку<select value={selectedActivity ? String(selectedActivity.id) : ''} onChange={(event) => setSelectedActivity(activities.find((activity) => String(activity.id) === event.target.value) ?? null)}><option value="">Без тренировки</option>{activities.map((activity) => <option key={activity.id} value={activity.id}>{activity.name} — {formatActivity(activity)}</option>)}</select></label>}
     <label>Описание<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={2200} placeholder="Как прошёл заезд?" /></label>
-    <button type="button" className="ai-assist-button" disabled={aiBusy} onClick={() => void generateCaption()}><Sparkles size={17} />{aiBusy ? 'Gemini пишет…' : 'Помочь с текстом'}</button>
+    <button type="button" className="ai-assist-button" disabled={aiBusy} onClick={() => void generateCaption()}><Sparkles size={17} />{aiBusy ? 'ИИ пишет…' : 'Помочь с текстом'}</button>
     <button className="signal-button" disabled={busy}>{busy ? 'Публикуем…' : 'Опубликовать'}</button>
   </form><AnimatePresence>{published && <motion.p className="form-note publish-success" role="status" initial={{ opacity: 0, scale: .86 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .9 }}><Check size={16} aria-hidden="true" /> Пост опубликован</motion.p>}</AnimatePresence>{message && !published && <p className="form-note" role="status">{message}</p>}</section>;
 }

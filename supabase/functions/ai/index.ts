@@ -82,11 +82,11 @@ function geminiText(payload: unknown): string | null {
 }
 
 function geminiError(status: number): string {
-  if (status === 400) return 'Gemini отклонил запрос. Проверь доступ ключа к выбранной модели.';
-  if (status === 401 || status === 403) return 'Ключ Gemini недействителен или не имеет доступа к Gemini API.';
-  if (status === 404) return 'Модель Gemini не найдена.';
-  if (status === 429) return 'Квота Gemini закончилась или сервис занят. Проверь лимиты проекта.';
-  return `Gemini API не ответил (код ${status}).`;
+  if (status === 400) return 'ИИ-сервис отклонил запрос. Попробуй изменить данные.';
+  if (status === 401 || status === 403) return 'ИИ-сервис временно недоступен из-за ошибки доступа.';
+  if (status === 404) return 'ИИ-модель временно недоступна.';
+  if (status === 429) return 'ИИ-сервис занят. Попробуй ещё раз немного позже.';
+  return `ИИ-сервис не ответил (код ${status}).`;
 }
 
 const assistSchema = {
@@ -212,13 +212,13 @@ async function generate(
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) return json({ error: geminiError(response.status) }, 502);
   const text = geminiText(payload);
-  if (!text) return json({ error: 'Gemini не смог подготовить ответ.' }, 502);
+  if (!text) return json({ error: 'ИИ не смог подготовить ответ.' }, 502);
   try {
     const result: unknown = JSON.parse(text);
-    if (!isRecord(result)) return json({ error: 'Gemini вернул неполный ответ.' }, 502);
+    if (!isRecord(result)) return json({ error: 'ИИ-сервис вернул неполный ответ.' }, 502);
     return json({ ...result, provider: 'gemini' });
   } catch {
-    return json({ error: 'Gemini вернул некорректный JSON.' }, 502);
+    return json({ error: 'ИИ-сервис вернул некорректный ответ.' }, 502);
   }
 }
 
@@ -228,7 +228,7 @@ Deno.serve(async (request) => {
   if (!await authenticatedUser(request)) return json({ error: 'Сессия истекла. Войди в аккаунт снова.' }, 401);
 
   const apiKey = Deno.env.get('GEMINI_API_KEY') ?? Deno.env.get('GOOGLE_API_KEY');
-  if (!apiKey) return json({ error: 'GEMINI_API_KEY не настроен в Supabase Secrets.' }, 503);
+  if (!apiKey) return json({ error: 'ИИ-сервис не настроен на сервере.' }, 503);
   const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.5-flash';
   const body: unknown = await request.json().catch(() => null);
   if (!isRecord(body) || !isLocale(body.locale)) return json({ error: 'Некорректный запрос.' }, 400);

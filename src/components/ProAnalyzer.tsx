@@ -192,9 +192,9 @@ export function ProAnalyzer({ active, statusLoading }: ProAnalyzerProps) {
         <label className="pro-analysis-consent">
           <input type="checkbox" required checked={consent} onChange={(event) => setConsent(event.target.checked)} />
           <span><strong>{text(
-            'Я согласен передать эти параметры модели Google Gemini для создания одного отчёта.',
-            'Бір есеп жасау үшін осы параметрлерді Google Gemini моделіне жіберуге келісемін.',
-            'I agree to send these details to Google Gemini to create one report.',
+            'Я согласен передать эти параметры модели ИИ Google для создания одного отчёта.',
+            'Бір есеп жасау үшін осы параметрлерді Google AI моделіне жіберуге келісемін.',
+            'I agree to send these details to Google AI to create one report.',
           )}</strong><small>{text(
             'Slipstream не сохраняет анкету автоматически. Не указывай медицинские документы или секретные данные.',
             'Slipstream сауалнаманы автоматты түрде сақтамайды. Медициналық құжаттарды немесе құпия деректерді жазба.',
