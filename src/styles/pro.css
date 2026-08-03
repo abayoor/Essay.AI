@@ -527,3 +527,94 @@
 @media (prefers-reduced-motion: reduce) {
   .pro-benefit-card, .pro-primary-button, .pro-faq summary::after { transition: none; }
 }
+
+/* Compact product layout: content and controls take priority over decoration. */
+.pro-hero {
+  min-height: 0;
+  padding: 52px 0 66px;
+}
+
+.pro-hero-copy h1 {
+  font-size: clamp(3.2rem, 6vw, 5.1rem);
+  line-height: .94;
+}
+
+.pro-hero-points span,
+.pro-price-card-top > span,
+.pro-analyzer-private,
+.pro-toolkit-live,
+.pro-week-change,
+.pro-confidence {
+  border-radius: 8px;
+}
+
+.pro-price-card,
+.pro-analysis-form,
+.pro-analysis-result,
+.pro-benefit-card,
+.pro-toolkit-shell,
+.pro-tool-metric,
+.pro-pressure-result,
+.pro-readiness-result,
+.pro-kit-result,
+.pro-weekly-digest,
+.pro-weekly-preview,
+.pro-final-cta {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.pro-price-card::before { display: none; }
+.pro-primary-button:hover:not(:disabled),
+.pro-benefit-card:hover { transform: none; }
+
+.pro-benefits h2,
+.pro-weekly-preview h2,
+.pro-analyzer-heading h2,
+.pro-toolkit-heading h2,
+.pro-weekly-digest h2,
+.pro-faq > h2 {
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1;
+}
+
+.pro-benefits,
+.pro-toolkit {
+  padding-top: 54px;
+  padding-bottom: 54px;
+}
+
+.pro-locked-preview,
+.pro-toolkit-shell.locked .pro-tool-body,
+.pro-weekly-digest.locked > :not(.pro-digest-lock) {
+  filter: none;
+  opacity: .22;
+}
+
+.pro-locked-panel,
+.pro-tool-lock,
+.pro-digest-lock {
+  backdrop-filter: none;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.pro-readiness-result > span { font-size: clamp(3rem, 7vw, 4.6rem); }
+
+.pro-final-cta {
+  background: var(--pro-surface-high);
+  bottom: 10px;
+}
+
+@media (max-width: 900px) {
+  .pro-hero-copy h1 { font-size: clamp(3rem, 11vw, 4.8rem); }
+}
+
+@media (max-width: 620px) {
+  .pro-hero { padding: 34px 0 40px; }
+  .pro-hero-copy h1 { font-size: clamp(2.8rem, 15vw, 4rem); }
+  .pro-price-card,
+  .pro-analysis-form,
+  .pro-weekly-preview,
+  .pro-weekly-digest { border-radius: 12px; }
+}

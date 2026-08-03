@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { Activity, BatteryCharging, Bike, BrainCircuit, CalendarDays, Clock3, Gauge, HeartPulse, Mountain, Route, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { Activity, BatteryCharging, Bike, BrainCircuit, CalendarDays, Clock3, Gauge, HeartPulse, Mountain, Route, Target, TrendingUp } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { BikeLoader } from '../components/BikeLoader';
 import { PageShell } from '../components/PageShell';
@@ -134,7 +134,7 @@ export function CoachPage() {
 
   return <PageShell><main className="cycle-page coach-page">
     <header className="page-heading coach-heading">
-      <div><p className="kicker"><Sparkles size={14} /> Slipstream AI</p><h1>{text('Тренировки, которые понимают тебя', 'Сені түсінетін жаттығулар', 'Training that understands you')}</h1><p>{text(
+      <div><p className="kicker"><Activity size={14} /> {text('Тренировочный центр', 'Жаттығу орталығы', 'Training center')}</p><h1>{text('Тренировки, которые понимают тебя', 'Сені түсінетін жаттығулар', 'Training that understands you')}</h1><p>{text(
         'Сравнивает нагрузку, скорость, подъёмы, восстановление и последние поездки — затем строит конкретный план на неделю.',
         'Жүктемені, жылдамдықты, өрлерді, қалпына келуді және соңғы сапарларды салыстырып, нақты апталық жоспар құрады.',
         'Compares load, speed, climbing, recovery and recent rides, then builds a concrete weekly plan.',
@@ -174,7 +174,7 @@ export function CoachPage() {
       </section>
 
       <section className={`coach-advice-card coach-intensity-${advice.nextWorkout.intensity}`}>
-        <header><div><p className="kicker">{advice.source === 'ai' ? text('Углублённый разбор ИИ', 'AI терең талдауы', 'Deep AI analysis') : text('Расширенный локальный анализ', 'Кеңейтілген жергілікті талдау', 'Enhanced local analysis')}</p><h2>{advice.headline}</h2><p>{advice.summary}</p></div><span className="coach-source-badge">{advice.source === 'ai' ? <><Sparkles size={15} />{text('ИИ', 'AI', 'AI')}</> : <><Gauge size={15} />{text('Расчёт', 'Есеп', 'Local')}</>}</span></header>
+        <header><div><p className="kicker">{advice.source === 'ai' ? text('Расширенный разбор', 'Кеңейтілген талдау', 'Advanced analysis') : text('Расширенный локальный анализ', 'Кеңейтілген жергілікті талдау', 'Enhanced local analysis')}</p><h2>{advice.headline}</h2><p>{advice.summary}</p></div><span className="coach-source-badge">{advice.source === 'ai' ? <><BrainCircuit size={15} />{text('Персональный', 'Жеке', 'Personal')}</> : <><Gauge size={15} />{text('Расчёт', 'Есеп', 'Local')}</>}</span></header>
         <div className="coach-insight"><TrendingUp size={20} /><div><strong>{text('Главный вывод', 'Негізгі қорытынды', 'Key insight')}</strong><p>{advice.trainingInsight}</p></div><span>{confidenceLabel}</span></div>
         <div className="coach-workout">
           <div className="coach-workout-icon"><BatteryCharging size={28} /></div>
@@ -190,7 +190,7 @@ export function CoachPage() {
         <ul>{advice.focus.map((item) => <li key={item}><HeartPulse size={16} />{item}</li>)}</ul>
         <p className="coach-watch-metric"><Gauge size={16} /><strong>{text('Контроль прогресса:', 'Прогрестің бақылауы:', 'Progress check:')}</strong> {advice.watchMetric}</p>
         <div className="coach-advice-actions">
-          <button type="button" className="signal-button" disabled={aiLoading || !rides.length} onClick={() => void generateAiAdvice()}>{aiLoading ? text('ИИ анализирует глубже…', 'AI терең талдап жатыр…', 'AI is analyzing…') : <><Sparkles size={17} />{text('Усилить анализ с ИИ', 'Талдауды AI-мен күшейту', 'Deepen with AI')}</>}</button>
+          <button type="button" className="signal-button" disabled={aiLoading || !rides.length} onClick={() => void generateAiAdvice()}>{aiLoading ? text('Углубляем анализ…', 'Талдау тереңдетіліп жатыр…', 'Deepening analysis…') : <><BrainCircuit size={17} />{text('Получить подробный разбор', 'Толық талдау алу', 'Get detailed analysis')}</>}</button>
           {!rides.length && <span>{text('Сначала сохрани хотя бы одну поездку.', 'Алдымен кемінде бір сапарды сақта.', 'Save at least one ride first.')}</span>}
         </div>
         {message && <p className="coach-message" role="status">{message}</p>}

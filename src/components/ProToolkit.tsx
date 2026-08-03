@@ -5,10 +5,10 @@ import {
   Check,
   Droplets,
   Gauge,
+  ClipboardCheck,
   LockKeyhole,
   Moon,
   Salad,
-  Sparkles,
   Wrench,
 } from 'lucide-react';
 import { useLocaleText } from '../lib/localized';
@@ -204,7 +204,7 @@ export function ProToolkit({ active }: { active: boolean }) {
   return <section className="pro-toolkit" id="pro-toolkit" aria-labelledby="pro-toolkit-title">
     <header className="pro-toolkit-heading">
       <div>
-        <p className="pro-eyebrow"><Sparkles size={14} /> Pro Ride Lab</p>
+        <p className="pro-eyebrow"><ClipboardCheck size={14} /> Pro Ride Lab</p>
         <h2 id="pro-toolkit-title">{text('6 инструментов для каждого выезда', 'Әр сапарға арналған 6 құрал', '6 tools for every ride')}</h2>
         <p>{text(
           'Они помогают подготовить воду и питание, рассчитать темп, подобрать давление, оценить нагрузку, собрать снаряжение и не пропустить обслуживание.',

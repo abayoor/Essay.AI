@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   Bike,
+  BadgeCheck,
   BrainCircuit,
   CircleUserRound,
   Compass,
@@ -11,7 +12,6 @@ import {
   Newspaper,
   Plus,
   Settings,
-  Sparkles,
   Trophy,
   UsersRound,
   Wrench,
@@ -183,7 +183,7 @@ export function PageShell({ children }: { children: ReactNode }) {
                 {text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}
               </Link>
               <Link href="/pro" onClick={() => setProfileOpen(false)}>
-                <Sparkles size={17} />
+                <BadgeCheck size={17} />
                 Slipstream Pro
               </Link>
               <Link href="/rides" onClick={() => setProfileOpen(false)}>
@@ -214,7 +214,7 @@ export function PageShell({ children }: { children: ReactNode }) {
           className={`header-pro-link${location.startsWith('/pro') ? ' active' : ''}`}
           aria-label="Slipstream Pro"
         >
-          <Sparkles size={17} />
+          <BadgeCheck size={17} />
           <span>PRO</span>
         </Link>
         <Link
@@ -249,7 +249,7 @@ export function PageShell({ children }: { children: ReactNode }) {
           <Link href="/profile"><CircleUserRound size={20} /><span>{t('profile')}</span></Link>
           <Link href="/friends"><UsersRound size={20} /><span>{text('Друзья', 'Достар', 'Friends')}</span></Link>
           <Link href="/coach"><BrainCircuit size={20} /><span>{text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}</span></Link>
-          <Link href="/pro"><Sparkles size={20} /><span>Slipstream Pro</span></Link>
+          <Link href="/pro"><BadgeCheck size={20} /><span>Slipstream Pro</span></Link>
           <Link href="/rides"><Bike size={20} /><span>{t('myRides')}</span></Link>
           <Link href="/bikes"><Wrench size={20} /><span>{t('bikesAndService')}</span></Link>
           <Link href="/competitions"><Trophy size={20} /><span>{text('Челленджи', 'Челлендждер', 'Challenges')}</span></Link>

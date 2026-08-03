@@ -1,0 +1,298 @@
+/* Product-first visual language: compact, structured and deliberately non-decorative. */
+:root {
+  --radius-control: 9px;
+  --radius-card: 12px;
+  --radius-panel: 14px;
+}
+
+.cycle-shell,
+:root[data-theme='dark'] .cycle-shell {
+  background: var(--fog);
+}
+
+.cycle-header,
+:root[data-theme='dark'] .cycle-header {
+  backdrop-filter: none;
+  background: var(--fog);
+  box-shadow: none;
+}
+
+.cycle-brand svg { filter: none; }
+
+.cycle-page,
+.landing-page {
+  padding-top: 30px;
+}
+
+.cycle-hero {
+  max-width: 760px;
+  padding: 54px 0 70px;
+}
+
+.cycle-hero h1 {
+  font-size: clamp(3.25rem, 7vw, 5.5rem);
+  line-height: .94;
+  margin: 14px 0 22px;
+}
+
+.page-heading h1,
+.feed-heading h1,
+.marketplace-hero h1,
+.listing-editor-heading h1,
+.messages-hero h1 {
+  background: none;
+  color: var(--ink);
+  font-size: clamp(2.25rem, 4.8vw, 3.65rem);
+  letter-spacing: -.045em;
+  line-height: .98;
+  -webkit-text-fill-color: currentColor;
+}
+
+.kicker,
+.pro-eyebrow {
+  font-size: .69rem;
+  letter-spacing: .08em;
+}
+
+.signal-button,
+.outline-button,
+.outline-inline-button,
+.quiet-button,
+.header-cta,
+.header-pro-link,
+.pro-inline-button,
+.main-nav-link,
+.main-nav-record,
+.ai-assist-button,
+.message-send-button {
+  border-radius: var(--radius-control);
+  box-shadow: none;
+  transform: none;
+}
+
+.signal-button:hover,
+.outline-button:hover,
+.outline-inline-button:hover,
+.quiet-button:hover,
+.header-cta:hover,
+.header-pro-link:hover,
+.pro-inline-button:hover,
+.main-nav-link:hover,
+.main-nav-record:hover,
+.ai-assist-button:hover:not(:disabled) {
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.cycle-form input,
+.cycle-form select,
+.cycle-form textarea,
+.comment-form input,
+.marketplace-search,
+.map-place-search,
+.rider-search input {
+  border-radius: var(--radius-control);
+}
+
+.metric-card,
+.bike-mini,
+.bike-card,
+.form-card,
+.empty-panel,
+.route-preview,
+.route-description,
+.rider-profile-header,
+.post-card,
+.conversations-list,
+.content-management-grid > section,
+.dashboard-safety-mission,
+.dashboard-weekly-card,
+.dashboard-coach-teaser,
+.coach-readiness-card,
+.coach-advice-card,
+.messages-launchpad,
+.messages-empty-state,
+.challenge-card,
+.visual-challenge,
+.marketplace-card,
+.marketplace-map-card,
+.listing-gallery,
+.listing-seller-card,
+.city-map-panel,
+.city-leaflet-map,
+.global-map-canvas,
+.global-leaflet-map,
+.global-route-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.metric-card:hover,
+.bike-mini:hover,
+.route-preview:hover,
+.post-card:hover,
+.dashboard-safety-mission:hover,
+.dashboard-weekly-card:hover,
+.marketplace-card:hover,
+.coach-advice-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.post-card {
+  background: var(--surface);
+  contain: none;
+}
+
+.post-card::before { display: none; }
+
+.post-card:hover { border-color: color-mix(in srgb, var(--brand) 34%, var(--line)); }
+.post-card:hover .post-media > img { transform: none; }
+
+.dashboard-safety-mission,
+.dashboard-coach-teaser,
+.coach-readiness-card,
+.messages-hero,
+.challenge-card,
+.visual-challenge,
+.marketplace-hero {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.dashboard-safety-mission,
+.dashboard-coach-teaser,
+.coach-readiness-card {
+  min-height: 0;
+  padding: 20px;
+}
+
+.dashboard-safety-mission p:not(.kicker),
+.dashboard-coach-teaser p,
+.coach-readiness-card p,
+.messages-hero > div > p:not(.kicker),
+.challenge-card > div > p:not(.kicker) {
+  color: var(--muted);
+}
+
+.dashboard-safety-mission .dashboard-mission-icon,
+.dashboard-weekly-card header > span,
+.messages-launchpad-copy > span {
+  border-radius: 8px;
+}
+
+.dashboard-coach-teaser::after,
+.messages-hero::after,
+.marketplace-hero::after {
+  display: none;
+}
+
+.messages-hero {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 24px;
+}
+
+.messages-hero-visual { display: none; }
+
+.marketplace-hero {
+  align-items: center;
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.marketplace-hero h1 em,
+.listing-editor-heading h1 em {
+  color: var(--brand-strong);
+}
+
+.marketplace-card-image,
+.marketplace-card:hover .marketplace-card-image > img {
+  background: var(--surface-raised);
+  transform: none;
+}
+
+.marketplace-filters button,
+.map-quick-searches button,
+.community-feed-tabs,
+.map-section-tabs,
+.map-layer-switcher {
+  backdrop-filter: none;
+  border-radius: var(--radius-control);
+  box-shadow: none;
+}
+
+.marketplace-filters button:active { transform: none; }
+
+.global-route-panel,
+.navigation-instruction-card,
+.navigation-bottom-sheet,
+.persistent-navigation-bar,
+.mobile-main-nav {
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.global-route-panel { background: var(--surface); }
+
+.feed-heading {
+  align-items: center;
+  padding-bottom: 16px;
+}
+
+.feed-list { gap: 14px; }
+
+.mobile-profile-sheet,
+.mobile-profile-grid a {
+  box-shadow: none;
+}
+
+@media (max-width: 780px) {
+  .cycle-hero {
+    padding: 38px 0 52px;
+  }
+
+  .cycle-hero h1 {
+    font-size: clamp(2.9rem, 14vw, 4.4rem);
+  }
+
+  .page-heading h1,
+  .feed-heading h1,
+  .marketplace-hero h1,
+  .listing-editor-heading h1,
+  .messages-hero h1 {
+    font-size: clamp(2rem, 10vw, 2.85rem);
+  }
+
+  .marketplace-hero,
+  .messages-hero {
+    border-radius: var(--radius-card);
+    margin-left: 0;
+    margin-right: 0;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .cycle-page,
+  .landing-page {
+    padding-top: 22px;
+  }
+
+  .mobile-profile-sheet {
+    border-radius: 16px 16px 0 0;
+  }
+
+  .mobile-profile-grid a {
+    border-radius: var(--radius-control);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-card,
+  .marketplace-card,
+  .dashboard-safety-mission,
+  .dashboard-weekly-card {
+    transition: none;
+  }
+}

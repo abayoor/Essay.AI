@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, ArrowRight, Bike, LockKeyhole, Mountain, Sparkles, TimerReset } from 'lucide-react';
+import { Activity, ArrowRight, Bike, LockKeyhole, Mountain, Target, TimerReset } from 'lucide-react';
 import { Link } from 'wouter';
 import type { RideActivity } from '../lib/cyclingModels';
 import { useLocaleText } from '../lib/localized';
@@ -73,7 +73,7 @@ export function ProWeeklyDigest({ active }: { active: boolean }) {
 
   return <section className={`pro-weekly-digest${active ? '' : ' locked'}`} aria-labelledby="pro-weekly-digest-title">
     <header>
-      <div><p className="pro-eyebrow"><Sparkles size={14} /> {text('Недельный отчёт', 'Апталық есеп', 'Weekly report')}</p><h2 id="pro-weekly-digest-title">{text('Прогресс без догадок', 'Болжамсыз прогресс', 'Progress without guesswork')}</h2><p>{text('Сравнение последних семи дней с предыдущей неделей на основе твоих поездок.', 'Соңғы жеті күнді сапарларың негізінде алдыңғы аптамен салыстыру.', 'A comparison of the last seven days with the previous week, based on your rides.')}</p></div>
+      <div><p className="pro-eyebrow"><Activity size={14} /> {text('Недельный отчёт', 'Апталық есеп', 'Weekly report')}</p><h2 id="pro-weekly-digest-title">{text('Прогресс без догадок', 'Болжамсыз прогресс', 'Progress without guesswork')}</h2><p>{text('Сравнение последних семи дней с предыдущей неделей на основе твоих поездок.', 'Соңғы жеті күнді сапарларың негізінде алдыңғы аптамен салыстыру.', 'A comparison of the last seven days with the previous week, based on your rides.')}</p></div>
       {active && !loading && <span className={`pro-week-change${report.change < 0 ? ' down' : ''}`}>{report.change > 0 ? '+' : ''}{report.change}%</span>}
     </header>
 
@@ -84,7 +84,7 @@ export function ProWeeklyDigest({ active }: { active: boolean }) {
         <article><Mountain size={19} /><span>{text('Набор', 'Биіктік', 'Elevation')}</span><strong>{Math.round(report.current.elevationM)} m</strong></article>
         <article><TimerReset size={19} /><span>{text('Время', 'Уақыт', 'Time')}</span><strong>{formatDuration(report.current.durationSeconds, text('ч', 'сағ', 'h'), text('мин', 'мин', 'min'))}</strong><small>{report.averageSpeed > 0 ? `${report.averageSpeed.toFixed(1)} km/h` : '—'}</small></article>
       </div>
-      <div className="pro-digest-advice"><Sparkles size={19} /><div><strong>{text('Фокус следующей недели', 'Келесі аптаның бағыты', 'Next-week focus')}</strong><p>{report.advice}</p></div><Link href="/coach">{text('Открыть тренера', 'Жаттықтырушыны ашу', 'Open coach')}<ArrowRight size={16} /></Link></div>
+      <div className="pro-digest-advice"><Target size={19} /><div><strong>{text('Фокус следующей недели', 'Келесі аптаның бағыты', 'Next-week focus')}</strong><p>{report.advice}</p></div><Link href="/coach">{text('Открыть тренера', 'Жаттықтырушыны ашу', 'Open coach')}<ArrowRight size={16} /></Link></div>
     </>}
 
     {!active && <div className="pro-digest-lock"><LockKeyhole size={21} /><strong>{text('Персональный отчёт входит в Pro', 'Жеке есеп Pro құрамына кіреді', 'Personal reports are included with Pro')}</strong><a href="#pro-price">{text('Открыть отчёты', 'Есептерді ашу', 'Unlock reports')}</a></div>}

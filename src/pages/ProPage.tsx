@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import {
   Activity,
+  BadgeCheck,
   Bike,
   BrainCircuit,
   Check,
@@ -12,7 +13,6 @@ import {
   LockKeyhole,
   Route,
   ShieldCheck,
-  Sparkles,
   TimerReset,
   Wrench,
 } from 'lucide-react';
@@ -267,7 +267,7 @@ export function ProPage() {
     <main className="pro-page">
       <section className="pro-hero">
         <div className="pro-hero-copy">
-          <p className="pro-eyebrow"><Sparkles size={14} /> Slipstream Pro</p>
+          <p className="pro-eyebrow"><BadgeCheck size={14} /> Slipstream Pro</p>
           <h1>{text('Езжай умнее.\nКаждый день.', 'Күн сайын\nақылдырақ жүр.', 'Ride smarter.\nEvery day.')}</h1>
           <p>{text(
             'Один персональный велоассистент для выбора велосипеда, тренировок, маршрутов, обслуживания и восстановления.',
@@ -307,7 +307,7 @@ export function ProPage() {
             <div><strong>{text('Нужно обновить оплату', 'Төлемді жаңарту керек', 'Payment needs attention')}</strong><span>{text('Pro временно приостановлен — открой управление подпиской.', 'Pro уақытша тоқтатылды — жазылымды басқаруды аш.', 'Pro is paused until you update the subscription.')}</span></div>
           </div> : null}
 
-          {active && subscription?.source === 'promotion' ? <div className="pro-promo-active"><Sparkles size={18} />{text('Бесплатный Pro активирован', 'Тегін Pro белсендірілді', 'Free Pro activated')}</div> : active || needsBillingAttention ? <button className="pro-primary-button" type="button" disabled={!billingConfiguration.checkoutEnabled || billingAction !== null} onClick={() => void openPortal()}>
+          {active && subscription?.source === 'promotion' ? <div className="pro-promo-active"><BadgeCheck size={18} />{text('Бесплатный Pro активирован', 'Тегін Pro белсендірілді', 'Free Pro activated')}</div> : active || needsBillingAttention ? <button className="pro-primary-button" type="button" disabled={!billingConfiguration.checkoutEnabled || billingAction !== null} onClick={() => void openPortal()}>
             {billingAction === 'portal'
               ? text('Открываем…', 'Ашып жатырмыз…', 'Opening…')
               : billingConfiguration.nativePlatform

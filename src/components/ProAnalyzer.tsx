@@ -12,7 +12,6 @@ import {
   MapPinned,
   Salad,
   ShieldCheck,
-  Sparkles,
   Wrench,
 } from 'lucide-react';
 import { Link } from 'wouter';
@@ -207,7 +206,7 @@ export function ProAnalyzer({ active, statusLoading }: ProAnalyzerProps) {
 
         <div className="pro-analysis-submit">
           <div><ShieldCheck size={16} /><span><strong>{text('Данные не сохраняются автоматически', 'Деректер автоматты сақталмайды', 'Nothing is auto-saved')}</strong><small>{text('Они используются для этого анализа', 'Олар осы талдау үшін пайдаланылады', 'They are used for this analysis')}</small></span></div>
-          <button type="submit" disabled={submitting}>{submitting ? text('ИИ собирает отчёт…', 'AI есеп дайындап жатыр…', 'AI is building your report…') : <><Sparkles size={17} />{text('Создать мой Pro-разбор', 'Менің Pro талдауымды жасау', 'Create my Pro analysis')}</>}</button>
+          <button type="submit" disabled={submitting}>{submitting ? text('Собираем отчёт…', 'Есеп дайындалып жатыр…', 'Building your report…') : <><BrainCircuit size={17} />{text('Создать мой Pro-разбор', 'Менің Pro талдауымды жасау', 'Create my Pro analysis')}</>}</button>
         </div>
       </form>
 
@@ -215,7 +214,7 @@ export function ProAnalyzer({ active, statusLoading }: ProAnalyzerProps) {
 
       {analysis && <article className="pro-analysis-result" aria-live="polite">
         <header className="pro-result-hero">
-          <div><p className="pro-eyebrow"><Sparkles size={14} /> {text('Твой персональный разбор', 'Сенің жеке талдауың', 'Your personal analysis')}</p><h3>{analysis.headline}</h3><p>{analysis.summary}</p></div>
+          <div><p className="pro-eyebrow"><Gauge size={14} /> {text('Твой персональный разбор', 'Сенің жеке талдауың', 'Your personal analysis')}</p><h3>{analysis.headline}</h3><p>{analysis.summary}</p></div>
           <span className={`pro-confidence ${analysis.confidence.level}`}><Check size={14} /> {confidenceLabel}</span>
         </header>
 

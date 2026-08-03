@@ -892,6 +892,53 @@
 .weekly-leaderboard li > em:last-child { color: var(--signal); font-style: normal; font-weight: 900; white-space: nowrap; }
 .weekly-leaderboard-empty { color: var(--muted); margin: 0; }
 
+/* Competition screens use the same compact, data-first visual language. */
+.competitions-hero {
+  border-radius: 12px;
+  box-shadow: none;
+  min-height: 0;
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.competitions-hero::before { display: none; }
+.competitions-hero h1 { font-size: clamp(2.4rem, 5vw, 3.8rem); line-height: .98; }
+.competitions-hero-mark { box-shadow: none; }
+
+.weekly-progress-card,
+.challenge-group-card,
+.organizer-marathon-form,
+.competition-event-card,
+.weekly-leaderboard {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.challenge-group-card:hover,
+.competition-event-card:hover,
+.competition-event-card.home-city {
+  box-shadow: none;
+  transform: none;
+}
+
+.challenge-group-icon,
+.event-date-block,
+.weekly-leaderboard li {
+  border-radius: 8px;
+}
+
+.weekly-progress-heading h2,
+.competition-section-heading h2,
+.events-heading h2,
+.weekly-leaderboard > header h2 {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+@media (max-width: 720px) {
+  .competitions-hero { border-radius: 12px; padding: 20px; }
+  .competitions-hero h1 { font-size: clamp(2.2rem, 11vw, 3rem); }
+}
+
 @media (max-width: 560px) {
   .weekly-leaderboard > header { flex-direction: column; }
   .weekly-leaderboard li { grid-template-columns: 26px 38px minmax(0, 1fr) auto; padding-inline: 9px; }
