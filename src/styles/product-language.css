@@ -247,6 +247,48 @@
   box-shadow: none;
 }
 
+.post-author .avatar-image,
+.post-author .avatar-fallback {
+  border-color: color-mix(in srgb, var(--signal) 70%, var(--line));
+  box-shadow: none;
+}
+
+.post-media {
+  background: #0b0d0c;
+}
+
+.like-button.liked {
+  background: color-mix(in srgb, var(--brand) 11%, var(--surface));
+  color: var(--brand);
+}
+
+.post-like-burst {
+  color: var(--brand);
+  filter: none;
+}
+
+.comment-panel-heading span {
+  background: color-mix(in srgb, var(--signal) 12%, var(--surface));
+}
+
+.feed-empty-state {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.feed-empty-state > span {
+  background: color-mix(in srgb, var(--signal) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--signal) 22%, var(--line));
+  border-radius: var(--radius-control);
+}
+
+.feed-load-more {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--brand);
+}
+
 @media (max-width: 780px) {
   .cycle-hero {
     padding: 38px 0 52px;
@@ -270,6 +312,22 @@
     margin-left: 0;
     margin-right: 0;
     padding: 20px;
+  }
+
+  .mobile-main-nav .main-nav-link.active {
+    background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+    color: var(--brand);
+  }
+
+  .mobile-main-nav .main-nav-record {
+    background: var(--brand);
+    border-color: var(--fog);
+    box-shadow: none;
+    color: var(--on-brand);
+  }
+
+  .mobile-main-nav .main-nav-record svg {
+    color: var(--on-brand);
   }
 }
 

@@ -45,11 +45,11 @@
 }
 
 .dashboard-safety-mission:hover { box-shadow: 0 22px 52px rgba(8, 38, 31, .25); transform: translateY(-2px); }
-.dashboard-safety-mission .dashboard-mission-icon { align-items: center; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .12); border-radius: 17px; color: #9fe3d7; display: flex; height: 56px; justify-content: center; width: 56px; }
-.dashboard-safety-mission .kicker { color: #9fe3d7; }
+.dashboard-safety-mission .dashboard-mission-icon { align-items: center; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .12); border-radius: 17px; color: var(--signal); display: flex; height: 56px; justify-content: center; width: 56px; }
+.dashboard-safety-mission .kicker { color: var(--signal); }
 .dashboard-safety-mission h2 { color: #fff; font-size: clamp(1.35rem, 2.7vw, 2.1rem); margin: 4px 0 7px; }
 .dashboard-safety-mission p:not(.kicker) { color: rgba(246, 255, 252, .68); font-size: .76rem; line-height: 1.5; max-width: 600px; }
-.dashboard-safety-mission > svg { color: #9fe3d7; }
+.dashboard-safety-mission > svg { color: var(--signal); }
 
 .dashboard-weekly-card {
   background: var(--surface);
