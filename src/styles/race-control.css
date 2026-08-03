@@ -449,3 +449,167 @@
 @media (prefers-reduced-motion: reduce) {
   .cycle-shell { background-image: none; }
 }
+
+/* Light-theme contrast guard.
+   Keep this last: older feature styles contain dark-theme text colors and
+   higher-specificity light-theme header rules. */
+:root[data-theme='light'] .cycle-header {
+  background: var(--race-carbon);
+  border-bottom-color: var(--race-yellow);
+  color: #fff;
+}
+
+:root[data-theme='light'] .cycle-header .cycle-brand,
+:root[data-theme='light'] .cycle-header .cycle-brand svg {
+  color: #fff;
+}
+
+:root[data-theme='light'] .cycle-header :is(
+  .main-nav-link,
+  nav > a:not(.main-nav-record),
+  .header-icon-link,
+  .profile-toggle,
+  .quiet-button
+) {
+  color: #c4cbc5;
+}
+
+:root[data-theme='light'] .cycle-header :is(
+  .main-nav-link:hover,
+  .main-nav-link.active,
+  .header-icon-link:hover,
+  .header-icon-link.active
+) {
+  background: rgba(240, 189, 32, .11);
+  color: var(--race-yellow);
+}
+
+:root[data-theme='light'] .cycle-header :is(
+  .main-nav-record,
+  .main-nav-record:hover,
+  .main-nav-record.active
+) {
+  background: var(--race-yellow);
+  border-color: var(--race-yellow);
+  color: var(--on-brand) !important;
+}
+
+:root[data-theme='light'] .cycle-header .header-pro-link,
+:root[data-theme='light'] .cycle-header .header-pro-link:hover,
+:root[data-theme='light'] .cycle-header .header-pro-link.active {
+  background: rgba(240, 189, 32, .09);
+  border-color: rgba(240, 189, 32, .42);
+  color: #f2cb55;
+}
+
+:root[data-theme='light'] .cycle-header .header-preferences {
+  border-color: rgba(255, 255, 255, .2);
+}
+
+:root[data-theme='light'] .cycle-header .header-preferences select {
+  border-color: rgba(255, 255, 255, .24);
+  color: #fff;
+}
+
+:root[data-theme='light'] .cycle-header .header-preferences option {
+  background: #fff;
+  color: var(--ink);
+}
+
+:root[data-theme='light'] .cycle-shell :is(
+  .post-card,
+  .profile-popover,
+  .metric-card,
+  .bike-mini,
+  .bike-card,
+  .form-card,
+  .empty-panel,
+  .route-preview,
+  .route-description,
+  .rider-profile-header,
+  .conversations-list,
+  .messages-launchpad,
+  .messages-empty-state,
+  .marketplace-card,
+  .marketplace-map-card,
+  .listing-seller-card,
+  .global-route-panel,
+  .navigation-instruction-card,
+  .navigation-bottom-sheet,
+  .weekly-progress-card,
+  .competition-event-card,
+  .weekly-leaderboard
+) {
+  color: var(--ink);
+}
+
+:root[data-theme='light'] .post-card .post-author strong,
+:root[data-theme='light'] .post-card .post-comments strong,
+:root[data-theme='light'] .post-card .post-caption {
+  color: var(--ink);
+}
+
+:root[data-theme='light'] .post-card :is(
+  .post-author-meta,
+  .post-actions,
+  .post-comments p,
+  time
+) {
+  color: var(--muted);
+}
+
+:root[data-theme='light'] .post-card .post-author-meta > span:first-child,
+:root[data-theme='light'] .post-card .comment-form button {
+  color: var(--signal);
+}
+
+:root[data-theme='light'] :is(.post-inline-error, .feed-error) {
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--line));
+  color: var(--danger);
+}
+
+:root[data-theme='light'] .feed-error button {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+  color: var(--danger);
+}
+
+:root[data-theme='light'] :is(
+  .profile-popover,
+  .mobile-profile-sheet,
+  .wallpaper-popover,
+  .rider-search-results
+) :is(a, button, strong, span, p) {
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  :root[data-theme='light'] .mobile-main-nav {
+    background: var(--race-carbon);
+    border-top-color: var(--race-yellow);
+  }
+
+  :root[data-theme='light'] .mobile-main-nav .main-nav-link {
+    color: #c4cbc5;
+  }
+
+  :root[data-theme='light'] .mobile-main-nav .main-nav-link.active {
+    background: rgba(240, 189, 32, .1);
+    color: var(--race-yellow);
+  }
+
+  :root[data-theme='light'] .mobile-main-nav :is(
+    .main-nav-record,
+    .main-nav-record:hover,
+    .main-nav-record.active
+  ) {
+    background: var(--race-yellow);
+    border-color: var(--race-carbon);
+    color: var(--on-brand);
+  }
+
+  :root[data-theme='light'] .mobile-main-nav .main-nav-record svg {
+    color: var(--on-brand);
+  }
+}
