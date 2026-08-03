@@ -34,7 +34,7 @@ export function LiveRecordMap({ track, currentPoint = null, className = 'record-
     <KeepMapSized />
     <FollowRider point={displayedPoint} />
     {segments.map((positions, index) => positions.length > 1 && <Polyline key={`record-outline-${index}`} positions={positions} pathOptions={{ color: '#071310', opacity: .8, weight: 9, lineCap: 'round', lineJoin: 'round' }} />)}
-    {segments.map((positions, index) => positions.length > 1 && <Polyline key={`record-route-${index}`} positions={positions} pathOptions={{ color: '#78966a', weight: 5, lineCap: 'round', lineJoin: 'round' }} />)}
+    {segments.map((positions, index) => positions.length > 1 && <Polyline key={`record-route-${index}`} positions={positions} pathOptions={{ color: '#58745a', weight: 5, lineCap: 'round', lineJoin: 'round' }} />)}
     {displayedPoint && <>
       <CircleMarker center={[displayedPoint.lat, displayedPoint.lng]} radius={18} pathOptions={{ color: '#1b8577', fillColor: '#1b8577', fillOpacity: .16, weight: 2 }} />
       <CircleMarker center={[displayedPoint.lat, displayedPoint.lng]} radius={8} pathOptions={{ color: '#fff', fillColor: '#1b8577', fillOpacity: 1, weight: 3 }} />

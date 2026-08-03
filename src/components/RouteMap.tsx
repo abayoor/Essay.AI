@@ -31,9 +31,9 @@ export function RouteMap({ points, className = '' }: { points: RoutePoint[]; cla
     <MapContainer center={center} zoom={positions.length ? 12 : 11} scrollWheelZoom={false} className={`route-map ${className}`}>
       <CommunityTileLayer />
       <FitRoute positions={positions} />
-      {segments.map((segment, index) => segment.length > 1 && <Polyline key={`route-segment-${index}`} positions={segment} pathOptions={{ color: '#78966a', weight: 5, lineCap: 'round', lineJoin: 'round' }} />)}
+      {segments.map((segment, index) => segment.length > 1 && <Polyline key={`route-segment-${index}`} positions={segment} pathOptions={{ color: '#58745a', weight: 5, lineCap: 'round', lineJoin: 'round' }} />)}
       {positions[0] && <CircleMarker center={positions[0]} radius={7} pathOptions={{ color: '#fff', fillColor: '#3e6f5c', fillOpacity: 1, weight: 2 }} />}
-      {positions.length > 1 && <CircleMarker center={positions[positions.length - 1]} radius={6} pathOptions={{ color: '#fff', fillColor: '#78966a', fillOpacity: 1, weight: 2 }} />}
+      {positions.length > 1 && <CircleMarker center={positions[positions.length - 1]} radius={6} pathOptions={{ color: '#fff', fillColor: '#58745a', fillOpacity: 1, weight: 2 }} />}
     </MapContainer>
   );
 }

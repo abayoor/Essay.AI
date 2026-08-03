@@ -16,16 +16,16 @@ const preferencesStorageKey = 'slipstream-preferences';
 function readStoredPreferences(): { locale: Locale; theme: ThemePreference } {
   try {
     const stored = window.localStorage.getItem(preferencesStorageKey);
-    if (!stored) return { locale: 'ru', theme: 'dark' };
+    if (!stored) return { locale: 'ru', theme: 'light' };
     const value: unknown = JSON.parse(stored);
-    if (!value || typeof value !== 'object') return { locale: 'ru', theme: 'dark' };
+    if (!value || typeof value !== 'object') return { locale: 'ru', theme: 'light' };
     const { locale } = value as { locale?: unknown };
     return {
       locale: locale === 'kz' || locale === 'en' ? locale : 'ru',
-      theme: 'dark',
+      theme: 'light',
     };
   } catch {
-    return { locale: 'ru', theme: 'dark' };
+    return { locale: 'ru', theme: 'light' };
   }
 }
 
@@ -33,7 +33,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { session } = useSession();
   const [storedPreferences] = useState(readStoredPreferences);
   const [locale, setLocale] = useState<Locale>(storedPreferences.locale);
-  const theme: ThemePreference = 'dark';
+  const theme: ThemePreference = 'light';
   const hasLocalChange = useRef(false);
 
   useEffect(() => {

@@ -1,25 +1,27 @@
-/* Slipstream "Carbon + Racing Yellow" palette.
+/* Slipstream "Warm Ivory + Racing Yellow" palette.
    Neutral surfaces carry the interface; color is reserved for actions and meaning. */
 :root,
-:root[data-theme='dark'] {
-  --fog: #0f1110;
-  --surface: #171a18;
-  --surface-soft: #20241f;
-  --surface-raised: #1c201d;
-  --ink: #f1f2ec;
-  --muted: #a7aba1;
-  --line: rgba(224, 225, 214, .15);
-  --signal: #78966a;
-  --signal-strong: #8daa7c;
-  --on-signal: #0f150d;
-  --brand: #d6b447;
-  --brand-strong: #e2c45d;
-  --on-brand: #19170f;
-  --premium: #e2c878;
-  --moss: #6b8761;
-  --steel: #9ea59c;
-  --danger: #e27078;
+:root[data-theme='light'] {
+  --fog: #f3f1e9;
+  --surface: #fffdf8;
+  --surface-soft: #eae7dd;
+  --surface-raised: #f8f5ee;
+  --ink: #1c1e1b;
+  --muted: #686c63;
+  --line: rgba(42, 47, 39, .14);
+  --signal: #58745a;
+  --signal-strong: #466248;
+  --on-signal: #fffdf8;
+  --brand: #d2ae32;
+  --brand-strong: #bc9520;
+  --brand-text: #765c0d;
+  --on-brand: #26200d;
+  --premium: #9a7938;
+  --moss: #58745a;
+  --steel: #768075;
+  --danger: #b24c46;
   background: var(--fog);
+  color-scheme: light;
 }
 
 button:focus-visible,
@@ -31,12 +33,12 @@ textarea:focus-visible {
 }
 
 .cycle-shell,
-:root[data-theme='dark'] .cycle-shell {
+:root[data-theme='light'] .cycle-shell {
   background: var(--fog);
 }
 
 .cycle-header,
-:root[data-theme='dark'] .cycle-header {
+:root[data-theme='light'] .cycle-header {
   background: color-mix(in srgb, var(--fog) 88%, transparent);
   border-color: var(--line);
 }
@@ -83,7 +85,7 @@ textarea:focus-visible {
 .pro-inline-button:hover {
   background: color-mix(in srgb, var(--premium) 18%, var(--surface));
   border-color: color-mix(in srgb, var(--premium) 48%, var(--line));
-  color: #f0d994;
+  color: #755923;
   filter: none;
 }
 
@@ -149,7 +151,7 @@ textarea:focus-visible {
 .navigation-rider-marker span {
   background: var(--surface);
   border-color: var(--ink);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--signal) 32%, transparent), 0 8px 28px rgba(0, 0, 0, .48);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--signal) 22%, transparent), 0 8px 22px rgba(42, 47, 39, .2);
 }
 
 .navigation-rider-marker path { fill: var(--signal); }
@@ -183,7 +185,8 @@ textarea:focus-visible {
 .dashboard-safety-mission .dashboard-mission-icon,
 .dashboard-safety-mission .kicker,
 .dashboard-safety-mission > svg { color: var(--signal); }
-.dashboard-safety-mission p:not(.kicker) { color: #b8c0bc; }
+.dashboard-safety-mission h2 { color: var(--ink); }
+.dashboard-safety-mission p:not(.kicker) { color: var(--muted); }
 .dashboard-weekly-progress span { background: var(--signal); }
 
 .dashboard-coach-teaser,
@@ -205,7 +208,7 @@ textarea:focus-visible {
 .dashboard-coach-teaser::after { display: none; }
 
 .empty-chat-art,
-:root[data-theme='dark'] .empty-chat-art {
+:root[data-theme='light'] .empty-chat-art {
   background: var(--surface-soft);
 }
 
@@ -215,17 +218,17 @@ textarea:focus-visible {
 .listing-sold-note {
   background: color-mix(in srgb, var(--brand) 10%, var(--surface));
   border-color: color-mix(in srgb, var(--brand) 25%, var(--line));
-  color: var(--brand-strong);
+  color: var(--brand-text);
 }
 
 .pro-page {
-  --pro-bg: #0f1110;
-  --pro-surface: #171a18;
-  --pro-surface-high: #20241f;
-  --pro-line: rgba(224, 225, 214, .15);
-  --pro-muted: #a7aba1;
-  --pro-accent: #e2c878;
-  --pro-accent-strong: #f0d994;
+  --pro-bg: #f3f1e9;
+  --pro-surface: #fffdf8;
+  --pro-surface-high: #eae7dd;
+  --pro-line: rgba(42, 47, 39, .14);
+  --pro-muted: #686c63;
+  --pro-accent: #8a692d;
+  --pro-accent-strong: #715421;
   background: var(--pro-bg);
 }
 

@@ -101,7 +101,7 @@ function arrowIcon(bearing: number) {
 
 export function DirectionalRouteLine({
   points,
-  color = '#78966a',
+  color = '#58745a',
   weight = 6,
   opacity = 1,
   showArrows = true,

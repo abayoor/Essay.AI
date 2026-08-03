@@ -1,24 +1,24 @@
-/* Final dark-only guard for older feature surfaces that predate theme tokens. */
+/* Marketplace surfaces aligned with the warm light palette. */
 .marketplace-card-image,
 .listing-gallery {
-  background: linear-gradient(145deg, #12231f, #0a1512);
+  background: linear-gradient(145deg, #ece9df, #f8f5ee);
 }
 
 .marketplace-condition-badge,
 .marketplace-photo-count,
 .gallery-nav {
-  background: rgba(7, 18, 15, .88);
-  border: 1px solid rgba(141, 174, 164, .24);
-  color: #eef8f5;
+  background: rgba(255, 253, 248, .92);
+  border: 1px solid rgba(42, 47, 39, .14);
+  color: #1c1e1b;
 }
 
 .listing-price span,
 .listing-sold-note {
-  background: rgba(82, 208, 188, .12);
-  border: 1px solid rgba(82, 208, 188, .24);
-  color: #6ce5cb;
+  background: rgba(210, 174, 50, .13);
+  border: 1px solid rgba(210, 174, 50, .28);
+  color: #765c0d;
 }
 
 .listing-gallery-empty {
-  color: #9eb2ac;
+  color: #686c63;
 }

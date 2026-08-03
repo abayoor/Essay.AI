@@ -58,7 +58,7 @@ export function PageShell({ children }: { children: ReactNode }) {
   }
 
   function changeLocale(nextLocale: Locale) {
-    setPreferences({ locale: nextLocale, theme: 'dark' });
+    setPreferences({ locale: nextLocale, theme: 'light' });
     if (session) void saveRiderProfile({ locale: nextLocale });
   }
 
@@ -67,7 +67,7 @@ export function PageShell({ children }: { children: ReactNode }) {
   }, [location]);
 
   useEffect(() => {
-    if (theme !== 'dark') setPreferences({ locale, theme: 'dark' });
+    if (theme !== 'light') setPreferences({ locale, theme: 'light' });
   }, [locale, setPreferences, theme]);
 
   const profileActive = ['/profile', '/pro', '/coach', '/friends', '/competitions', '/rides', '/bikes', '/settings'].some((path) => location.startsWith(path));

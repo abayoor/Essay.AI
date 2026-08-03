@@ -18,7 +18,7 @@ const blankProfile: RiderProfile = {
   username: 'rider',
   interests: [],
   locale: 'ru',
-  theme_preference: 'dark',
+  theme_preference: 'light',
 };
 
 function ProfilePosts({ posts, text }: { posts: SocialPost[]; text: LocaleText }) {
