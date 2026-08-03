@@ -862,7 +862,7 @@ export function CityExploreMap({
             ? <DirectionalRouteLine
               key={option.preference}
               points={option.result.points}
-              color="#58745a"
+              color="#2f6f55"
               weight={navigationActive ? 9 : 7}
               opacity={0.98}
               showArrows

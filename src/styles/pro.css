@@ -1,11 +1,11 @@
 .pro-page {
-  --pro-bg: #f3f1e9;
-  --pro-surface: #fffdf8;
-  --pro-surface-high: #eae7dd;
-  --pro-line: rgba(42, 47, 39, .14);
-  --pro-muted: #686c63;
-  --pro-accent: #8a692d;
-  --pro-accent-strong: #715421;
+  --pro-bg: #eef0ed;
+  --pro-surface: #ffffff;
+  --pro-surface-high: #e3e7e2;
+  --pro-line: rgba(21, 25, 22, .15);
+  --pro-muted: #626a62;
+  --pro-accent: #7b5c1c;
+  --pro-accent-strong: #624713;
   background: var(--pro-bg);
   color: #1c1e1b;
   margin: 0 auto;

@@ -1,0 +1,451 @@
+/* Race Control: metric-first, high-contrast and built around athletic momentum. */
+:root {
+  --race-carbon: #171c19;
+  --race-carbon-soft: #232a25;
+  --race-yellow: #f0bd20;
+  --race-green: #2f6f55;
+  --radius-control: 6px;
+  --radius-card: 8px;
+  --radius-panel: 10px;
+}
+
+.cycle-shell {
+  background-color: var(--fog);
+  background-image:
+    linear-gradient(rgba(21, 25, 22, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(21, 25, 22, .025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.cycle-header {
+  background: var(--race-carbon);
+  border-bottom: 3px solid var(--race-yellow);
+  color: #fff;
+  margin: 0;
+  max-width: none;
+  padding-left: max(32px, calc((100vw - 1280px) / 2));
+  padding-right: max(32px, calc((100vw - 1280px) / 2));
+  position: sticky;
+  top: 0;
+  z-index: 2100;
+}
+
+.cycle-brand { color: #fff; }
+.cycle-brand span { background: var(--race-yellow); color: var(--on-brand); }
+
+.cycle-header .main-nav-link,
+.cycle-header nav > a:not(.main-nav-record),
+.cycle-header .header-icon-link,
+.cycle-header .profile-toggle,
+.cycle-header .quiet-button {
+  color: #b8c0b9;
+}
+
+.cycle-header .main-nav-link:hover,
+.cycle-header .main-nav-link.active,
+.cycle-header .header-icon-link:hover,
+.cycle-header .header-icon-link.active {
+  background: rgba(240, 189, 32, .11);
+  color: var(--race-yellow);
+}
+
+.cycle-header .main-nav-link.active::after { background: var(--race-yellow); }
+
+.cycle-header .main-nav-record,
+.cycle-header .main-nav-record:hover,
+.cycle-header .main-nav-record.active {
+  background: var(--race-yellow);
+  color: var(--on-brand) !important;
+}
+
+.cycle-header .main-nav-record.active::after { background: var(--on-brand); }
+
+.cycle-header .header-pro-link {
+  background: rgba(240, 189, 32, .09);
+  border-color: rgba(240, 189, 32, .32);
+  color: #f2cb55;
+}
+
+.cycle-header .header-preferences { border-color: rgba(255, 255, 255, .16); }
+.cycle-header .header-preferences select { border-color: rgba(255, 255, 255, .2); color: #fff; }
+.cycle-header .header-preferences option { background: #fff; color: var(--ink); }
+
+.profile-popover {
+  border-radius: var(--radius-card);
+  box-shadow: 0 14px 32px rgba(21, 25, 22, .18);
+}
+
+.cycle-page,
+.landing-page { padding-top: 34px; }
+
+.page-heading,
+.feed-heading,
+.section-heading {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 18px;
+}
+
+.page-heading h1,
+.feed-heading h1,
+.marketplace-hero h1,
+.messages-hero h1,
+.listing-editor-heading h1 {
+  font-variation-settings: 'wdth' 82;
+  font-weight: 800;
+  letter-spacing: -.055em;
+}
+
+.kicker,
+.pro-eyebrow {
+  align-items: center;
+  color: var(--signal);
+  display: inline-flex;
+  font-weight: 800;
+  gap: 7px;
+  letter-spacing: .11em;
+}
+
+.kicker::before,
+.pro-eyebrow::before {
+  background: var(--race-yellow);
+  content: '';
+  display: inline-block;
+  height: 10px;
+  width: 3px;
+}
+
+.cycle-hero {
+  border-left: 6px solid var(--race-yellow);
+  max-width: 860px;
+  padding-left: clamp(20px, 4vw, 38px);
+}
+
+.cycle-hero h1 { font-variation-settings: 'wdth' 78; }
+.cycle-hero h1 em { color: var(--brand-text); }
+
+.signal-button,
+.header-cta,
+.message-send-button,
+.comment-form button[type='submit'],
+.pro-primary-button,
+.pro-analysis-submit button {
+  font-weight: 850;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+
+.signal-button,
+.header-cta,
+.main-nav-record,
+.message-send-button,
+.comment-form button[type='submit'] {
+  background: var(--race-yellow);
+  border-color: var(--race-yellow);
+  color: var(--on-brand) !important;
+}
+
+.signal-button:hover,
+.header-cta:hover,
+.main-nav-record:hover,
+.message-send-button:hover,
+.comment-form button[type='submit']:hover {
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
+}
+
+.outline-button,
+.outline-inline-button,
+.quiet-button,
+.marketplace-filters button,
+.section-tabs button {
+  font-weight: 800;
+}
+
+.metric-card,
+.garage-health-summary article {
+  border-radius: var(--radius-card);
+  border-top: 3px solid var(--race-yellow);
+  min-height: 132px;
+}
+
+.metric-card p {
+  font-size: .68rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.metric-card strong,
+.odometer,
+.route-data strong,
+.weekly-distance-line strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.metric-card strong { font-size: clamp(1.8rem, 3.4vw, 2.75rem); }
+
+.metric-card,
+.bike-mini,
+.bike-card,
+.form-card,
+.empty-panel,
+.route-preview,
+.route-description,
+.rider-profile-header,
+.post-card,
+.conversations-list,
+.content-management-grid > section,
+.dashboard-weekly-card,
+.coach-advice-card,
+.messages-launchpad,
+.messages-empty-state,
+.marketplace-card,
+.marketplace-map-card,
+.listing-gallery,
+.listing-seller-card,
+.city-map-panel,
+.global-route-panel {
+  background: var(--surface);
+  border-color: var(--line);
+  border-radius: var(--radius-card);
+}
+
+.route-preview:hover,
+.marketplace-card:hover,
+.post-card:hover {
+  border-color: color-mix(in srgb, var(--signal) 58%, var(--line));
+}
+
+.dashboard-safety-mission,
+.dashboard-coach-teaser,
+.messages-hero,
+.challenge-card,
+.marketplace-hero,
+.profile-hero {
+  background: var(--race-carbon);
+  border: 0;
+  border-top: 4px solid var(--race-yellow);
+  border-radius: var(--radius-panel);
+  color: #fff;
+}
+
+.dashboard-safety-mission h2,
+.dashboard-coach-teaser h2,
+.messages-hero h1,
+.challenge-card h2,
+.marketplace-hero h1,
+.profile-identity h1 {
+  color: #fff;
+}
+
+.dashboard-safety-mission p:not(.kicker),
+.dashboard-coach-teaser p,
+.messages-hero > div > p:not(.kicker),
+.challenge-card > div > p:not(.kicker),
+.marketplace-hero > div > p:not(.kicker),
+.profile-meta {
+  color: #b8c0b9;
+}
+
+.dashboard-safety-mission .kicker,
+.dashboard-coach-teaser .kicker,
+.messages-hero .kicker,
+.challenge-card .kicker,
+.marketplace-hero .kicker,
+.profile-eyebrow,
+.profile-meta span:first-child {
+  color: var(--race-yellow);
+}
+
+.dashboard-safety-mission .dashboard-mission-icon,
+.dashboard-coach-teaser > span {
+  background: var(--race-carbon-soft);
+  border-color: rgba(255, 255, 255, .14);
+  color: var(--race-yellow);
+}
+
+.profile-edit-button {
+  background: var(--race-carbon-soft);
+  border-color: rgba(255, 255, 255, .2);
+  color: #fff;
+}
+
+.profile-edit-button:hover { background: #303832; }
+.profile-hero-pattern { display: none; }
+
+.profile-stats {
+  border-radius: var(--radius-card);
+  box-shadow: 0 10px 24px rgba(21, 25, 22, .11);
+}
+
+.profile-stats strong { font-size: 1.3rem; }
+
+.post-card { border-top: 3px solid var(--race-carbon); }
+.post-author { border-bottom: 1px solid var(--line); }
+.post-actions { border-top-color: var(--line); }
+
+.post-media,
+.profile-post-thumb-image { background: #dfe4df; }
+
+.like-button.liked {
+  background: color-mix(in srgb, var(--race-yellow) 17%, var(--surface));
+  color: var(--brand-text);
+}
+
+.community-feed-tabs,
+.map-section-tabs,
+.section-tabs {
+  border-bottom: 2px solid var(--line);
+  border-radius: 0;
+}
+
+.community-feed-tabs button.active,
+.map-section-tabs button.active,
+.section-tabs button.active {
+  border-color: var(--race-yellow);
+  color: var(--ink);
+}
+
+.route-sketch { background: #dce2dd; }
+.route-sketch path { stroke: var(--race-green); }
+
+.route-data article { border-top: 3px solid var(--race-green); }
+.route-preview-go { background: var(--race-carbon); color: #fff !important; }
+
+.map-layer-switcher,
+.map-quick-searches button,
+.global-route-panel,
+.navigation-instruction-card,
+.navigation-bottom-sheet {
+  border-radius: var(--radius-control);
+}
+
+.navigation-turn { background: var(--race-yellow); color: var(--on-brand); }
+.navigation-rider-marker path { fill: var(--race-green); }
+
+.record-metrics {
+  background: var(--race-carbon);
+  border-bottom: 3px solid var(--race-yellow);
+}
+
+.record-controls { background: #fff; }
+
+.marketplace-filters button.active {
+  background: var(--race-carbon);
+  color: #fff;
+}
+
+.marketplace-card-copy strong { font-size: 1.08rem; }
+
+.competitions-page .competitions-hero {
+  background: var(--race-carbon);
+  border: 0;
+  border-top: 4px solid var(--race-yellow);
+  color: #fff;
+}
+
+.competitions-page .competitions-hero h1 { color: #fff; }
+.competitions-page .competitions-hero .kicker,
+.competitions-page .competitions-hero-mark svg { color: var(--race-yellow); }
+.competitions-page .competitions-hero > div:first-child > p:not(.kicker),
+.competitions-page .competitions-hero-mark small { color: #b8c0b9; }
+.competitions-page .competitions-hero-mark {
+  background: var(--race-carbon-soft);
+  border-color: rgba(255, 255, 255, .16);
+}
+
+.competitions-page .weekly-progress-card,
+.competitions-page .competition-event-card,
+.competitions-page .weekly-leaderboard {
+  border-top: 3px solid var(--race-yellow);
+}
+
+.pro-page .pro-price-card {
+  background: var(--race-carbon);
+  border: 0;
+  border-top: 4px solid var(--race-yellow);
+  color: #fff;
+}
+
+.pro-page .pro-price-card :is(strong, p, span) { color: inherit; }
+.pro-page .pro-price-card-top > span,
+.pro-page .pro-price-card svg { color: var(--race-yellow); }
+.pro-page .pro-price-card-top > p,
+.pro-page .pro-price-card-top > strong small,
+.pro-page .pro-trust-list span { color: #b8c0b9; }
+.pro-page .pro-trust-list strong { color: #fff; }
+
+.pro-page .pro-primary-button,
+.pro-page .pro-analysis-submit button,
+.pro-page .pro-final-cta button,
+.pro-page .pro-final-cta > a {
+  background: var(--race-yellow);
+  color: var(--on-brand);
+}
+
+.pro-page .pro-analysis-form,
+.pro-page .pro-analysis-result,
+.pro-page .pro-toolkit-shell,
+.pro-page .pro-weekly-digest {
+  border-top: 3px solid var(--race-yellow);
+}
+
+.legal-page { background: var(--fog); }
+.legal-hero { border-top: 4px solid var(--race-yellow); padding-top: 24px; }
+.legal-sections section { border-left: 3px solid var(--race-carbon); }
+
+@media (max-width: 900px) {
+  .cycle-header {
+    padding-left: max(15px, env(safe-area-inset-left));
+    padding-right: max(15px, env(safe-area-inset-right));
+  }
+
+  .mobile-main-nav {
+    background: var(--race-carbon);
+    border-top: 3px solid var(--race-yellow);
+  }
+
+  .mobile-main-nav .main-nav-link { color: #aeb7b0; }
+  .mobile-main-nav .main-nav-link.active {
+    background: rgba(240, 189, 32, .1);
+    color: var(--race-yellow);
+  }
+
+  .mobile-main-nav .main-nav-link.active::after { background: var(--race-yellow); }
+
+  .mobile-main-nav .main-nav-record,
+  .mobile-main-nav .main-nav-record:hover,
+  .mobile-main-nav .main-nav-record.active {
+    background: var(--race-yellow);
+    border-color: var(--race-carbon);
+    color: var(--on-brand);
+  }
+}
+
+@media (max-width: 560px) {
+  .cycle-page,
+  .landing-page { padding-top: 24px; }
+
+  .page-heading h1,
+  .feed-heading h1 { font-size: clamp(2.15rem, 11vw, 3rem); }
+
+  .cycle-hero {
+    border-left-width: 4px;
+    padding-left: 18px;
+  }
+
+  .dashboard-safety-mission,
+  .dashboard-coach-teaser,
+  .messages-hero,
+  .challenge-card,
+  .marketplace-hero,
+  .profile-hero,
+  .competitions-page .competitions-hero {
+    border-radius: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cycle-shell { background-image: none; }
+}

@@ -1,7 +1,7 @@
 /* Marketplace surfaces aligned with the warm light palette. */
 .marketplace-card-image,
 .listing-gallery {
-  background: linear-gradient(145deg, #ece9df, #f8f5ee);
+  background: linear-gradient(145deg, #e1e5e1, #f6f7f4);
 }
 
 .marketplace-condition-badge,
@@ -9,7 +9,7 @@
 .gallery-nav {
   background: rgba(255, 253, 248, .92);
   border: 1px solid rgba(42, 47, 39, .14);
-  color: #1c1e1b;
+  color: #151916;
 }
 
 .listing-price span,
