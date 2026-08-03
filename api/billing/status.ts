@@ -1,4 +1,5 @@
 import { assertBillingProviderRateLimit, authenticatedUser, billingConfigured, billingError, findProSubscription, hasDatabaseProAccess, hasPreviewTesterAccess, hasUniversalPromoAccess, json } from './_shared.js';
+import { findPolarSubscription, polarBillingConfigured } from './_polar.js';
 import { corsPreflight, withCors } from '../_cors.js';
 
 async function handler(request: Request): Promise<Response> {
@@ -28,8 +29,11 @@ async function handler(request: Request): Promise<Response> {
         source: 'promotion',
       } });
     }
-    if (!billingConfigured()) return json({ subscription: null });
-    const subscription = await findProSubscription(user.email);
+    const usePolar = polarBillingConfigured();
+    if (!usePolar && !billingConfigured()) return json({ subscription: null });
+    const subscription = usePolar
+      ? await findPolarSubscription(user.id)
+      : await findProSubscription(user.email);
     if (!subscription.id) return json({ subscription: null });
     const mappedStatus = subscription.status === 'on_trial' ? 'trialing'
       : subscription.status === 'cancelled' || subscription.status === 'expired' ? 'canceled'

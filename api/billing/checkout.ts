@@ -11,6 +11,13 @@ import {
   reserveProCheckout,
   validateProBillingProduct,
 } from './_shared.js';
+import {
+  billingAppOrigin,
+  createPolarCheckout,
+  createPolarCustomerPortal,
+  findPolarSubscription,
+  polarBillingConfigured,
+} from './_polar.js';
 import { corsPreflight, withCors } from '../_cors.js';
 
 type CheckoutResponse = {
@@ -52,16 +59,22 @@ async function handler(request: Request): Promise<Response> {
     if (requestedLocale !== 'ru' && requestedLocale !== 'kz' && requestedLocale !== 'en') {
       return json({ error: 'Неизвестный язык оплаты.' }, 400);
     }
-    if (!billingConfigured()) {
+    const usePolar = polarBillingConfigured();
+    if (!usePolar && !billingConfigured()) {
       return json({ error: 'Оплата пока работает в режиме предпросмотра. Подключи магазин в настройках сервера.' }, 503);
     }
-    const existing = await findProSubscription(user.email);
+    const existing = usePolar
+      ? await findPolarSubscription(user.id)
+      : await findProSubscription(user.email);
     const needsPaymentAction = existing.status === 'past_due'
       || existing.status === 'paused'
       || existing.status === 'unpaid';
     if (existing.active || needsPaymentAction) {
-      if (!existing.portalUrl) throw new Error('Не удалось открыть управление существующей подпиской.');
-      return json({ url: existing.portalUrl, alreadySubscribed: true });
+      const portalUrl = usePolar
+        ? await createPolarCustomerPortal(user.id, billingAppOrigin(request))
+        : existing.portalUrl;
+      if (!portalUrl) throw new Error('Не удалось открыть управление существующей подпиской.');
+      return json({ url: portalUrl, alreadySubscribed: true });
     }
 
     const reservation = await reserveProCheckout(user);
@@ -71,6 +84,13 @@ async function handler(request: Request): Promise<Response> {
     }
     if (!reservation.lockToken) throw new Error('Сервис оплаты не создал защиту от повторного списания.');
     checkoutLock = { user, token: reservation.lockToken };
+
+    if (usePolar) {
+      const checkoutUrl = await createPolarCheckout(user, requestedLocale, billingAppOrigin(request));
+      await finishProCheckout(user, reservation.lockToken, checkoutUrl, true).catch(() => undefined);
+      checkoutLock = null;
+      return json({ url: checkoutUrl, alreadySubscribed: false });
+    }
 
     const storeId = process.env.LEMON_SQUEEZY_STORE_ID as string;
     const variantId = process.env.LEMON_SQUEEZY_VARIANT_ID as string;
