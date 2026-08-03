@@ -1,0 +1,258 @@
+/* Slipstream "Asphalt + Terracotta" palette.
+   Neutral surfaces carry the interface; color is reserved for actions and meaning. */
+:root,
+:root[data-theme='dark'] {
+  --fog: #121614;
+  --surface: #1b211f;
+  --surface-soft: #232b28;
+  --surface-raised: #202725;
+  --ink: #f3f5f2;
+  --muted: #aab2ae;
+  --line: rgba(216, 217, 212, .16);
+  --signal: #64b8a6;
+  --signal-strong: #7dc7b7;
+  --on-signal: #101815;
+  --brand: #e47a55;
+  --brand-strong: #f08b68;
+  --on-brand: #181b19;
+  --premium: #d5ae66;
+  --moss: #4f8b76;
+  --steel: #9da9a4;
+  --danger: #e97773;
+  background: var(--fog);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-color: color-mix(in srgb, var(--brand) 52%, transparent);
+}
+
+.cycle-shell,
+:root[data-theme='dark'] .cycle-shell {
+  background: var(--fog);
+}
+
+.cycle-header,
+:root[data-theme='dark'] .cycle-header {
+  background: color-mix(in srgb, var(--fog) 88%, transparent);
+  border-color: var(--line);
+}
+
+.cycle-brand span {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.signal-button,
+.header-cta,
+.main-nav-record,
+.message-send-button,
+.comment-form button[type='submit'] {
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: none;
+  color: var(--on-brand) !important;
+}
+
+.signal-button:hover,
+.header-cta:hover,
+.main-nav-record:hover,
+.main-nav-record.active,
+.message-send-button:hover,
+.comment-form button[type='submit']:hover {
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
+  color: var(--on-brand) !important;
+}
+
+.main-nav-record.active::after { background: var(--on-brand); }
+
+.header-pro-link,
+.pro-inline-button {
+  background: color-mix(in srgb, var(--premium) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--premium) 34%, var(--line));
+  box-shadow: none;
+  color: var(--premium);
+}
+
+.header-pro-link:hover,
+.header-pro-link.active,
+.pro-inline-button:hover {
+  background: color-mix(in srgb, var(--premium) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--premium) 48%, var(--line));
+  color: #e3c481;
+  filter: none;
+}
+
+.header-coach-link,
+.header-coach-link:hover,
+.header-coach-link.active {
+  color: var(--signal);
+}
+
+.header-coach-link:hover,
+.header-coach-link.active {
+  background: color-mix(in srgb, var(--signal) 10%, var(--surface));
+}
+
+.route-prep-card,
+.ride-ai-section,
+.ride-metric-analysis article,
+.coach-safety-note,
+.coach-source-badge,
+.coach-watch-metric {
+  background: color-mix(in srgb, var(--premium) 7%, var(--surface));
+  border-color: color-mix(in srgb, var(--premium) 24%, var(--line));
+}
+
+.route-prep-card > span,
+.ai-assist-button,
+.ride-ai-section .kicker,
+.ride-metric-analysis article small b,
+.coach-safety-note,
+.coach-source-badge {
+  color: var(--premium);
+}
+
+.route-prep-card > span {
+  background: color-mix(in srgb, var(--premium) 13%, var(--surface));
+}
+
+.ai-assist-button {
+  background: color-mix(in srgb, var(--premium) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--premium) 28%, var(--line));
+}
+
+.ai-assist-button:hover:not(:disabled),
+.coach-feeling-scale button:hover,
+.coach-feeling-scale button.active {
+  background: color-mix(in srgb, var(--premium) 13%, var(--surface));
+  border-color: var(--premium);
+  color: var(--premium);
+}
+
+.ride-ai-section li::before { background: var(--premium); }
+.ride-ai-observations { border-color: color-mix(in srgb, var(--premium) 22%, var(--line)); }
+.coach-intensity-recovery { border-left-color: var(--premium); }
+.safety-hazard-no_lighting { --safety-color: var(--premium); }
+
+.destination-location-marker span,
+.route-address-marker.finish,
+.navigation-turn.finish {
+  background: var(--premium);
+  color: #1c1811;
+}
+
+.navigation-rider-marker span {
+  background: var(--surface);
+  border-color: var(--ink);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--signal) 32%, transparent), 0 8px 28px rgba(0, 0, 0, .48);
+}
+
+.navigation-rider-marker path { fill: var(--signal); }
+.global-city-map.navigation-active { background: var(--fog); }
+
+.navigation-instruction-card,
+.navigation-bottom-sheet {
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  border-color: color-mix(in srgb, var(--signal) 22%, var(--line));
+}
+
+.navigation-turn {
+  background: var(--signal);
+  box-shadow: none;
+  color: var(--on-signal);
+}
+
+.navigation-stop-button {
+  background: var(--surface-soft);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.dashboard-safety-mission {
+  background: #242a27;
+  border-color: color-mix(in srgb, var(--signal) 28%, var(--line));
+  box-shadow: none;
+}
+
+.dashboard-safety-mission:hover { box-shadow: none; }
+.dashboard-safety-mission .dashboard-mission-icon,
+.dashboard-safety-mission .kicker,
+.dashboard-safety-mission > svg { color: var(--signal); }
+.dashboard-safety-mission p:not(.kicker) { color: #b8c0bc; }
+.dashboard-weekly-progress span { background: var(--signal); }
+
+.dashboard-coach-teaser,
+.messages-hero,
+.challenge-card,
+.visual-challenge {
+  background: #242a27;
+  border: 1px solid var(--line);
+}
+
+.messages-hero .kicker,
+.messages-hero h1 em,
+.challenge-card .kicker,
+.dashboard-coach-teaser .kicker {
+  color: var(--signal);
+}
+
+.messages-hero::after,
+.dashboard-coach-teaser::after { display: none; }
+
+.empty-chat-art,
+:root[data-theme='dark'] .empty-chat-art {
+  background: var(--surface-soft);
+}
+
+.mobile-profile-grid a[href='/pro'] svg { color: var(--premium); }
+
+.listing-price span,
+.listing-sold-note {
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--brand) 25%, var(--line));
+  color: var(--brand-strong);
+}
+
+.pro-page {
+  --pro-bg: #121614;
+  --pro-surface: #1b211f;
+  --pro-surface-high: #232b28;
+  --pro-line: rgba(216, 217, 212, .16);
+  --pro-muted: #aab2ae;
+  --pro-accent: #d5ae66;
+  --pro-accent-strong: #e3c481;
+  background: var(--pro-bg);
+}
+
+.pro-page::before { display: none; }
+
+.pro-primary-button,
+.pro-analysis-submit button,
+.pro-final-cta button,
+.pro-final-cta > a {
+  color: #1c1811;
+}
+
+.pro-analysis-result,
+.pro-toolkit-shell,
+.pro-benefit-card,
+.pro-weekly-digest,
+.pro-faq,
+.pro-final-cta {
+  box-shadow: none;
+}
+
+.legal-back:hover,
+.legal-hero > p,
+.legal-nav a:hover { color: var(--signal); }
+
+.legal-contact {
+  background: color-mix(in srgb, var(--signal) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--signal) 22%, var(--line));
+  color: var(--signal);
+}

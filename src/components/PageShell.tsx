@@ -184,7 +184,7 @@ export function PageShell({ children }: { children: ReactNode }) {
               </Link>
               <Link href="/pro" onClick={() => setProfileOpen(false)}>
                 <Sparkles size={17} />
-                Slipstream Pro · $5
+                Slipstream Pro
               </Link>
               <Link href="/rides" onClick={() => setProfileOpen(false)}>
                 <Bike size={17} />
@@ -212,10 +212,10 @@ export function PageShell({ children }: { children: ReactNode }) {
         <Link
           href="/pro"
           className={`header-pro-link${location.startsWith('/pro') ? ' active' : ''}`}
-          aria-label="Slipstream Pro — 5 долларов в месяц"
+          aria-label="Slipstream Pro"
         >
           <Sparkles size={17} />
-          <span>PRO · $5</span>
+          <span>PRO</span>
         </Link>
         <Link
           href="/coach"

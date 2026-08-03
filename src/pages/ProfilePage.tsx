@@ -168,7 +168,7 @@ export function ProfilePage() {
           <Link href="/rides"><span><Bike size={19} /></span><div><strong>{text('Мои заезды', 'Менің сапарларым', 'My rides')}</strong><small>{text('История и статистика', 'Тарих және статистика', 'History and statistics')}</small></div></Link>
           <Link href="/bikes"><span><Wrench size={19} /></span><div><strong>{text('Мой гараж', 'Менің гаражым', 'My garage')}</strong><small>{text('Велосипеды и ТО', 'Велосипедтер және қызмет', 'Bikes and service')}</small></div></Link>
           <Link href="/coach"><span><BrainCircuit size={19} /></span><div><strong>{text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}</strong><small>{text('План с Gemini', 'Gemini жоспары', 'Plan with Gemini')}</small></div></Link>
-          <Link href="/pro"><span><Sparkles size={19} /></span><div><strong>Slipstream Pro</strong><small>{text('Полный ИИ-анализ · $5/месяц', 'Толық AI талдау · $5/ай', 'Full AI analysis · $5/month')}</small></div></Link>
+          <Link href="/pro"><span><Sparkles size={19} /></span><div><strong>Slipstream Pro</strong><small>{text('Расширенный анализ и инструменты', 'Кеңейтілген талдау және құралдар', 'Advanced analysis and tools')}</small></div></Link>
           <Link href="/map"><span><Map size={19} /></span><div><strong>{text('Карта', 'Карта', 'Map')}</strong><small>{text('Маршруты и места', 'Бағыттар мен орындар', 'Routes and places')}</small></div></Link>
           <Link href="/settings"><span><Settings size={19} /></span><div><strong>{text('Настройки', 'Баптаулар', 'Settings')}</strong><small>{text('Профиль и аккаунт', 'Профиль және аккаунт', 'Profile and account')}</small></div></Link>
         </nav>

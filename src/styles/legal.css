@@ -1,8 +1,6 @@
 .legal-page {
-  background:
-    radial-gradient(circle at 15% 0, rgba(73, 209, 179, .13), transparent 32rem),
-    #07100e;
-  color: #effaf7;
+  background: #121614;
+  color: #f3f5f2;
   min-height: calc(100dvh - 70px);
   padding: clamp(24px, 5vw, 64px) 16px max(48px, env(safe-area-inset-bottom));
 }
@@ -20,10 +18,10 @@
   text-decoration: none;
 }
 
-.legal-back:hover { color: #76e6cd; }
+.legal-back:hover { color: #64b8a6; }
 
 .legal-hero { border-bottom: 1px solid rgba(205, 255, 240, .13); padding-bottom: 34px; }
-.legal-hero > p { align-items: center; color: #76e6cd; display: flex; font-size: .75rem; font-weight: 850; gap: 8px; letter-spacing: .12em; margin: 0 0 15px; text-transform: uppercase; }
+.legal-hero > p { align-items: center; color: #64b8a6; display: flex; font-size: .75rem; font-weight: 850; gap: 8px; letter-spacing: .12em; margin: 0 0 15px; text-transform: uppercase; }
 .legal-hero h1 { color: #f5fffc; font-size: clamp(2rem, 6vw, 3.7rem); letter-spacing: -.04em; line-height: 1.02; margin: 0 0 14px; }
 .legal-hero > span { color: #81968f; display: block; font-size: .78rem; margin-bottom: 22px; }
 .legal-hero > div { color: #b5c7c1; font-size: clamp(.98rem, 2vw, 1.08rem); line-height: 1.7; max-width: 720px; }
@@ -33,14 +31,14 @@
 .legal-sections h2 { color: #f0faf7; font-size: 1.05rem; margin: 0 0 10px; }
 .legal-sections p { color: #a7bbb4; line-height: 1.72; margin: 0; }
 
-.legal-contact { align-items: center; background: rgba(108, 229, 203, .08); border: 1px solid rgba(108, 229, 203, .2); border-radius: 18px; color: #76e6cd; display: flex; gap: 14px; padding: 18px 20px; }
+.legal-contact { align-items: center; background: rgba(100, 184, 166, .08); border: 1px solid rgba(100, 184, 166, .22); border-radius: 18px; color: #64b8a6; display: flex; gap: 14px; padding: 18px 20px; }
 .legal-contact div { display: grid; gap: 3px; min-width: 0; }
 .legal-contact strong { color: #eaf8f4; font-size: .9rem; }
 .legal-contact a, .legal-contact span { color: #a9c2bb; font-size: .86rem; overflow-wrap: anywhere; }
 
 .legal-nav { display: flex; flex-wrap: wrap; gap: 10px 20px; padding-top: 26px; }
 .legal-nav a { color: #9eb4ae; font-size: .82rem; font-weight: 720; }
-.legal-nav a:hover { color: #76e6cd; }
+.legal-nav a:hover { color: #64b8a6; }
 
 @media (max-width: 640px) {
   .legal-page { padding-top: 22px; }
