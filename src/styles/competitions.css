@@ -4,8 +4,8 @@
 
 .competitions-hero {
   align-items: center;
-  background: #242a27;
-  border: 1px solid rgba(216, 217, 212, .16);
+  background: #22292d;
+  border: 1px solid rgba(210, 218, 222, .15);
   border-radius: 30px;
   box-shadow: 0 20px 54px rgba(8, 39, 34, .17);
   color: #f4fffc;
@@ -877,7 +877,7 @@
 .weekly-leaderboard > header { align-items: start; display: flex; gap: 20px; justify-content: space-between; }
 .weekly-leaderboard > header h2 { font-size: clamp(1.65rem, 4vw, 2.35rem); margin: 3px 0 6px; }
 .weekly-leaderboard > header p:last-child { color: var(--muted); margin: 0; }
-.weekly-leaderboard > header > span { align-items: center; background: rgba(213, 174, 102, .12); border: 1px solid rgba(213, 174, 102, .28); border-radius: 999px; color: #d5ae66; display: inline-flex; font-size: .68rem; font-weight: 900; gap: 6px; padding: 8px 11px; }
+.weekly-leaderboard > header > span { align-items: center; background: rgba(200, 170, 110, .12); border: 1px solid rgba(200, 170, 110, .28); border-radius: 999px; color: #c8aa6e; display: inline-flex; font-size: .68rem; font-weight: 900; gap: 6px; padding: 8px 11px; }
 .weekly-leaderboard ol { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .weekly-leaderboard li { align-items: center; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 14px; display: grid; gap: 12px; grid-template-columns: 34px 42px minmax(0, 1fr) auto; min-height: 62px; padding: 9px 13px; }
 .weekly-leaderboard li > b:first-child { color: var(--muted); font-size: .75rem; text-align: center; }

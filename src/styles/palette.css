@@ -1,24 +1,24 @@
-/* Slipstream "Asphalt + Terracotta" palette.
+/* Slipstream "Graphite + Alpine" palette.
    Neutral surfaces carry the interface; color is reserved for actions and meaning. */
 :root,
 :root[data-theme='dark'] {
-  --fog: #121614;
-  --surface: #1b211f;
-  --surface-soft: #232b28;
-  --surface-raised: #202725;
-  --ink: #f3f5f2;
-  --muted: #aab2ae;
-  --line: rgba(216, 217, 212, .16);
-  --signal: #64b8a6;
-  --signal-strong: #7dc7b7;
-  --on-signal: #101815;
-  --brand: #e47a55;
-  --brand-strong: #f08b68;
-  --on-brand: #181b19;
-  --premium: #d5ae66;
-  --moss: #4f8b76;
-  --steel: #9da9a4;
-  --danger: #e97773;
+  --fog: #111416;
+  --surface: #191e21;
+  --surface-soft: #22292d;
+  --surface-raised: #1f262a;
+  --ink: #f2f4f3;
+  --muted: #a4adb1;
+  --line: rgba(210, 218, 222, .15);
+  --signal: #6fae9f;
+  --signal-strong: #86c1b3;
+  --on-signal: #101817;
+  --brand: #769fba;
+  --brand-strong: #8ab4ca;
+  --on-brand: #0e171c;
+  --premium: #c8aa6e;
+  --moss: #648e7f;
+  --steel: #94a4ad;
+  --danger: #d86f72;
   background: var(--fog);
 }
 
@@ -83,7 +83,7 @@ textarea:focus-visible {
 .pro-inline-button:hover {
   background: color-mix(in srgb, var(--premium) 18%, var(--surface));
   border-color: color-mix(in srgb, var(--premium) 48%, var(--line));
-  color: #e3c481;
+  color: #d7bd87;
   filter: none;
 }
 
@@ -174,7 +174,7 @@ textarea:focus-visible {
 }
 
 .dashboard-safety-mission {
-  background: #242a27;
+  background: var(--surface-soft);
   border-color: color-mix(in srgb, var(--signal) 28%, var(--line));
   box-shadow: none;
 }
@@ -190,7 +190,7 @@ textarea:focus-visible {
 .messages-hero,
 .challenge-card,
 .visual-challenge {
-  background: #242a27;
+  background: var(--surface-soft);
   border: 1px solid var(--line);
 }
 
@@ -219,13 +219,13 @@ textarea:focus-visible {
 }
 
 .pro-page {
-  --pro-bg: #121614;
-  --pro-surface: #1b211f;
-  --pro-surface-high: #232b28;
-  --pro-line: rgba(216, 217, 212, .16);
-  --pro-muted: #aab2ae;
-  --pro-accent: #d5ae66;
-  --pro-accent-strong: #e3c481;
+  --pro-bg: #111416;
+  --pro-surface: #191e21;
+  --pro-surface-high: #22292d;
+  --pro-line: rgba(210, 218, 222, .15);
+  --pro-muted: #a4adb1;
+  --pro-accent: #c8aa6e;
+  --pro-accent-strong: #d7bd87;
   background: var(--pro-bg);
 }
 

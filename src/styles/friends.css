@@ -13,7 +13,7 @@
 .friends-map-card > header span, .friends-list > header span { align-items: center; color: var(--signal); display: inline-flex; font-size: .72rem; font-weight: 800; gap: 5px; }
 .friends-map { border: 1px solid var(--line); border-radius: 16px; height: min(52dvh, 480px); min-height: 320px; overflow: hidden; }
 .friends-map .leaflet-container { height: 100%; width: 100%; }
-.friend-map-marker span { background: #64b8a6; border: 4px solid #fff; border-radius: 50%; box-shadow: 0 4px 14px rgba(9, 36, 32, .45); display: block; height: 28px; width: 28px; }
+.friend-map-marker span { background: #6fae9f; border: 4px solid #fff; border-radius: 50%; box-shadow: 0 4px 14px rgba(9, 36, 32, .45); display: block; height: 28px; width: 28px; }
 .friends-map-empty, .friends-empty { align-items: center; color: var(--muted); display: flex; flex-direction: column; gap: 10px; justify-content: center; min-height: 180px; text-align: center; }
 .friends-list article { grid-template-columns: auto minmax(0, 1fr) auto auto; }
 .friends-list article > button { color: var(--danger); padding: 8px; }
