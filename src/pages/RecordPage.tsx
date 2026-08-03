@@ -344,7 +344,7 @@ export function RecordPage() {
     setBusy(true);
     setMessage('Публикуем в ленте…');
     try {
-      await createPost({
+      const postId = await createPost({
         mediaUrl: '',
         mediaType: 'image',
         caption: [rideTitle.trim(), rideDescription.trim()].filter(Boolean).join('\n'),
@@ -357,9 +357,9 @@ export function RecordPage() {
           track: ride.track,
         },
       });
-      navigate('/feed');
-    } catch {
-      setMessage('Не удалось опубликовать тренировку. Попробуй ещё раз.');
+      navigate(`/feed?published=${encodeURIComponent(postId)}#post-${postId}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? `Не удалось опубликовать тренировку: ${error.message}` : 'Не удалось опубликовать тренировку. Попробуй ещё раз.');
     } finally {
       setBusy(false);
     }

@@ -9,6 +9,7 @@ import { requestAiAssist, type AiAssistResult } from '../lib/aiAssistant';
 import type { RideActivity } from '../lib/cyclingModels';
 import { createPost } from '../lib/posts';
 import { loadRecordedRide } from '../lib/recordedRides';
+import { rideMetricInsights } from '../lib/rideAnalysis';
 import { shareRide, shareUrl, type RideShareData } from '../lib/share';
 import { usePreferences } from '../lib/preferences';
 
@@ -50,16 +51,16 @@ export function RideDetailPage() {
     setBusy(true);
     setMessage('Публикуем в ленте…');
     try {
-      await createPost({
+      const postId = await createPost({
         mediaUrl: '',
         mediaType: 'image',
         caption: [ride.title, ride.description].filter(Boolean).join('\n'),
         rideActivityId: ride.id,
         rideStats: { distanceKm: ride.distanceKm, elevationGainM: ride.elevationGainM, durationSeconds: ride.movingTimeSeconds ?? ride.durationSeconds, summaryPolyline: null, track: ride.gpsTrack },
       });
-      navigate('/feed');
-    } catch {
-      setMessage('Не удалось опубликовать заезд. Попробуй ещё раз.');
+      navigate(`/feed?published=${encodeURIComponent(postId)}#post-${postId}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? `Не удалось опубликовать заезд: ${error.message}` : 'Не удалось опубликовать заезд. Попробуй ещё раз.');
     } finally {
       setBusy(false);
     }
@@ -89,6 +90,10 @@ export function RideDetailPage() {
         averageSpeedKmh: ride.averageSpeedKmh !== null ? Number(ride.averageSpeedKmh.toFixed(1)) : null,
         maxSpeedKmh: ride.maxSpeedKmh !== null ? Number(ride.maxSpeedKmh.toFixed(1)) : null,
         paceMinPerKm: ride.paceMinPerKm,
+        elapsedTimeMinutes: Math.round(ride.durationSeconds / 60),
+        stoppedTimeMinutes: Math.max(0, Math.round((ride.durationSeconds - (ride.movingTimeSeconds ?? ride.durationSeconds)) / 60)),
+        elevationPerKm: ride.distanceKm > 0 ? Number((ride.elevationGainM / ride.distanceKm).toFixed(1)) : 0,
+        gpsPointCount: ride.gpsTrack.length,
       });
       setAiInsight(result);
     } catch (error) {
@@ -100,6 +105,7 @@ export function RideDetailPage() {
 
   if (!ride) return <PageShell><main className="cycle-page">{message ? <p className="inline-error">{message}</p> : <BikeLoader label="Открываем заезд…" />}</main></PageShell>;
   const shareData: RideShareData = { title: ride.title || 'Моя тренировка', distanceKm: ride.distanceKm, elevationGainM: ride.elevationGainM, durationSeconds: ride.movingTimeSeconds ?? ride.durationSeconds };
+  const metricInsights = rideMetricInsights(ride);
 
   return <PageShell><main className="cycle-page ride-detail-page">
     <header className="page-heading"><div><p className="kicker">Мой заезд</p><h1>{ride.title || 'Заезд без названия'}</h1><p>{ride.description || 'Без заметки'}</p></div><Link className="text-link" href="/rides">← Все мои заезды</Link></header>
@@ -108,7 +114,8 @@ export function RideDetailPage() {
     <section className="ride-ai-section">
       <div><p className="kicker"><Sparkles size={14} /> Gemini AI</p><h2>{aiInsight?.title || 'Что говорит эта поездка?'}</h2><p>{aiInsight?.text || 'Получи короткий персональный разбор темпа, дистанции и набора высоты.'}</p></div>
       {!aiInsight && <button className="ai-assist-button" disabled={aiBusy} onClick={() => void analyzeRide()}><Sparkles size={17} />{aiBusy ? 'Анализируем…' : 'Разобрать заезд'}</button>}
-      {aiInsight?.highlights.length ? <ul>{aiInsight.highlights.map((highlight) => <li key={highlight}>{highlight}</li>)}</ul> : null}
+      {aiInsight?.highlights.length ? <section className="ride-ai-observations"><h3>Выводы ИИ</h3><ul>{aiInsight.highlights.map((highlight) => <li key={highlight}>{highlight}</li>)}</ul></section> : null}
+      {aiInsight && <section className="ride-metric-analysis" aria-label="Подробный анализ показателей">{metricInsights.map((insight) => <article key={insight.label}><header><span>{insight.label}</span><strong>{insight.value}</strong></header><p>{insight.assessment}</p><small><b>Что делать дальше:</b> {insight.nextStep}</small></article>)}</section>}
     </section>
     <section className="ride-detail-actions"><button className="signal-button" disabled={busy} onClick={() => void publish()}>Опубликовать в Slipstream</button><button className="outline-inline-button" onClick={() => void share()}>Другие приложения</button><a className="outline-inline-button" href={shareUrl('whatsapp', shareData)} target="_blank" rel="noreferrer">WhatsApp</a><a className="outline-inline-button" href={shareUrl('telegram', shareData)} target="_blank" rel="noreferrer">Telegram</a></section>
     {message && <p className="record-note" role="status">{message}</p>}

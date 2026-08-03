@@ -97,7 +97,7 @@ const assistSchema = {
     highlights: {
       type: 'array',
       minItems: 0,
-      maxItems: 3,
+      maxItems: 6,
       items: { type: 'string' },
     },
   },
@@ -157,7 +157,15 @@ function assistPrompt(task: AssistTask): string {
   if (task === 'route_copy') {
     return 'Create a useful cycling route title and description from supplied metrics. Mention distance, climbing, difficulty and city only when provided. Do not invent roads, surfaces, landmarks, water points, safety, or bike lanes. title is under 70 characters, text under 700 characters, highlights contains up to three factual traits.';
   }
-  return 'Analyze one completed bicycle ride using only supplied metrics. Explain the result in plain language, identify one strength and one sensible next step. Never invent heart rate, power, sleep, weather, medical facts, or unavailable history. Avoid diagnosis. title is concise, text is 2-4 sentences, highlights contains exactly three short factual observations when possible.';
+  return [
+    'Analyze one completed bicycle ride using only supplied metrics.',
+    'Write a detailed 6-9 sentence overview that explains how distance, moving and elapsed time, average speed, maximum speed, pace, elevation gain, elevation per kilometre and GPS data quality affect the interpretation.',
+    'Do not call a result excellent or poor without enough context and do not compare it with unavailable ride history.',
+    'Treat an unusually high maximum speed cautiously because it may be a descent or GPS spike.',
+    'Provide exactly six substantial highlights, each 1-2 sentences: distance and duration; moving time and stops; average speed and pace; maximum speed reliability and safety; elevation and route load; a conservative next-ride plan.',
+    'Every highlight must name its parameter, cite the supplied value when available, explain what it means, and give one concrete action.',
+    'Never invent heart rate, power, cadence, sleep, weather, surface, medical facts or diagnoses.',
+  ].join(' ');
 }
 
 const coachPrompt = [
@@ -233,7 +241,7 @@ Deno.serve(async (request) => {
     return generate(apiKey, model, assistPrompt(task), body.locale, {
       task,
       context: body.context,
-    }, assistSchema, 1400);
+    }, assistSchema, task === 'ride_analysis' ? 2600 : 1400);
   }
 
   if (body.mode === 'coach') {

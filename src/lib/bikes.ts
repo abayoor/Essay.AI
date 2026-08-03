@@ -44,6 +44,17 @@ export async function logRide(input: RideLog): Promise<void> {
   if (error) throw error;
 }
 
+export async function markMaintenanceDone(maintenanceId: string, currentDistanceKm: number): Promise<void> {
+  const { error } = await supabase
+    .from('maintenance_intervals')
+    .update({
+      last_service_km: Math.max(0, currentDistanceKm),
+      last_service_date: new Date().toISOString().slice(0, 10),
+    })
+    .eq('id', maintenanceId);
+  if (error) throw error;
+}
+
 export async function deleteBike(bikeId: string): Promise<void> {
   const { error } = await supabase.from('bikes').delete().eq('id', bikeId);
   if (error) throw error;

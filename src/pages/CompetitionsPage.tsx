@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
 import {
   Bike,
+  Building2,
   CalendarDays,
   Check,
   Crown,
@@ -8,6 +9,8 @@ import {
   Flag,
   Flame,
   MapPin,
+  Plus,
+  Route,
   Trophy,
   Users,
 } from 'lucide-react';
@@ -16,18 +19,29 @@ import { BikeLoader } from '../components/BikeLoader';
 import { PageShell } from '../components/PageShell';
 import { useSession } from '../lib/auth';
 import {
+  createMarathon,
   loadCompetitionsOverview,
   setChallengeGroupMembership,
   setEventInterest,
   type ChallengeGroupSummary,
   type CompetitionEvent,
   type CompetitionsOverview,
+  type NewMarathon,
 } from '../lib/competitions';
 import { useLocaleText } from '../lib/localized';
 import '../styles/competitions.css';
 
 type CompetitionTab = 'challenge' | 'events';
 type Feedback = { tone: 'success' | 'error'; message: string } | null;
+
+const emptyMarathon: NewMarathon = {
+  title: '', organizerName: '', city: '', country: '', eventDate: '', distanceKm: 100, registrationUrl: '', description: '',
+};
+
+function splitProfileLocation(value: string | null): { city: string; country: string } {
+  const parts = (value ?? '').split(',').map((part) => part.trim()).filter(Boolean);
+  return { city: parts[0] ?? '', country: parts.length > 1 ? parts[parts.length - 1] : '' };
+}
 
 function parseLocalDate(value: string): Date {
   const [year, month, day] = value.split('-').map(Number);
@@ -94,6 +108,9 @@ export function CompetitionsPage() {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [pendingGroupIds, setPendingGroupIds] = useState<Set<string>>(() => new Set());
   const [pendingEventIds, setPendingEventIds] = useState<Set<string>>(() => new Set());
+  const [marathonForm, setMarathonForm] = useState<NewMarathon>(emptyMarathon);
+  const [marathonFormOpen, setMarathonFormOpen] = useState(false);
+  const [marathonBusy, setMarathonBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!userId) return;
@@ -102,7 +119,10 @@ export function CompetitionsPage() {
     setFeedback(null);
     setOverview(null);
     try {
-      setOverview(await loadCompetitionsOverview(userId));
+      const nextOverview = await loadCompetitionsOverview(userId);
+      setOverview(nextOverview);
+      const location = splitProfileLocation(nextOverview.homeCity);
+      setMarathonForm((current) => current.city ? current : { ...current, ...location });
     } catch {
       setLoadError(text(
         'Не удалось загрузить прогресс и соревнования.',
@@ -191,6 +211,26 @@ export function CompetitionsPage() {
     }
   }
 
+  async function submitMarathon(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (marathonBusy) return;
+    setMarathonBusy(true);
+    setFeedback(null);
+    try {
+      await createMarathon(marathonForm);
+      const location = splitProfileLocation(overview?.homeCity ?? null);
+      setMarathonForm({ ...emptyMarathon, ...location });
+      setMarathonFormOpen(false);
+      await refresh();
+      setTab('events');
+      setFeedback({ tone: 'success', message: text('Веломарафон опубликован в календаре города.', 'Веломарафон қала күнтізбесінде жарияланды.', 'The cycling marathon is now published in the city calendar.') });
+    } catch {
+      setFeedback({ tone: 'error', message: text('Не удалось опубликовать марафон. Проверь поля и ссылку.', 'Марафонды жариялау мүмкін болмады. Өрістер мен сілтемені тексер.', 'Could not publish the marathon. Check the fields and URL.') });
+    } finally {
+      setMarathonBusy(false);
+    }
+  }
+
   const weekly = overview?.weekly;
   const progressPercent = weekly ? Math.min(100, Math.max(0, (weekly.distanceKm / weekly.goalKm) * 100)) : 0;
   const remainingKm = weekly ? Math.max(0, weekly.goalKm - weekly.distanceKm) : 0;
@@ -208,6 +248,7 @@ export function CompetitionsPage() {
   }
 
   function eventTypeLabel(eventType: CompetitionEvent['eventType']): string {
+    if (eventType === 'marathon') return text('Веломарафон', 'Веломарафон', 'Cycling marathon');
     if (eventType === 'race') return text('Гонка', 'Жарыс', 'Race');
     if (eventType === 'gran_fondo') return text('Гран-фондо', 'Гран-фондо', 'Gran fondo');
     return text('Клубный заезд', 'Клубтық сапар', 'Club ride');
@@ -416,15 +457,30 @@ export function CompetitionsPage() {
             <header className="competition-section-heading events-heading">
               <div>
                 <p className="kicker">{text('Календарь сообщества', 'Қауымдастық күнтізбесі', 'Community calendar')}</p>
-                <h2>{text('Ближайшие старты', 'Жақын старттар', 'Upcoming events')}</h2>
+                <h2>{text('Веломарафоны и ближайшие старты', 'Веломарафондар және жақын старттар', 'Cycling marathons and upcoming events')}</h2>
                 <p>{text(
-                  'Отметь интересные события, чтобы быстро найти их при следующем визите.',
-                  'Қызықты оқиғаларды белгіле — келесі кіргенде оларды тез табасың.',
-                  'Mark events you like so they are easy to find next time.',
+                  overview.homeCity ? `Сначала показываем старты рядом с ${overview.homeCity}, затем события из других городов.` : 'Добавь город в профиле — местные старты появятся первыми.',
+                  overview.homeCity ? `Алдымен ${overview.homeCity} маңындағы старттарды, кейін басқа қалаларды көрсетеміз.` : 'Профильге қалаңды қос — жергілікті старттар бірінші көрінеді.',
+                  overview.homeCity ? `Events near ${overview.homeCity} appear first, followed by starts in other cities.` : 'Add your city to your profile to see local events first.',
                 )}</p>
               </div>
-              <span>{overview.events.length}</span>
+              <div className="events-heading-actions"><span>{overview.events.length}</span><button type="button" onClick={() => setMarathonFormOpen((open) => !open)} aria-expanded={marathonFormOpen}><Plus size={16} />{text('Добавить марафон', 'Марафон қосу', 'Add marathon')}</button></div>
             </header>
+
+            {marathonFormOpen && <form className="organizer-marathon-form" onSubmit={(event) => void submitMarathon(event)}>
+              <header><span><Building2 size={20} /></span><div><strong>{text('Публикация для организаторов', 'Ұйымдастырушыларға жариялау', 'Organizer publishing')}</strong><p>{text('Заполни данные старта — он появится у райдеров этого города.', 'Старт деректерін толтыр — ол осы қаланың райдерлеріне көрінеді.', 'Add the start details and it will appear for riders in that city.')}</p></div></header>
+              <div className="organizer-marathon-grid">
+                <label>{text('Название марафона', 'Марафон атауы', 'Marathon name')}<input required maxLength={120} value={marathonForm.title} onChange={(event) => setMarathonForm({ ...marathonForm, title: event.target.value })} /></label>
+                <label>{text('Организатор', 'Ұйымдастырушы', 'Organizer')}<input required maxLength={100} value={marathonForm.organizerName} onChange={(event) => setMarathonForm({ ...marathonForm, organizerName: event.target.value })} /></label>
+                <label>{text('Город', 'Қала', 'City')}<input required maxLength={100} value={marathonForm.city} onChange={(event) => setMarathonForm({ ...marathonForm, city: event.target.value })} /></label>
+                <label>{text('Страна', 'Ел', 'Country')}<input maxLength={100} value={marathonForm.country} onChange={(event) => setMarathonForm({ ...marathonForm, country: event.target.value })} /></label>
+                <label>{text('Дата старта', 'Старт күні', 'Start date')}<input required type="date" min={new Date().toISOString().slice(0, 10)} value={marathonForm.eventDate} onChange={(event) => setMarathonForm({ ...marathonForm, eventDate: event.target.value })} /></label>
+                <label>{text('Дистанция, км', 'Қашықтық, км', 'Distance, km')}<input required type="number" min="1" max="2000" step="0.1" value={marathonForm.distanceKm} onChange={(event) => setMarathonForm({ ...marathonForm, distanceKm: Number(event.target.value) })} /></label>
+                <label className="wide">{text('Ссылка на регистрацию', 'Тіркелу сілтемесі', 'Registration URL')}<input type="url" placeholder="https://" maxLength={500} value={marathonForm.registrationUrl} onChange={(event) => setMarathonForm({ ...marathonForm, registrationUrl: event.target.value })} /></label>
+                <label className="wide">{text('Описание', 'Сипаттама', 'Description')}<textarea maxLength={1000} value={marathonForm.description} onChange={(event) => setMarathonForm({ ...marathonForm, description: event.target.value })} /></label>
+              </div>
+              <footer><small>{text('Опубликовать событие может только вошедший пользователь. Автор отвечает за точность данных.', 'Оқиғаны тек кірген пайдаланушы жариялай алады. Деректердің дұрыстығына автор жауап береді.', 'Only signed-in users can publish. The author is responsible for accurate event details.')}</small><button className="signal-button" disabled={marathonBusy}>{marathonBusy ? text('Публикуем…', 'Жариялануда…', 'Publishing…') : text('Опубликовать марафон', 'Марафонды жариялау', 'Publish marathon')}</button></footer>
+            </form>}
 
             {overview.events.length ? (
               <div className="competition-event-list" aria-live="polite">
@@ -432,16 +488,17 @@ export function CompetitionsPage() {
                   const date = eventDateParts(locale, event.eventDate);
                   const pending = pendingEventIds.has(event.id);
                   return (
-                    <article className={event.isInterested ? 'competition-event-card interested' : 'competition-event-card'} key={event.id}>
+                    <article className={`competition-event-card${event.isInterested ? ' interested' : ''}${event.isHomeCity ? ' home-city' : ''}`} key={event.id}>
                       <time className="event-date-block" dateTime={event.eventDate}>
                         <span>{date.weekday}</span>
                         <strong>{date.day}</strong>
                         <small>{date.month}</small>
                       </time>
                       <div className="event-card-copy">
-                        <span className="event-type-badge">{eventTypeLabel(event.eventType)}</span>
+                        <div className="event-badge-row"><span className="event-type-badge">{eventTypeLabel(event.eventType)}</span>{event.isHomeCity ? <span className="event-local-badge"><MapPin size={12} />{text('В твоём городе', 'Сенің қалаңда', 'In your city')}</span> : event.isHomeCountry ? <span className="event-country-badge"><Flag size={12} />{text('В твоей стране', 'Сенің еліңде', 'In your country')}</span> : null}</div>
                         <h3>{event.title}</h3>
                         {event.location && <p className="event-location"><MapPin size={15} aria-hidden="true" />{event.location}</p>}
+                        {(event.organizerName || event.distanceKm) && <p className="event-organizer">{event.organizerName && <span><Building2 size={14} />{event.organizerName}</span>}{event.distanceKm && <span><Route size={14} />{formatDistance(locale, event.distanceKm)} km</span>}</p>}
                         <p className="event-description">{event.description || eventTypeLabel(event.eventType)}</p>
                       </div>
                       <div className="event-card-actions">

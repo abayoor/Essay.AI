@@ -13,7 +13,7 @@ export type MarketplaceOverview = {
 
 export type CompetitionOverview = {
   challengeGroups: { id: string; name: string; is_public: boolean }[];
-  events: { id: string; title: string; event_type: 'race' | 'gran_fondo' | 'club_ride'; event_date: string; location: string | null; registration_url: string | null; description: string | null }[];
+  events: { id: string; title: string; event_type: 'race' | 'gran_fondo' | 'club_ride' | 'marathon'; event_date: string; location: string | null; registration_url: string | null; description: string | null }[];
 };
 
 export async function loadMapOverview(): Promise<{ marketplace: MarketplaceOverview[] }> {

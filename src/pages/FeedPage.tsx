@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Newspaper, Plus, RefreshCw, ShoppingBag, Users } from 'lucide-react';
+import { AlertTriangle, CircleCheck, Newspaper, Plus, RefreshCw, ShoppingBag, Users } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { MarketplaceCard } from '../components/MarketplaceCard';
 import { PageShell } from '../components/PageShell';
@@ -9,7 +9,7 @@ import type { SocialPost } from '../lib/cyclingModels';
 import { useLocaleText } from '../lib/localized';
 import { loadFriendHub } from '../lib/friends';
 import { loadMarketplaceListings, type MarketplaceListing } from '../lib/marketplace';
-import { loadPosts } from '../lib/posts';
+import { loadPost, loadPosts } from '../lib/posts';
 import { loadRiderProfile } from '../lib/rider';
 import { useTranslations } from '../lib/translations';
 
@@ -53,6 +53,7 @@ export function FeedPage() {
   const [error, setError] = useState('');
   const t = useTranslations();
   const text = useLocaleText();
+  const publishedPostId = new URLSearchParams(window.location.search).get('published');
 
   const refresh = useCallback(async (showLoader = false) => {
     if (showLoader) setPostsLoading(true);
@@ -66,12 +67,15 @@ export function FeedPage() {
       }
       const profile = tab === 'recommendations' ? await loadRiderProfile() : null;
       const friendIds = tab === 'friends' ? (await loadFriendHub()).friends.map((friend) => friend.id) : undefined;
-      const nextPosts = await loadPosts(undefined, {
+      const [nextPosts, publishedPost] = await Promise.all([
+        loadPosts(undefined, {
         limit: tab === 'recommendations' ? feedPageSize * 3 : feedPageSize,
         authorIds: friendIds,
         preferredHomeCity: profile?.home_city,
-      });
-      setPosts(nextPosts);
+        }),
+        tab === 'recommendations' && publishedPostId ? loadPost(publishedPostId).catch(() => null) : Promise.resolve(null),
+      ]);
+      setPosts(publishedPost ? [publishedPost, ...nextPosts.filter((post) => post.id !== publishedPost.id)] : nextPosts);
       setListings([]);
       setHasMore(tab !== 'recommendations' && nextPosts.length === feedPageSize);
     } catch {
@@ -83,7 +87,12 @@ export function FeedPage() {
     } finally {
       if (showLoader) setPostsLoading(false);
     }
-  }, [tab, text]);
+  }, [publishedPostId, tab, text]);
+
+  useEffect(() => {
+    if (!publishedPostId || postsLoading || !posts.some((post) => post.id === publishedPostId)) return;
+    window.requestAnimationFrame(() => document.getElementById(`post-${publishedPostId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }, [posts, postsLoading, publishedPostId]);
 
   const loadMore = useCallback(async () => {
     const cursor = posts[posts.length - 1]?.created_at;
@@ -146,10 +155,12 @@ export function FeedPage() {
       </header>
 
       <nav className="community-feed-tabs" aria-label={text('Разделы сообщества', 'Қауымдастық бөлімдері', 'Community sections')}>
-        <button type="button" className={tab === 'recommendations' ? 'active' : ''} onClick={() => setTab('recommendations')}><Newspaper size={17} />{text('Рекомендации', 'Ұсыныстар', 'For you')}</button>
-        <button type="button" className={tab === 'friends' ? 'active' : ''} onClick={() => setTab('friends')}><Users size={17} />{text('Посты друзей', 'Достар жазбалары', 'Friends')}</button>
-        <button type="button" className={tab === 'marketplace' ? 'active' : ''} onClick={() => setTab('marketplace')}><ShoppingBag size={17} />{text('Маркетплейс', 'Маркетплейс', 'Marketplace')}</button>
+        <button type="button" aria-label={text('Рекомендации', 'Ұсыныстар', 'For you')} title={text('Рекомендации', 'Ұсыныстар', 'For you')} aria-pressed={tab === 'recommendations'} className={tab === 'recommendations' ? 'active' : ''} onClick={() => setTab('recommendations')}><Newspaper size={19} aria-hidden="true" /></button>
+        <button type="button" aria-label={text('Посты друзей', 'Достар жазбалары', 'Friends')} title={text('Посты друзей', 'Достар жазбалары', 'Friends')} aria-pressed={tab === 'friends'} className={tab === 'friends' ? 'active' : ''} onClick={() => setTab('friends')}><Users size={19} aria-hidden="true" /></button>
+        <button type="button" aria-label={text('Маркетплейс', 'Маркетплейс', 'Marketplace')} title={text('Маркетплейс', 'Маркетплейс', 'Marketplace')} aria-pressed={tab === 'marketplace'} className={tab === 'marketplace' ? 'active' : ''} onClick={() => setTab('marketplace')}><ShoppingBag size={19} aria-hidden="true" /></button>
       </nav>
+
+      {publishedPostId && tab === 'recommendations' && <p className="feed-publish-success" role="status"><CircleCheck size={18} aria-hidden="true" />Заезд опубликован и добавлен в ленту.</p>}
 
       {error && <div className="feed-error" role="alert">
         <AlertTriangle size={22} aria-hidden="true" />

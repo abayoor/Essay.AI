@@ -722,14 +722,10 @@ export function CityExploreMap({
         return;
       }
       setRouteOptions(options);
-      const safestOption = options.reduce((safest, option) => {
-        const safestScore = calculateRouteSafety(safest.result.points, hazardsRef.current).score;
-        const optionScore = calculateRouteSafety(option.result.points, hazardsRef.current).score;
-        if (optionScore > safestScore) return option;
-        if (optionScore === safestScore && option.preference === 'recommended') return option;
-        return safest;
-      }, options[0]);
-      setActivePreference(safestOption.preference);
+      // Keep the road-aware recommended profile as the predictable default.
+      // Previously a small difference in community hazard reports could make
+      // the shorter, more abrupt alternative become active automatically.
+      setActivePreference(options.some((option) => option.preference === 'recommended') ? 'recommended' : options[0].preference);
     }).finally(() => {
       if (requestId === routeRequest.current) setRouting(false);
     });

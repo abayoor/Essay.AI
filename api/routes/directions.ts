@@ -40,10 +40,14 @@ type RoutePayload = { features?: RouteFeature[] };
 const MAX_WAYPOINTS = 50;
 const MAX_REQUEST_BODY_BYTES = 12_000;
 const MAX_REQUESTED_DISTANCE_KM = 600;
-const ROUTING_BUDGET_MS = 22_000;
+const ROUTING_BUDGET_MS = 30_000;
 const PROVIDER_ATTEMPT_TIMEOUT_MS = 8_000;
-const ORS_SNAP_RADIUS_ATTEMPTS_M = [45, 120, 220] as const;
-const MAX_ACCEPTED_SNAP_DISTANCE_M = 230;
+// Building and POI search results are commonly located in the middle of a
+// large complex. ORS supports a snap search radius up to 2 km; these attempts
+// keep precise street addresses strict while still serving malls, campuses
+// and residential blocks whose mapped centre is far from the entrance.
+const ORS_SNAP_RADIUS_ATTEMPTS_M = [80, 450, 1_500] as const;
+const MAX_ACCEPTED_SNAP_DISTANCE_M = 1_500;
 const ROUTE_CACHE_TTL_MS = 60_000;
 const MAX_CACHE_ENTRIES = 40;
 const routeCache = new Map<string, { expiresAt: number; result: RouteResult }>();
@@ -207,22 +211,10 @@ function bRouterRouteIsBicycleSafe(feature: RouteFeature): boolean {
   return !messages.some((row) => {
     if (!Array.isArray(row)) return false;
     const tags = row.filter((value): value is string => typeof value === 'string').join(' ');
-    if (/\bhighway=steps\b|\broute=ferry\b|\bbicycle=(?:dismount|no|private|use_sidepath)\b/.test(tags)) return true;
-    const explicitBicycleAccess = /\bbicycle=(?:yes|designated|permissive|official)\b|\bbicycle_road=yes\b/.test(tags);
-    if (!explicitBicycleAccess && /\b(?:vehicle|access)=(?:no|private)\b/.test(tags)) return true;
-    const footOnlyWay = /\bhighway=(footway|pedestrian)\b/.test(tags)
-      && !explicitBicycleAccess;
-    if (footOnlyWay) return true;
-
-    const reverseDirection = /\breversedirection=yes\b/.test(tags);
-    const againstOneWay = reverseDirection
-      ? /\boneway=(?:yes|true|1)\b/.test(tags)
-        || (!/\boneway=/.test(tags) && /\bjunction=(?:roundabout|circular)\b/.test(tags))
-      : /\boneway=-1\b/.test(tags);
-    const legalBicycleContraflow = /\boneway:bicycle=no\b/.test(tags)
-      || /\bcycleway(?::(?:left|right|both))?=opposite(?:_lane|_track)?\b/.test(tags)
-      || /\bcycleway:(?:left|right|both):oneway=(?:no|-1)\b/.test(tags);
-    return againstOneWay && !legalBicycleContraflow;
+    // The bicycle profile is the source of truth for routability. A second
+    // hand-written access classifier used to discard valid street geometry
+    // whenever a route touched a driveway, crossing or shared footway.
+    return /(?:^|\s)(?:highway=steps|route=ferry|bicycle=(?:dismount|no|private))(?:\s|$)/.test(tags);
   });
 }
 

@@ -22,12 +22,18 @@ export type ChallengeGroupSummary = {
 export type CompetitionEvent = {
   id: string;
   title: string;
-  eventType: 'race' | 'gran_fondo' | 'club_ride';
+  eventType: 'race' | 'gran_fondo' | 'club_ride' | 'marathon';
   eventDate: string;
   location: string | null;
+  city: string | null;
+  country: string | null;
+  distanceKm: number | null;
+  organizerName: string | null;
   registrationUrl: string | null;
   description: string | null;
   isInterested: boolean;
+  isHomeCity: boolean;
+  isHomeCountry: boolean;
 };
 
 export type CompetitionsOverview = {
@@ -35,6 +41,18 @@ export type CompetitionsOverview = {
   leaderboard: WeeklyLeaderboardEntry[];
   challengeGroups: ChallengeGroupSummary[];
   events: CompetitionEvent[];
+  homeCity: string | null;
+};
+
+export type NewMarathon = {
+  title: string;
+  organizerName: string;
+  city: string;
+  country: string;
+  eventDate: string;
+  distanceKm: number;
+  registrationUrl: string;
+  description: string;
 };
 
 export type WeeklyLeaderboardEntry = {
@@ -68,6 +86,10 @@ type EventRow = {
   event_type: CompetitionEvent['eventType'];
   event_date: string;
   location: string | null;
+  city: string | null;
+  country: string | null;
+  distance_km: number | string | null;
+  organizer_name: string | null;
   registration_url: string | null;
   description: string | null;
 };
@@ -136,11 +158,48 @@ function safeRegistrationUrl(value: string | null): string | null {
   }
 }
 
+const placeAliases: Record<string, string> = {
+  'алматы': 'almaty', almaty: 'almaty',
+  'астана': 'astana', astana: 'astana', 'nur sultan': 'astana',
+  'альбукерке': 'albuquerque', albuquerque: 'albuquerque',
+  'александрия': 'alexandria', alexandria: 'alexandria',
+  'дубай': 'dubai', dubai: 'dubai',
+  'лондон': 'london', london: 'london',
+  'нью йорк': 'new york', 'new york': 'new york',
+  'токио': 'tokyo', tokyo: 'tokyo',
+  'казахстан': 'kazakhstan', 'қазақстан': 'kazakhstan', kazakhstan: 'kazakhstan',
+  'сша': 'united states', 'ақш': 'united states', 'united states': 'united states',
+  'египет': 'egypt', 'мысыр': 'egypt', egypt: 'egypt',
+  'оаэ': 'united arab emirates', 'баә': 'united arab emirates', 'біріккен араб әмірліктері': 'united arab emirates', 'united arab emirates': 'united arab emirates',
+  'великобритания': 'united kingdom', 'ұлыбритания': 'united kingdom', 'united kingdom': 'united kingdom',
+  'япония': 'japan', 'жапония': 'japan', japan: 'japan',
+};
+
+function normalizePlace(value: string | null): string {
+  const normalized = (value ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
+    .replace(/[-–—]/g, ' ')
+    .replace(/[^\p{L}\p{N} ]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return placeAliases[normalized] ?? normalized;
+}
+
+function locationParts(value: string | null): { city: string; country: string } {
+  const parts = (value ?? '').split(',').map((part) => part.trim()).filter(Boolean);
+  return {
+    city: normalizePlace(parts[0] ?? null),
+    country: normalizePlace(parts.length > 1 ? parts[parts.length - 1] : null),
+  };
+}
+
 export async function loadCompetitionsOverview(userId: string, now = new Date()): Promise<CompetitionsOverview> {
   if (!userId) throw new Error('A signed-in rider is required.');
 
   const todayKey = dateKey(now);
-  const [weekly, leaderboardResult, groupsResult, eventsResult] = await Promise.all([
+  const [weekly, leaderboardResult, groupsResult, eventsResult, profileResult] = await Promise.all([
     loadWeeklyCompetitionProgress(userId, now),
     supabase.rpc('current_week_distance_leaderboard', { max_rows: 50 }),
     supabase
@@ -151,14 +210,16 @@ export async function loadCompetitionsOverview(userId: string, now = new Date())
       .limit(30),
     supabase
       .from('events_calendar')
-      .select('id, title, event_type, event_date, location, registration_url, description')
+      .select('id, title, event_type, event_date, location, city, country, distance_km, organizer_name, registration_url, description')
       .gte('event_date', todayKey)
       .order('event_date', { ascending: true })
       .limit(40),
+    supabase.from('users').select('home_city').eq('id', userId).maybeSingle(),
   ]);
 
   if (groupsResult.error) throw groupsResult.error;
   if (eventsResult.error) throw eventsResult.error;
+  if (profileResult.error) throw profileResult.error;
   // Keep the existing challenges usable while a freshly deployed database is
   // still receiving the leaderboard migration.
   void supabase.rpc('ensure_previous_week_pro_winner').then(() => undefined);
@@ -194,6 +255,31 @@ export async function loadCompetitionsOverview(userId: string, now = new Date())
   const interests = new Set(
     ((interestsResult.data ?? []) as EventInterestRow[]).map((interest) => interest.event_id),
   );
+  const homeCity = (profileResult.data as { home_city: string | null } | null)?.home_city ?? null;
+  const home = locationParts(homeCity);
+  const mappedEvents: CompetitionEvent[] = events.map((event) => {
+    const fallbackLocation = locationParts(event.location);
+    const eventCity = normalizePlace(event.city) || fallbackLocation.city;
+    const eventCountry = normalizePlace(event.country) || fallbackLocation.country;
+    return {
+      id: event.id,
+      title: event.title,
+      eventType: event.event_type,
+      eventDate: event.event_date,
+      location: event.location,
+      city: event.city,
+      country: event.country,
+      distanceKm: event.distance_km === null ? null : Number(event.distance_km),
+      organizerName: event.organizer_name,
+      registrationUrl: safeRegistrationUrl(event.registration_url),
+      description: event.description,
+      isInterested: interests.has(event.id),
+      isHomeCity: Boolean(home.city && eventCity === home.city),
+      isHomeCountry: Boolean(home.country && eventCountry === home.country),
+    };
+  }).sort((first, second) => Number(second.isHomeCity) - Number(first.isHomeCity)
+    || Number(second.isHomeCountry) - Number(first.isHomeCountry)
+    || first.eventDate.localeCompare(second.eventDate));
   return {
     weekly,
     leaderboard: ((leaderboardResult.error ? [] : leaderboardResult.data ?? []) as {
@@ -219,17 +305,33 @@ export async function loadCompetitionsOverview(userId: string, now = new Date())
       memberCount: Number(group.challenge_group_members?.[0]?.count ?? 0),
       isMember: memberships.has(group.id),
     })),
-    events: events.map((event) => ({
-      id: event.id,
-      title: event.title,
-      eventType: event.event_type,
-      eventDate: event.event_date,
-      location: event.location,
-      registrationUrl: safeRegistrationUrl(event.registration_url),
-      description: event.description,
-      isInterested: interests.has(event.id),
-    })),
+    events: mappedEvents,
+    homeCity,
   };
+}
+
+export async function createMarathon(input: NewMarathon): Promise<void> {
+  const title = input.title.trim();
+  const organizerName = input.organizerName.trim();
+  const city = input.city.trim();
+  const country = input.country.trim();
+  if (!title || !organizerName || !city || !input.eventDate) throw new Error('Fill in the required marathon fields.');
+  if (!Number.isFinite(input.distanceKm) || input.distanceKm < 1 || input.distanceKm > 2000) throw new Error('Distance is outside the allowed range.');
+  const registrationUrl = safeRegistrationUrl(input.registrationUrl.trim() || null);
+  if (input.registrationUrl.trim() && !registrationUrl) throw new Error('Registration URL must use http or https.');
+  const { error } = await supabase.from('events_calendar').insert({
+    title,
+    event_type: 'marathon',
+    event_date: input.eventDate,
+    location: [city, country].filter(Boolean).join(', '),
+    city,
+    country: country || null,
+    distance_km: input.distanceKm,
+    organizer_name: organizerName,
+    registration_url: registrationUrl,
+    description: input.description.trim() || null,
+  });
+  if (error) throw error;
 }
 
 export async function loadWeeklyCompetitionProgress(

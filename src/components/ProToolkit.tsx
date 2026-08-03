@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useLocaleText } from '../lib/localized';
 
-type ToolKey = 'ride' | 'pressure' | 'readiness' | 'service';
+type ToolKey = 'ride' | 'pressure' | 'pace' | 'readiness' | 'service' | 'kit';
 type RideIntensity = 'easy' | 'steady' | 'hard';
 type Surface = 'road' | 'gravel' | 'trail';
 
@@ -23,6 +23,20 @@ type MetricProps = {
   value: string;
   note: string;
 };
+
+function initialNumber(key: string, fallback: number, minimum: number, maximum: number): number {
+  if (typeof window === 'undefined') return fallback;
+  const rawValue = new URLSearchParams(window.location.search).get(key);
+  if (rawValue === null || rawValue.trim() === '') return fallback;
+  const value = Number(rawValue);
+  return Number.isFinite(value) ? clamp(value, minimum, maximum) : fallback;
+}
+
+function initialTool(): ToolKey {
+  if (typeof window === 'undefined') return 'ride';
+  const value = new URLSearchParams(window.location.search).get('tool');
+  return value === 'ride' || value === 'pressure' || value === 'pace' || value === 'readiness' || value === 'service' || value === 'kit' ? value : 'ride';
+}
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -39,8 +53,8 @@ function Metric({ icon, label, value, note }: MetricProps) {
 
 export function ProToolkit({ active }: { active: boolean }) {
   const text = useLocaleText();
-  const [tool, setTool] = useState<ToolKey>('ride');
-  const [duration, setDuration] = useState(120);
+  const [tool, setTool] = useState<ToolKey>(initialTool);
+  const [duration, setDuration] = useState(() => initialNumber('duration', 120, 20, 600));
   const [temperature, setTemperature] = useState(20);
   const [intensity, setIntensity] = useState<RideIntensity>('steady');
   const [riderWeight, setRiderWeight] = useState(70);
@@ -54,6 +68,13 @@ export function ProToolkit({ active }: { active: boolean }) {
   const [chainKm, setChainKm] = useState(120);
   const [brakeKm, setBrakeKm] = useState(350);
   const [wetRide, setWetRide] = useState(false);
+  const [routeDistance, setRouteDistance] = useState(() => initialNumber('distance', 65, 5, 1000));
+  const [elevationGain, setElevationGain] = useState(() => initialNumber('elevation', 700, 0, 15000));
+  const [targetMinutes, setTargetMinutes] = useState(() => initialNumber('duration', 210, 20, 1440));
+  const [rainChance, setRainChance] = useState(20);
+  const [afterDark, setAfterDark] = useState(false);
+  const [remoteRoute, setRemoteRoute] = useState(false);
+  const [checkedGear, setCheckedGear] = useState<string[]>([]);
 
   const ridePlan = useMemo(() => {
     const hours = duration / 60;
@@ -134,22 +155,61 @@ export function ProToolkit({ active }: { active: boolean }) {
     return items;
   }, [brakeKm, chainKm, text, wetRide]);
 
+  const pacePlan = useMemo(() => {
+    const hours = targetMinutes / 60;
+    const averageSpeed = routeDistance / hours;
+    const climbingDensity = elevationGain / Math.max(routeDistance, 1);
+    const movingMinutes = Math.max(20, targetMinutes - Math.floor(targetMinutes / 90) * 8);
+    const breakCount = Math.max(0, Math.floor(targetMinutes / 90));
+    const effort = climbingDensity >= 18
+      ? text('Холмистый маршрут: береги силы на подъёмы.', 'Төбелі бағыт: күшті өрге сақта.', 'Hilly route: save energy for the climbs.')
+      : climbingDensity >= 8
+        ? text('Смешанный рельеф: держи ровное усилие.', 'Аралас бедер: күшті бірқалыпты ұста.', 'Mixed terrain: keep the effort steady.')
+        : text('Ровный маршрут: избегай слишком быстрого старта.', 'Тегіс бағыт: тым жылдам бастама.', 'Flat route: avoid starting too fast.');
+    return {
+      averageSpeed: Math.round(averageSpeed * 10) / 10,
+      breakCount,
+      climbingDensity: Math.round(climbingDensity),
+      movingMinutes,
+      effort,
+    };
+  }, [elevationGain, routeDistance, targetMinutes, text]);
+
+  const gearItems = useMemo(() => {
+    const items = [
+      { id: 'safety', title: text('Шлем и заряженные фонари', 'Дулыға және зарядталған шамдар', 'Helmet and charged lights'), note: text('Фонари полезны даже днём для заметности.', 'Шамдар күндіз де көріну үшін пайдалы.', 'Lights improve visibility even during the day.') },
+      { id: 'repair', title: text('Насос и ремкомплект', 'Сорғы және жөндеу жинағы', 'Pump and repair kit'), note: text('Камера или жгуты, монтажки и мультитул.', 'Камера немесе жіптер, монтаждау құралдары және мультитул.', 'Tube or plugs, tire levers and a multitool.') },
+      { id: 'fuel', title: text('Вода и питание', 'Су және тамақ', 'Water and fuel'), note: `${ridePlan.bottles} × 600 ml · ${ridePlan.carbsTotal} ${text('г углеводов', 'г көмірсу', 'g carbohydrates')}` },
+    ];
+    if (rainChance >= 35) items.push({ id: 'rain', title: text('Лёгкая защита от дождя', 'Жеңіл жаңбыр қорғанысы', 'Light rain shell'), note: text(`Вероятность дождя ${rainChance}% — держи куртку сверху.`, `Жаңбыр ықтималдығы ${rainChance}% — күртешені үстіне қой.`, `${rainChance}% rain chance — keep the shell easy to reach.`) });
+    if (temperature <= 12) items.push({ id: 'warmth', title: text('Тёплый слой и перчатки', 'Жылы қабат және қолғап', 'Warm layer and gloves'), note: text('На спусках будет холоднее, чем на старте.', 'Төмен түскенде бастапқыдан салқынырақ болады.', 'Descents will feel colder than the start.') });
+    if (afterDark) items.push({ id: 'night', title: text('Запасной свет', 'Қосалқы жарық', 'Backup light'), note: text('Проверь крепления и возьми резервный фонарь.', 'Бекітпелерді тексеріп, қосалқы шам ал.', 'Check the mounts and carry a backup light.') });
+    if (remoteRoute || routeDistance >= 80) items.push({ id: 'remote', title: text('Пауэрбанк и аварийный контакт', 'Пауэрбанк және төтенше байланыс', 'Power bank and emergency contact'), note: text('Сохрани маршрут офлайн и сообщи время возвращения.', 'Бағытты офлайн сақтап, қайту уақытын хабарла.', 'Save the route offline and share your return time.') });
+    return items;
+  }, [afterDark, rainChance, remoteRoute, ridePlan.bottles, ridePlan.carbsTotal, routeDistance, temperature, text]);
+
+  function toggleGear(id: string): void {
+    setCheckedGear((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
   const tabs: { key: ToolKey; icon: ReactNode; label: string }[] = [
     { key: 'ride', icon: <Droplets size={17} />, label: text('План заезда', 'Сапар жоспары', 'Ride plan') },
     { key: 'pressure', icon: <Gauge size={17} />, label: text('Давление', 'Қысым', 'Pressure') },
+    { key: 'pace', icon: <Bike size={17} />, label: text('Темп', 'Қарқын', 'Pacing') },
     { key: 'readiness', icon: <Activity size={17} />, label: text('Готовность', 'Дайындық', 'Readiness') },
     { key: 'service', icon: <Wrench size={17} />, label: text('Сервис', 'Қызмет', 'Service') },
+    { key: 'kit', icon: <Check size={17} />, label: text('Снаряжение', 'Жабдық', 'Ride kit') },
   ];
 
-  return <section className="pro-toolkit" aria-labelledby="pro-toolkit-title">
+  return <section className="pro-toolkit" id="pro-toolkit" aria-labelledby="pro-toolkit-title">
     <header className="pro-toolkit-heading">
       <div>
         <p className="pro-eyebrow"><Sparkles size={14} /> Pro Ride Lab</p>
-        <h2 id="pro-toolkit-title">{text('4 инструмента для каждого выезда', 'Әр сапарға арналған 4 құрал', '4 tools for every ride')}</h2>
+        <h2 id="pro-toolkit-title">{text('6 инструментов для каждого выезда', 'Әр сапарға арналған 6 құрал', '6 tools for every ride')}</h2>
         <p>{text(
-          'Они работают сразу: помогают подготовить воду и питание, подобрать стартовое давление, оценить нагрузку и не пропустить обслуживание.',
-          'Олар бірден жұмыс істейді: су мен тамақты дайындауға, бастапқы қысымды таңдауға, жүктемені бағалауға және қызмет көрсетуді өткізіп алмауға көмектеседі.',
-          'Instant tools for hydration and fueling, starting pressure, workload readiness and timely maintenance.',
+          'Они помогают подготовить воду и питание, рассчитать темп, подобрать давление, оценить нагрузку, собрать снаряжение и не пропустить обслуживание.',
+          'Олар су мен тамақты дайындауға, қарқынды есептеуге, қысымды таңдауға, жүктемені бағалауға, жабдықты жинауға және қызмет көрсетуді өткізіп алмауға көмектеседі.',
+          'Plan hydration, pacing, tire pressure, readiness, ride kit and timely maintenance in one place.',
         )}</p>
       </div>
       <span className="pro-toolkit-live"><Check size={15} /> {text('Уже доступно', 'Қазір қолжетімді', 'Available now')}</span>
@@ -192,6 +252,19 @@ export function ProToolkit({ active }: { active: boolean }) {
           </div>
         </div>}
 
+        {tool === 'pace' && <div className="pro-tool-layout">
+          <div className="pro-tool-controls">
+            <label>{text('Дистанция', 'Қашықтық', 'Distance')}<span><input disabled={!active} type="number" min="5" max="1000" step="5" inputMode="decimal" value={routeDistance} onChange={(event) => setRouteDistance(clamp(Number(event.target.value), 5, 1000))} /><b>km</b></span></label>
+            <label>{text('Набор высоты', 'Биіктік жиынтығы', 'Elevation gain')}<span><input disabled={!active} type="number" min="0" max="15000" step="50" inputMode="numeric" value={elevationGain} onChange={(event) => setElevationGain(clamp(Number(event.target.value), 0, 15000))} /><b>m</b></span></label>
+            <label>{text('Целевое время', 'Мақсатты уақыт', 'Target time')}<span><input disabled={!active} type="number" min="20" max="1440" step="10" inputMode="numeric" value={targetMinutes} onChange={(event) => setTargetMinutes(clamp(Number(event.target.value), 20, 1440))} /><b>{text('мин', 'мин', 'min')}</b></span></label>
+          </div>
+          <div className="pro-tool-results">
+            <Metric icon={<Gauge size={18} />} label={text('Средняя скорость', 'Орташа жылдамдық', 'Average speed')} value={`${pacePlan.averageSpeed} km/h`} note={pacePlan.effort} />
+            <Metric icon={<Activity size={18} />} label={text('Плотность подъёмов', 'Өрлеу тығыздығы', 'Climbing density')} value={`${pacePlan.climbingDensity} m/km`} note={text('Чем выше число, тем спокойнее держи начало.', 'Сан неғұрлым жоғары болса, бастау соғұрлым тыныш болсын.', 'The higher the number, the calmer the opening pace.')} />
+            <Metric icon={<Droplets size={18} />} label={text('Остановки', 'Аялдамалар', 'Break plan')} value={`${pacePlan.breakCount}`} note={text(`${pacePlan.movingMinutes} мин в движении · короткая пауза каждые 90 мин`, `${pacePlan.movingMinutes} мин қозғалыста · әр 90 мин қысқа үзіліс`, `${pacePlan.movingMinutes} min moving · short stop every 90 min`)} />
+          </div>
+        </div>}
+
         {tool === 'readiness' && <div className="pro-tool-layout">
           <div className="pro-tool-controls">
             <label>{text('Сон прошлой ночью', 'Кеше түнгі ұйқы', 'Sleep last night')}<span><input disabled={!active} type="number" min="3" max="12" step="0.5" inputMode="decimal" value={sleepHours} onChange={(event) => setSleepHours(clamp(Number(event.target.value), 3, 12))} /><b>{text('ч', 'сағ', 'h')}</b></span></label>
@@ -213,6 +286,23 @@ export function ProToolkit({ active }: { active: boolean }) {
           </div>
           <div className="pro-service-result">
             {serviceItems.map((item) => <article key={item.title} className={item.urgent ? 'urgent' : ''}><span>{item.urgent ? <Wrench size={17} /> : <Check size={17} />}</span><div><strong>{item.title}</strong><p>{item.note}</p></div></article>)}
+          </div>
+        </div>}
+
+        {tool === 'kit' && <div className="pro-tool-layout">
+          <div className="pro-tool-controls">
+            <label>{text('Вероятность дождя', 'Жаңбыр ықтималдығы', 'Rain chance')}<input disabled={!active} type="range" min="0" max="100" step="5" value={rainChance} onChange={(event) => setRainChance(Number(event.target.value))} /><output>{rainChance}%</output></label>
+            <label>{text('Температура', 'Температура', 'Temperature')}<span><input disabled={!active} type="number" min="-10" max="45" inputMode="numeric" value={temperature} onChange={(event) => setTemperature(clamp(Number(event.target.value), -10, 45))} /><b>°C</b></span></label>
+            <label>{text('Дистанция', 'Қашықтық', 'Distance')}<span><input disabled={!active} type="number" min="5" max="1000" step="5" inputMode="decimal" value={routeDistance} onChange={(event) => setRouteDistance(clamp(Number(event.target.value), 5, 1000))} /><b>km</b></span></label>
+            <label className="pro-tool-toggle"><input disabled={!active} type="checkbox" checked={afterDark} onChange={(event) => setAfterDark(event.target.checked)} /><span>{text('Финиш после заката', 'Күн батқаннан кейін мәре', 'Finish after sunset')}</span></label>
+            <label className="pro-tool-toggle"><input disabled={!active} type="checkbox" checked={remoteRoute} onChange={(event) => setRemoteRoute(event.target.checked)} /><span>{text('Удалённый маршрут', 'Шалғай бағыт', 'Remote route')}</span></label>
+          </div>
+          <div className="pro-kit-result">
+            <header><div><small>{text('Готовность комплекта', 'Жинақ дайындығы', 'Kit readiness')}</small><strong>{checkedGear.filter((id) => gearItems.some((item) => item.id === id)).length} / {gearItems.length}</strong></div><span>{text('Отмечай собранное', 'Жиналғанын белгіле', 'Check items as you pack')}</span></header>
+            <div className="pro-kit-progress"><span style={{ width: `${gearItems.length ? (checkedGear.filter((id) => gearItems.some((item) => item.id === id)).length / gearItems.length) * 100 : 0}%` }} /></div>
+            <div className="pro-kit-list">
+              {gearItems.map((item) => <label key={item.id} className={checkedGear.includes(item.id) ? 'checked' : ''}><input disabled={!active} type="checkbox" checked={checkedGear.includes(item.id)} onChange={() => toggleGear(item.id)} /><span><strong>{item.title}</strong><small>{item.note}</small></span></label>)}
+            </div>
           </div>
         </div>}
       </div>

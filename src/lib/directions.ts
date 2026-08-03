@@ -37,8 +37,12 @@ type BRouterPayload = {
 const MAX_WAYPOINTS = 50;
 // The server has a 22-second total provider budget. This higher client deadline
 // lets it finish cleanly before the browser starts the public fallback.
-const REQUEST_TIMEOUT_MS = 30_000;
-const MAX_ACCEPTED_SNAP_DISTANCE_M = 230;
+const REQUEST_TIMEOUT_MS = 36_000;
+// Search results for large residential and shopping complexes often point to
+// the centre of the building instead of its street entrance. The router may
+// legitimately snap such a point farther away; the UI keeps the destination
+// marker at the requested place and explains the remaining walking gap.
+const MAX_ACCEPTED_SNAP_DISTANCE_M = 1_500;
 const ROUTE_CACHE_MS = 30_000;
 const pendingRequests = new Map<string, Promise<CyclingRouteResult>>();
 const resultCache = new Map<string, { expiresAt: number; result: CyclingRouteResult }>();
@@ -118,21 +122,11 @@ function bRouterRouteIsBicycleSafe(messages: unknown): boolean {
   return !messages.some((row) => {
     if (!Array.isArray(row)) return false;
     const tags = row.filter((value): value is string => typeof value === 'string').join(' ');
-    if (/\bhighway=steps\b|\broute=ferry\b|\bbicycle=(?:dismount|no|private|use_sidepath)\b/.test(tags)) return true;
-    const explicitBicycleAccess = /\bbicycle=(?:yes|designated|permissive|official)\b|\bbicycle_road=yes\b/.test(tags);
-    if (!explicitBicycleAccess && /\b(?:vehicle|access)=(?:no|private)\b/.test(tags)) return true;
-    const footOnlyWay = /\bhighway=(footway|pedestrian)\b/.test(tags) && !explicitBicycleAccess;
-    if (footOnlyWay) return true;
-
-    const reverseDirection = /\breversedirection=yes\b/.test(tags);
-    const againstOneWay = reverseDirection
-      ? /\boneway=(?:yes|true|1)\b/.test(tags)
-        || (!/\boneway=/.test(tags) && /\bjunction=(?:roundabout|circular)\b/.test(tags))
-      : /\boneway=-1\b/.test(tags);
-    const legalBicycleContraflow = /\boneway:bicycle=no\b/.test(tags)
-      || /\bcycleway(?::(?:left|right|both))?=opposite(?:_lane|_track)?\b/.test(tags)
-      || /\bcycleway:(?:left|right|both):oneway=(?:no|-1)\b/.test(tags);
-    return againstOneWay && !legalBicycleContraflow;
+    // BRouter has already applied the selected bicycle profile and access
+    // rules. Re-interpreting every OSM tag here used to reject valid routes
+    // that begin on a short driveway, crossing or shared footway. Keep only
+    // explicit hard bans that should never be drawn as a cycling route.
+    return /(?:^|\s)(?:highway=steps|route=ferry|bicycle=(?:dismount|no|private))(?:\s|$)/.test(tags);
   });
 }
 
@@ -256,7 +250,7 @@ async function routeWithPublicBRouter(
       { profile: 'fastbike', alternativeIndex: 0 },
       { profile: 'fastbike', alternativeIndex: 1 },
     ];
-  const deadline = Date.now() + 22_000;
+  const deadline = Date.now() + 27_000;
 
   for (const plan of plans) {
     const remainingMs = deadline - Date.now();
@@ -280,7 +274,7 @@ async function routeWithPublicBRouter(
     try {
       const response = await fetchWithTimeout(`https://brouter.de/brouter?${params.toString()}`, {
         headers: { accept: 'application/geo+json, application/json' },
-      }, Math.min(8_000, remainingMs));
+      }, Math.min(10_000, remainingMs));
       if (!response.ok) continue;
       const payload = await response.json() as BRouterPayload;
       const feature = payload.features?.[0];

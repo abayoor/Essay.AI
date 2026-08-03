@@ -246,19 +246,22 @@ function sourceRideTrack(stats: RidePostStats | undefined): RoutePoint[] | null 
   return source.length >= 2 && source.length <= 20_000 ? source : null;
 }
 
-export async function createPost(input: CreatePostInput): Promise<void> {
+export async function createPost(input: CreatePostInput): Promise<string> {
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы опубликовать пост.');
 
   const mediaUrl = input.mediaUrl || null;
-  const { error } = await supabase.rpc('create_public_post', {
+  const durationSeconds = input.rideStats
+    ? Math.max(1, Math.round(input.rideStats.durationSeconds))
+    : null;
+  const { data, error } = await supabase.rpc('create_public_post', {
     p_caption: input.caption.trim(),
     p_media_url: mediaUrl,
     p_media_type: mediaUrl ? input.mediaType ?? null : null,
     p_ride_activity_id: input.rideActivityId ?? null,
     p_distance_km: input.rideStats?.distanceKm ?? null,
     p_elevation_gain_m: input.rideStats?.elevationGainM ?? null,
-    p_duration_seconds: input.rideStats?.durationSeconds ?? null,
+    p_duration_seconds: durationSeconds,
     p_ride_track: sourceRideTrack(input.rideStats),
     p_route_id: input.routePreview?.routeId ?? null,
     p_route_title: input.routePreview?.title ?? null,
@@ -269,6 +272,10 @@ export async function createPost(input: CreatePostInput): Promise<void> {
     p_route_difficulty: input.routePreview?.difficulty ?? null,
   });
   if (error) throw error;
+  if (typeof data !== 'string' || !data.trim()) {
+    throw new Error('Сервер не подтвердил создание публикации. Попробуй ещё раз.');
+  }
+  return data;
 }
 
 export async function uploadPostMedia(file: File): Promise<{ url: string; type: PostMediaType }> {

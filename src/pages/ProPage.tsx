@@ -20,6 +20,7 @@ import { Link } from 'wouter';
 import { PageShell } from '../components/PageShell';
 import { ProAnalyzer } from '../components/ProAnalyzer';
 import { ProToolkit } from '../components/ProToolkit';
+import { ProWeeklyDigest } from '../components/ProWeeklyDigest';
 import { useSession } from '../lib/auth';
 import { useLocaleText } from '../lib/localized';
 import { usePreferences } from '../lib/preferences';
@@ -274,7 +275,7 @@ export function ProPage() {
             'One personal cycling assistant for bike choice, training, routes, maintenance and recovery.',
           )}</p>
           <div className="pro-hero-points" aria-label={text('Главные преимущества', 'Негізгі артықшылықтар', 'Key benefits')}>
-            <span><Check size={15} /> {text('4 инструмента Ride Lab', '4 Ride Lab құралы', '4 Ride Lab tools')}</span>
+            <span><Check size={15} /> {text('6 инструментов Ride Lab', '6 Ride Lab құралы', '6 Ride Lab tools')}</span>
             <span><Check size={15} /> {text('30 полных ИИ-разборов в месяц', 'Айына 30 толық AI талдауы', '30 full AI analyses each month')}</span>
             <span><Check size={15} /> {text('Отмена в любой момент', 'Кез келген уақытта тоқтату', 'Cancel anytime')}</span>
           </div>
@@ -372,6 +373,8 @@ export function ProPage() {
       <ProAnalyzer active={active} statusLoading={subscriptionLoading} />
 
       <ProToolkit active={active} />
+
+      <ProWeeklyDigest active={active} />
 
       <section className="pro-benefits" aria-labelledby="pro-benefits-title">
         <header>

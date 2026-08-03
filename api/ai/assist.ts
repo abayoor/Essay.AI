@@ -10,7 +10,7 @@ const outputSchema = {
     highlights: {
       type: 'array',
       minItems: 0,
-      maxItems: 3,
+      maxItems: 6,
       items: { type: 'string' },
     },
   },
@@ -99,7 +99,15 @@ function taskPrompt(task: AiTask): string {
   if (task === 'route_copy') {
     return 'Create a specific, useful cycling route title and description from supplied route metrics. Mention distance, climbing, difficulty and city only when provided. Do not invent roads, surfaces, landmarks, water points, safety, or bike lanes. title must be under 70 characters, text under 700 characters, highlights may contain up to three short factual route traits.';
   }
-  return 'Analyze one completed bicycle ride using only supplied metrics. Explain what the result means in plain language, identify one strength and one sensible next step. Never invent heart rate, power, sleep, weather, medical facts, or compare against unavailable history. Avoid diagnosis. title is a concise insight headline, text is a useful 2-4 sentence analysis, highlights are exactly three short factual observations when data allows.';
+  return [
+    'Analyze one completed bicycle ride using only supplied metrics.',
+    'Write a detailed 6-9 sentence overview that explains how distance, moving and elapsed time, average speed, maximum speed, pace, elevation gain, elevation per kilometre and GPS data quality affect the interpretation.',
+    'Do not call a result excellent or poor without enough context and do not compare it with unavailable ride history.',
+    'Treat an unusually high maximum speed cautiously because it may be a descent or GPS spike.',
+    'Provide exactly six substantial highlights, each 1-2 sentences: distance and duration; moving time and stops; average speed and pace; maximum speed reliability and safety; elevation and route load; a conservative next-ride plan.',
+    'Every highlight must name its parameter, cite the supplied value when available, explain what it means, and give one concrete action.',
+    'Never invent heart rate, power, cadence, sleep, weather, surface, medical facts or diagnoses.',
+  ].join(' ');
 }
 
 async function handler(request: Request): Promise<Response> {
@@ -135,7 +143,7 @@ async function handler(request: Request): Promise<Response> {
           parts: [{ text: JSON.stringify({ task: input.task, locale: input.locale, context: input.context }) }],
         }],
         generationConfig: {
-          maxOutputTokens: 1400,
+          maxOutputTokens: 2600,
           thinkingConfig: { thinkingBudget: 0 },
           responseMimeType: 'application/json',
           responseSchema: outputSchema,
