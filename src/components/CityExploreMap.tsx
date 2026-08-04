@@ -834,7 +834,7 @@ export function CityExploreMap({
       </div>
       <div className="city-map-canvas global-map-canvas" role="region" aria-label={text('Интерактивная велосипедная карта', 'Интерактивті велосипед картасы', 'Interactive cycling map')}>
         <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.125} zoomDelta={0.25} wheelPxPerZoomLevel={360} touchZoom="center" scrollWheelZoom zoomControl={false} fadeAnimation={false} preferCanvas className="city-leaflet-map global-leaflet-map">
-          <CommunityTileLayer showSwitcher />
+          <CommunityTileLayer fixedStyle="standard" showSwitcher />
           {!navigationActive && <ZoomControl position="bottomright" />}
           <StartPicker enabled={!riderLocation && !hazardPickMode} onPick={chooseManualStart} />
           <HazardPointPicker enabled={hazardPickMode} onPick={onPickHazardLocation} />

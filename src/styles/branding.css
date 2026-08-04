@@ -164,3 +164,23 @@
     color: #000 !important;
   }
 }
+
+.metric-card-value {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.metric-card-value strong,
+.metric-card-value span {
+  display: block;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.metric-card-value span {
+  letter-spacing: 0;
+  margin: 0;
+}

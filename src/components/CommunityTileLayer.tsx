@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { Bike, Map, Mountain } from 'lucide-react';
 import { TileLayer, useMap } from 'react-leaflet';
 import { useLocaleText } from '../lib/localized';
@@ -15,7 +15,7 @@ const layers: Record<MapLayerStyle, {
   standard: {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxNativeZoom: 19,
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   },
   terrain: {
     attribution: 'Imagery &amp; relief &copy; <a href="https://www.esri.com/">Esri</a> and its data providers',
@@ -32,9 +32,9 @@ const layers: Record<MapLayerStyle, {
 function savedLayer(): MapLayerStyle {
   try {
     const value = window.localStorage.getItem(storageKey);
-    return value === 'standard' || value === 'terrain' || value === 'cycling' ? value : 'cycling';
+    return value === 'standard' || value === 'terrain' || value === 'cycling' ? value : 'standard';
   } catch {
-    return 'cycling';
+    return 'standard';
   }
 }
 
@@ -69,9 +69,8 @@ type CommunityTileLayerProps = {
 export function CommunityTileLayer({ fixedStyle, showLoading = true, showSwitcher = false }: CommunityTileLayerProps) {
   const text = useLocaleText();
   const [style, setStyle] = useState<MapLayerStyle>(() => fixedStyle ?? savedLayer());
-  const [loadingTiles, setLoadingTiles] = useState(0);
+  const [tilesLoading, setTilesLoading] = useState(false);
   const [showTileLoading, setShowTileLoading] = useState(false);
-  const pendingTiles = useRef(new Set<HTMLImageElement>());
   const layer = layers[style];
   const options = [
     { value: 'standard' as const, label: text('Обычная', 'Қалыпты', 'Standard'), icon: Map },
@@ -86,8 +85,7 @@ export function CommunityTileLayer({ fixedStyle, showLoading = true, showSwitche
   }
 
   useEffect(() => {
-    pendingTiles.current.clear();
-    setLoadingTiles(0);
+    setTilesLoading(false);
   }, [style]);
 
   useEffect(() => {
@@ -95,26 +93,17 @@ export function CommunityTileLayer({ fixedStyle, showLoading = true, showSwitche
   }, [fixedStyle]);
 
   useEffect(() => {
-    if (loadingTiles === 0) {
+    if (!tilesLoading) {
       setShowTileLoading(false);
       return undefined;
     }
     const timer = window.setTimeout(() => setShowTileLoading(true), 220);
     return () => window.clearTimeout(timer);
-  }, [loadingTiles]);
+  }, [tilesLoading]);
 
   const tileEvents = useMemo(() => ({
-    tileloadstart: (event: unknown) => {
-      const tile = (event as TileEvent).tile;
-      if (!tile || pendingTiles.current.has(tile)) return;
-      pendingTiles.current.add(tile);
-      setLoadingTiles(pendingTiles.current.size);
-    },
-    tileload: (event: unknown) => {
-      const tile = (event as TileEvent).tile;
-      if (!tile || !pendingTiles.current.delete(tile)) return;
-      setLoadingTiles(pendingTiles.current.size);
-    },
+    loading: () => setTilesLoading(true),
+    load: () => setTilesLoading(false),
     tileerror: (event: unknown) => {
       const { tile, coords } = event as TileEvent;
       const isHillshade = tile?.classList.contains('community-map-hillshade') ?? false;
@@ -127,23 +116,16 @@ export function CommunityTileLayer({ fixedStyle, showLoading = true, showSwitche
       if (tile) {
         tile.style.opacity = isHillshade ? '0' : '1';
         tile.setAttribute('aria-hidden', 'true');
-        pendingTiles.current.delete(tile);
       }
-      setLoadingTiles(pendingTiles.current.size);
-    },
-    tileunload: (event: unknown) => {
-      const tile = (event as TileEvent).tile;
-      if (!tile || !pendingTiles.current.delete(tile)) return;
-      setLoadingTiles(pendingTiles.current.size);
     },
   }), [style]);
 
   const sharedTileProps = {
     maxZoom: 20,
-    updateWhenIdle: true,
+    updateWhenIdle: false,
     updateWhenZooming: false,
-    updateInterval: 200,
-    keepBuffer: 3,
+    updateInterval: 160,
+    keepBuffer: 4,
     eventHandlers: tileEvents,
   };
 
