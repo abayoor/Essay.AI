@@ -896,6 +896,34 @@
 .dashboard-coach-teaser p:not(.kicker) { color: rgba(255, 255, 255, .7); font-size: .82rem; line-height: 1.5; }
 .dashboard-coach-teaser .signal-button { position: relative; white-space: nowrap; z-index: 1; }
 .coach-page { max-width: 1120px; }
+.coach-pro-lock {
+  align-items: center;
+  display: grid;
+  justify-items: center;
+  min-height: calc(100dvh - 150px);
+}
+.coach-pro-lock > section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  display: grid;
+  justify-items: start;
+  max-width: 660px;
+  padding: clamp(26px, 6vw, 52px);
+}
+.coach-pro-lock > section > span {
+  align-items: center;
+  background: color-mix(in srgb, var(--signal) 12%, var(--surface));
+  border-radius: 12px;
+  color: var(--signal);
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  margin-bottom: 22px;
+  width: 48px;
+}
+.coach-pro-lock h1 { font-size: clamp(2rem, 6vw, 3.6rem); line-height: .98; margin: 14px 0 16px; }
+.coach-pro-lock section > p:not(.kicker) { color: var(--muted); line-height: 1.65; margin-bottom: 24px; }
 .coach-heading .kicker, .coach-heading .signal-button { align-items: center; display: flex; gap: 6px; }
 .coach-safety-note { align-items: center; background: color-mix(in srgb, #6f5aa8 7%, var(--surface)); border: 1px solid color-mix(in srgb, #6f5aa8 22%, var(--line)); border-radius: 16px; color: #6f5aa8; display: flex; gap: 11px; margin: 0 0 20px; padding: 13px 15px; }
 .coach-safety-note p { display: grid; gap: 2px; }

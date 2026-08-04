@@ -104,52 +104,6 @@ const assistSchema = {
   required: ['title', 'text', 'highlights'],
 };
 
-const workoutProperties = {
-  title: { type: 'string' },
-  durationMinutes: { type: 'integer', minimum: 15, maximum: 180 },
-  intensity: { type: 'string', enum: ['recovery', 'easy', 'moderate', 'hard'] },
-  description: { type: 'string' },
-};
-
-const coachSchema = {
-  type: 'object',
-  properties: {
-    headline: { type: 'string' },
-    summary: { type: 'string' },
-    readinessExplanation: { type: 'string' },
-    trainingInsight: { type: 'string' },
-    nextWorkout: {
-      type: 'object',
-      properties: workoutProperties,
-      required: ['title', 'durationMinutes', 'intensity', 'description'],
-    },
-    weeklyPlan: {
-      type: 'array',
-      minItems: 3,
-      maxItems: 3,
-      items: {
-        type: 'object',
-        properties: {
-          order: { type: 'integer', minimum: 1, maximum: 3 },
-          ...workoutProperties,
-          purpose: { type: 'string' },
-        },
-        required: ['order', 'title', 'durationMinutes', 'intensity', 'description', 'purpose'],
-      },
-    },
-    focus: {
-      type: 'array',
-      minItems: 3,
-      maxItems: 3,
-      items: { type: 'string' },
-    },
-    caution: { type: 'string' },
-    watchMetric: { type: 'string' },
-    confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
-  },
-  required: ['headline', 'summary', 'readinessExplanation', 'trainingInsight', 'nextWorkout', 'weeklyPlan', 'focus', 'watchMetric', 'confidence', 'caution'],
-};
-
 function assistPrompt(task: AssistTask): string {
   if (task === 'post_caption') {
     return 'Create a natural first-person social post for a cycling community. Use only supplied facts. Keep it under 700 characters. Do not invent places, speed, weather, achievements, or safety claims. title is a short internal label, text is the ready caption, highlights is empty.';
@@ -167,17 +121,6 @@ function assistPrompt(task: AssistTask): string {
     'Never invent heart rate, power, cadence, sleep, weather, surface, medical facts or diagnoses.',
   ].join(' ');
 }
-
-const coachPrompt = [
-  'You are Slipstream’s evidence-based and safety-first cycling coach.',
-  'Use only supplied privacy-preserving ride metrics. Never invent heart rate, sleep, power, diagnoses, injuries, or medical facts.',
-  'Compare the last 7 days with the previous 7 days and the 28-day baseline.',
-  'Explain which supplied numbers support the main insight and avoid generic praise.',
-  'Design one actionable workout and a conservative three-session weekly progression.',
-  'If feeling is low, load spiked, or recovery is uncertain, reduce intensity.',
-  'Never recommend extreme loads, supplements, diets, medication, or hiding pain.',
-  'For pain, dizziness, breathing difficulty, or feeling unwell, advise stopping and contacting a trusted adult or clinician.',
-].join(' ');
 
 async function generate(
   apiKey: string,
@@ -245,16 +188,7 @@ Deno.serve(async (request) => {
   }
 
   if (body.mode === 'coach') {
-    if (!safeObject(body.summary, 30_000)
-      || (body.goal !== 'consistency' && body.goal !== 'endurance' && body.goal !== 'speed' && body.goal !== 'distance')
-      || typeof body.feeling !== 'number' || body.feeling < 1 || body.feeling > 5) {
-      return json({ error: 'Не удалось проверить показатели тренировки.' }, 400);
-    }
-    return generate(apiKey, model, coachPrompt, body.locale, {
-      goal: body.goal,
-      feeling: body.feeling,
-      metrics: body.summary,
-    }, coachSchema, 3000);
+    return json({ error: 'ИИ-тренер доступен только в Slipstream Pro.' }, 403);
   }
 
   return json({ error: 'Неизвестный режим ИИ.' }, 400);

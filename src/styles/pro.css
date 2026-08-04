@@ -685,3 +685,91 @@
   .pro-weekly-preview,
   .pro-weekly-digest { border-radius: 12px; }
 }
+
+/* A calmer Pro surface: fewer competing sections and one clear action per block. */
+.pro-page {
+  max-width: 1280px;
+  padding-left: clamp(16px, 4vw, 52px);
+  padding-right: clamp(16px, 4vw, 52px);
+}
+
+.pro-hero {
+  align-items: start;
+  gap: clamp(28px, 5vw, 58px);
+  max-width: 1040px;
+  padding: 38px 0 46px;
+}
+
+.pro-hero-copy h1 {
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  line-height: .96;
+  margin: 16px 0 20px;
+}
+
+.pro-hero-points { margin-top: 20px; }
+.pro-price-card { background: #fff; padding: 24px; }
+
+.pro-coach-entry {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--pro-line);
+  border-radius: 14px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin: 0 auto 42px;
+  max-width: 1040px;
+  padding: clamp(20px, 4vw, 30px);
+  scroll-margin-top: 90px;
+}
+
+.pro-coach-entry-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--pro-accent) 12%, #fff);
+  border-radius: 12px;
+  color: var(--pro-accent);
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.pro-coach-entry h2 { font-size: clamp(1.35rem, 3vw, 2rem); line-height: 1.08; margin: 8px 0; }
+.pro-coach-entry div > p:not(.pro-eyebrow) { color: var(--pro-muted); font-size: .82rem; line-height: 1.55; }
+.pro-coach-entry-action {
+  align-items: center;
+  background: #000;
+  border-radius: 10px;
+  color: #fff !important;
+  display: inline-flex;
+  font-size: .75rem;
+  font-weight: 850;
+  gap: 6px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.pro-analyzer,
+.pro-toolkit,
+.pro-weekly-digest,
+.pro-benefits { max-width: 1040px; }
+
+.pro-analyzer { margin-bottom: 42px; }
+.pro-benefits { padding: 42px 0; }
+.pro-benefits > header { margin-bottom: 22px; }
+.pro-benefit-card { min-height: 0; padding: 22px; }
+.pro-benefit-card h3 { margin-top: 16px; }
+.pro-privacy { margin: 52px auto 38px; }
+.pro-faq { padding-bottom: 38px; }
+
+@media (max-width: 720px) {
+  .pro-coach-entry { align-items: start; grid-template-columns: auto minmax(0, 1fr); }
+  .pro-coach-entry-action { grid-column: 1 / -1; width: 100%; }
+}
+
+@media (max-width: 620px) {
+  .pro-hero-copy h1 { font-size: clamp(2.55rem, 14vw, 3.6rem); }
+  .pro-coach-entry { margin-bottom: 30px; }
+}

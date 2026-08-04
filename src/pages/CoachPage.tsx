@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { Activity, BatteryCharging, Bike, BrainCircuit, CalendarDays, Clock3, Gauge, HeartPulse, Mountain, Route, Target, TrendingUp } from 'lucide-react';
+import { Activity, BadgeCheck, BatteryCharging, Bike, BrainCircuit, CalendarDays, Clock3, Gauge, HeartPulse, LockKeyhole, Mountain, Route, Target, TrendingUp } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { BikeLoader } from '../components/BikeLoader';
 import { PageShell } from '../components/PageShell';
@@ -17,6 +17,7 @@ import type { RideActivity } from '../lib/cyclingModels';
 import { useLocaleText } from '../lib/localized';
 import { usePreferences } from '../lib/preferences';
 import { loadRecordedRides } from '../lib/recordedRides';
+import { hasActivePro, loadCurrentSubscription } from '../lib/subscriptions';
 
 export function CoachPage() {
   const { session, loading } = useSession();
@@ -30,6 +31,8 @@ export function CoachPage() {
   const [aiAdvice, setAiAdvice] = useState<CoachAdvice | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [proActive, setProActive] = useState(false);
+  const [proLoading, setProLoading] = useState(true);
 
   const goals: { id: CoachGoal; title: string; description: string }[] = [
     { id: 'consistency', title: text('Регулярность', 'Тұрақтылық', 'Consistency'), description: text('Кататься стабильно без перегрузки', 'Артық жүктемесіз тұрақты жүру', 'Ride regularly without overload') },
@@ -64,7 +67,30 @@ export function CoachPage() {
 
   useEffect(() => {
     if (!loading && !session) navigate('/auth/sign-in');
-    if (!session) return;
+    if (!session) {
+      setProLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setProLoading(true);
+    void loadCurrentSubscription()
+      .then((subscription) => {
+        if (!cancelled) setProActive(hasActivePro(subscription));
+      })
+      .catch(() => {
+        if (!cancelled) setProActive(false);
+      })
+      .finally(() => {
+        if (!cancelled) setProLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [loading, navigate, session]);
+
+  useEffect(() => {
+    if (!session || !proActive) {
+      setRidesLoading(false);
+      return;
+    }
     setRidesLoading(true);
     void loadRecordedRides()
       .then(setRides)
@@ -74,7 +100,7 @@ export function CoachPage() {
         'Rides could not be loaded. The built-in coach will show a starter plan.',
       )))
       .finally(() => setRidesLoading(false));
-  }, [loading, navigate, session, text]);
+  }, [proActive, session, text]);
 
   useEffect(() => {
     setAiAdvice(null);
@@ -131,6 +157,22 @@ export function CoachPage() {
     medium: text('Средняя уверенность', 'Сенімділік орташа', 'Medium confidence'),
     high: text('Высокая уверенность', 'Сенімділік жоғары', 'High confidence'),
   }[advice.confidence];
+
+  if (loading || proLoading) return <PageShell><main className="cycle-page coach-page"><BikeLoader label={text('Проверяем доступ к ИИ-тренеру…', 'AI жаттықтырушысына қолжетімділікті тексеріп жатырмыз…', 'Checking AI coach access…')} /></main></PageShell>;
+
+  if (!proActive) return <PageShell><main className="cycle-page coach-page coach-pro-lock">
+    <section>
+      <span><LockKeyhole size={26} /></span>
+      <p className="kicker"><BadgeCheck size={14} /> Slipstream Pro</p>
+      <h1>{text('ИИ-тренер теперь входит в Pro', 'AI жаттықтырушысы енді Pro құрамында', 'AI coach is now part of Pro')}</h1>
+      <p>{text(
+        'Анализ нагрузки, готовность, следующая тренировка и персональный план на неделю доступны только с активной подпиской Pro.',
+        'Жүктемені талдау, дайындық, келесі жаттығу және жеке апталық жоспар тек белсенді Pro жазылымымен қолжетімді.',
+        'Load analysis, readiness, your next workout and a personal weekly plan require an active Pro subscription.',
+      )}</p>
+      <Link className="signal-button" href="/pro#ai-coach"><BadgeCheck size={17} />{text('Посмотреть Slipstream Pro', 'Slipstream Pro-ны көру', 'See Slipstream Pro')}</Link>
+    </section>
+  </main></PageShell>;
 
   return <PageShell><main className="cycle-page coach-page">
     <header className="page-heading coach-heading">

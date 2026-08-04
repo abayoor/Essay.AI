@@ -181,9 +181,9 @@ export function PageShell({ children }: { children: ReactNode }) {
                 <UsersRound size={17} />
                 {text('Друзья', 'Достар', 'Friends')}
               </Link>
-              <Link href="/coach" onClick={() => setProfileOpen(false)}>
+              <Link href="/pro#ai-coach" onClick={() => setProfileOpen(false)}>
                 <BrainCircuit size={17} />
-                {text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}
+                {text('ИИ-тренер Pro', 'Pro AI жаттықтырушысы', 'Pro AI coach')}
               </Link>
               <Link href="/pro" onClick={() => setProfileOpen(false)}>
                 <BadgeCheck size={17} />
@@ -221,13 +221,6 @@ export function PageShell({ children }: { children: ReactNode }) {
           <span>PRO</span>
         </Link>
         <Link
-          href="/coach"
-          className={`header-icon-link header-coach-link${location.startsWith('/coach') ? ' active' : ''}`}
-          aria-label={text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}
-        >
-          <BrainCircuit size={20} />
-        </Link>
-        <Link
           href="/messages"
           className={`header-icon-link${location.startsWith('/messages') ? ' active' : ''}`}
           aria-label={t('messages')}
@@ -251,7 +244,7 @@ export function PageShell({ children }: { children: ReactNode }) {
         <div className="mobile-profile-grid">
           <Link href="/profile"><CircleUserRound size={20} /><span>{t('profile')}</span></Link>
           <Link href="/friends"><UsersRound size={20} /><span>{text('Друзья', 'Достар', 'Friends')}</span></Link>
-          <Link href="/coach"><BrainCircuit size={20} /><span>{text('ИИ-тренер', 'AI жаттықтырушы', 'AI coach')}</span></Link>
+          <Link href="/pro#ai-coach"><BrainCircuit size={20} /><span>{text('ИИ-тренер Pro', 'Pro AI жаттықтырушысы', 'Pro AI coach')}</span></Link>
           <Link href="/pro"><BadgeCheck size={20} /><span>Slipstream Pro</span></Link>
           <Link href="/rides"><Bike size={20} /><span>{t('myRides')}</span></Link>
           <Link href="/bikes"><Wrench size={20} /><span>{t('bikesAndService')}</span></Link>

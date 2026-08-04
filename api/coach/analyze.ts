@@ -1,3 +1,17 @@
+import {
+  authenticatedUser,
+  billingConfigured,
+  consumeProAnalysisCredit,
+  findProSubscription,
+  finishProAnalysisCredit,
+  hasDatabaseProAccess,
+  hasPreviewTesterAccess,
+  hasUniversalPromoAccess,
+  json,
+  ProQuotaError,
+} from '../billing/_shared.js';
+import { corsPreflight, withCors } from '../_cors.js';
+
 type CoachGoal = 'consistency' | 'endurance' | 'speed' | 'distance';
 type Locale = 'ru' | 'kz' | 'en';
 
@@ -30,39 +44,6 @@ type CoachSummary = {
     averageSpeedKmh: number | null;
   }[];
 };
-
-type SupabaseUser = { id: string };
-
-function json(value: object, status = 200): Response {
-  return new Response(JSON.stringify(value), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
-  });
-}
-
-function bearerToken(request: Request): string {
-  const header = request.headers.get('authorization');
-  if (!header?.startsWith('Bearer ')) throw new Error('Нужна авторизация.');
-  return header.slice('Bearer '.length);
-}
-
-function serverSetting(primary: string, fallback: string): string {
-  const value = process.env[primary] ?? process.env[fallback];
-  if (!value) throw new Error(`Не настроена серверная переменная ${primary}.`);
-  return value;
-}
-
-async function authenticatedUser(accessToken: string): Promise<SupabaseUser> {
-  const supabaseUrl = serverSetting('SUPABASE_URL', 'VITE_SUPABASE_URL');
-  const supabaseAnonKey = serverSetting('SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY');
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { apikey: supabaseAnonKey, authorization: `Bearer ${accessToken}` },
-  });
-  if (!response.ok) throw new Error('Сессия истекла. Войди в аккаунт снова.');
-  const user = await response.json() as Partial<SupabaseUser>;
-  if (!user.id) throw new Error('Не удалось определить пользователя.');
-  return { id: user.id };
-}
 
 function finiteNumber(value: unknown, minimum: number, maximum: number): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum;
@@ -312,8 +293,14 @@ async function requestOpenAiCoach(apiKey: string, userId: string, input: Record<
 async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Метод не поддерживается.' }, 405);
   try {
-    const accessToken = bearerToken(request);
-    const user = await authenticatedUser(accessToken);
+    const user = await authenticatedUser(request);
+    const promotionalAccess = hasUniversalPromoAccess(request)
+      || await hasPreviewTesterAccess(user)
+      || await hasDatabaseProAccess(user);
+    const subscription = promotionalAccess || !billingConfigured() ? null : await findProSubscription(user.email);
+    if (!promotionalAccess && !subscription?.active) {
+      return json({ error: 'ИИ-тренер доступен только с активной подпиской Slipstream Pro.' }, 403);
+    }
     const body: unknown = await request.json().catch(() => null);
     if (typeof body !== 'object' || body === null) return json({ error: 'Некорректный запрос.' }, 400);
     const input = body as Record<string, unknown>;
@@ -327,21 +314,41 @@ async function handler(request: Request): Promise<Response> {
       return json({ error: 'ИИ-модель ещё не подключена. Базовый план уже рассчитан без неё.' }, 503);
     }
 
-    const aiResult = geminiApiKey
-      ? await requestGeminiCoach(geminiApiKey, input)
-      : await requestOpenAiCoach(openAiApiKey as string, user.id, input);
-    if (!aiResult.text) {
-      return json({ error: geminiApiKey
-        ? geminiFailure(aiResult.status)
-        : aiResult.status === 429
-          ? 'ИИ-тренер занят. Попробуй ещё раз немного позже.'
-          : `OpenAI API не ответил (код ${aiResult.status}). Базовый план продолжает работать.` }, 502);
+    const credit = await consumeProAnalysisCredit(user, '2026-08-01');
+    let completed = false;
+    try {
+      const aiResult = geminiApiKey
+        ? await requestGeminiCoach(geminiApiKey, input)
+        : await requestOpenAiCoach(openAiApiKey as string, user.id, input);
+      if (!aiResult.text) {
+        return json({ error: geminiApiKey
+          ? geminiFailure(aiResult.status)
+          : aiResult.status === 429
+            ? 'ИИ-тренер занят. Попробуй ещё раз немного позже.'
+            : `OpenAI API не ответил (код ${aiResult.status}).` }, 502);
+      }
+      const advice: unknown = JSON.parse(aiResult.text);
+      if (typeof advice !== 'object' || advice === null) return json({ error: 'ИИ-тренер вернул неполный разбор.' }, 502);
+      completed = true;
+      await finishProAnalysisCredit(user, credit.reservationId, credit.reservationToken, true).catch(() => undefined);
+      return json({ ...(advice as object), provider: geminiApiKey ? 'gemini' : 'openai' });
+    } finally {
+      if (!completed) {
+        await finishProAnalysisCredit(user, credit.reservationId, credit.reservationToken, false).catch(() => undefined);
+      }
     }
-    const advice: unknown = JSON.parse(aiResult.text);
-    if (typeof advice !== 'object' || advice === null) return json({ error: 'ИИ-тренер вернул неполный разбор.' }, 502);
-    return json({ ...(advice as object), provider: geminiApiKey ? 'gemini' : 'openai' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Внутренняя ошибка сервера.';
+    if (error instanceof ProQuotaError) {
+      return new Response(JSON.stringify({ error: message }), {
+        status: 429,
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'private, no-store',
+          'retry-after': String(error.retryAfterSeconds),
+        },
+      });
+    }
     const status = message === 'Нужна авторизация.' || message.includes('Сессия истекла') ? 401 : 500;
     return json({ error: message }, status);
   }
@@ -353,4 +360,3 @@ export default {
       ?? withCors(request, await handler(request), 'POST, OPTIONS');
   },
 };
-import { corsPreflight, withCors } from '../_cors.js';

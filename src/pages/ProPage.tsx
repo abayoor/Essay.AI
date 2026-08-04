@@ -7,14 +7,9 @@ import {
   Check,
   ChevronRight,
   CreditCard,
-  Droplets,
-  Gauge,
-  HeartPulse,
   LockKeyhole,
-  Route,
   ShieldCheck,
   TimerReset,
-  Wrench,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { PageShell } from '../components/PageShell';
@@ -88,66 +83,6 @@ export function ProPage() {
         'A weekly training structure, safe intensity and recovery matched to your experience and available hours.',
       ),
       detail: text('Недельный отчёт с понятными причинами рекомендаций', 'Ұсыныстардың себептері бар апталық есеп', 'A weekly report explaining every recommendation'),
-    },
-    {
-      icon: <Route size={22} />,
-      title: text('Умные маршруты и безопасность', 'Ақылды бағыттар және қауіпсіздік', 'Smart routes and safety'),
-      description: text(
-        'ИИ подсказывает подходящий рельеф и покрытие, приоритет маршрута и конкретные проверки безопасности.',
-        'AI қолайлы жер бедері мен жол жамылғысын, бағыт басымдығын және қауіпсіздік тексерулерін ұсынады.',
-        'AI suggests suitable terrain and surfaces, a routing priority and concrete safety checks.',
-      ),
-      detail: text('Приоритет комфорта, скорости или спокойных улиц', 'Жайлылыққа, жылдамдыққа немесе тыныш көшелерге басымдық', 'Prioritize comfort, speed or quiet streets'),
-    },
-    {
-      icon: <Wrench size={22} />,
-      title: text('Персональное обслуживание', 'Жеке техникалық қызмет', 'Personal maintenance'),
-      description: text(
-        'Персональный чек-лист цепи, колодок, шин, трансмиссии и важных проверок перед поездкой.',
-        'Тізбек, қалып, шина, трансмиссия және сапар алдындағы маңызды тексерулерге арналған жеке тізім.',
-        'A personal checklist for the chain, pads, tires, drivetrain and important pre-ride checks.',
-      ),
-      detail: text('Понятно, что проверить сейчас и после поездки', 'Қазір және сапардан кейін не тексеру керегі түсінікті', 'Know what to check now and after a ride'),
-    },
-    {
-      icon: <HeartPulse size={22} />,
-      title: text('Восстановление и питание', 'Қалпына келу және тамақтану', 'Recovery and nutrition'),
-      description: text(
-        'Практичные подсказки по воде, еде до и после поездки, отдыху и лёгким дням с учётом длительности нагрузки.',
-        'Су, сапар алдындағы және кейінгі ас, демалыс және жеңіл күндер туралы жүктеме ұзақтығына сай кеңестер.',
-        'Practical hydration, pre/post-ride food, rest and easy-day guidance based on ride duration.',
-      ),
-      detail: text('Спортивные рекомендации, не медицинская диагностика', 'Спорттық кеңес, медициналық диагноз емес', 'Training guidance, not medical diagnosis'),
-    },
-    {
-      icon: <Droplets size={22} />,
-      title: text('План воды и питания', 'Су мен тамақ жоспары', 'Hydration and fuel planner'),
-      description: text(
-        'Введи длительность, погоду и интенсивность — получишь воду, количество фляг, углеводы и окно восстановления.',
-        'Ұзақтықты, ауа райын және қарқынды енгіз — су, бөтелке саны, көмірсу және қалпына келу уақытын аласың.',
-        'Enter duration, weather and intensity to get water, bottle count, carbohydrates and a recovery window.',
-      ),
-      detail: text('Мгновенный расчёт перед каждой поездкой', 'Әр сапар алдындағы жедел есеп', 'An instant calculation before every ride'),
-    },
-    {
-      icon: <Gauge size={22} />,
-      title: text('Калькулятор давления', 'Қысым калькуляторы', 'Tire pressure calculator'),
-      description: text(
-        'Стартовое давление отдельно для переднего и заднего колеса с учётом веса, ширины шины, покрытия и бескамерной установки.',
-        'Салмақты, шина енін, жолды және камерасыз орнатуды ескеретін алдыңғы және артқы қысым.',
-        'Starting front and rear pressure based on weight, tire width, surface and tubeless setup.',
-      ),
-      detail: text('Bar и PSI с напоминанием о пределах шины', 'Bar және PSI, шина шегі туралы ескертумен', 'Bar and PSI with tire-limit reminders'),
-    },
-    {
-      icon: <Activity size={22} />,
-      title: text('Готовность к поездке', 'Сапарға дайындық', 'Ride readiness'),
-      description: text(
-        'Быстрая оценка дня по сну, усталости и планируемой нагрузке: ехать по плану, снизить темп или восстановиться.',
-        'Ұйқы, шаршау және жоспарланған жүктеме бойынша күнді бағалау: жоспармен жүру, қарқынды азайту немесе демалу.',
-        'A quick daily check using sleep, fatigue and planned load: ride as planned, ease off or recover.',
-      ),
-      detail: text('Работает без ожидания ответа ИИ', 'AI жауабын күтпей жұмыс істейді', 'Works without waiting for an AI response'),
     },
   ], [text]);
 
@@ -370,11 +305,27 @@ export function ProPage() {
 
       {message && <p className="pro-message" role="status">{message}</p>}
 
+      <section className="pro-coach-entry" id="ai-coach" aria-labelledby="pro-coach-title">
+        <span className="pro-coach-entry-icon"><BrainCircuit size={25} /></span>
+        <div>
+          <p className="pro-eyebrow"><Activity size={14} /> {text('ИИ-тренер Pro', 'Pro AI жаттықтырушысы', 'Pro AI coach')}</p>
+          <h2 id="pro-coach-title">{text('План тренировок по твоим заездам', 'Сапарларыңа сай жаттығу жоспары', 'A training plan based on your rides')}</h2>
+          <p>{text(
+            'Анализирует нагрузку, готовность и последние поездки, затем предлагает следующую тренировку и безопасный план на неделю.',
+            'Жүктемені, дайындықты және соңғы сапарларды талдап, келесі жаттығу мен қауіпсіз апталық жоспарды ұсынады.',
+            'Analyzes load, readiness and recent rides, then suggests your next workout and a safe weekly plan.',
+          )}</p>
+        </div>
+        {active
+          ? <Link className="pro-coach-entry-action" href="/coach">{text('Открыть тренера', 'Жаттықтырушыны ашу', 'Open coach')} <ChevronRight size={17} /></Link>
+          : <a className="pro-coach-entry-action" href="#pro-price"><LockKeyhole size={16} />{text('Входит в Pro', 'Pro құрамында', 'Included with Pro')}</a>}
+      </section>
+
       <ProAnalyzer active={active} statusLoading={subscriptionLoading} />
 
-      <ProToolkit active={active} />
+      {active && <ProToolkit active />}
 
-      <ProWeeklyDigest active={active} />
+      {active && <ProWeeklyDigest active />}
 
       <section className="pro-benefits" aria-labelledby="pro-benefits-title">
         <header>
@@ -412,21 +363,6 @@ export function ProPage() {
         <details><summary>{text('ИИ заменяет врача или профессиональный bike fit?', 'AI дәрігерді немесе кәсіби bike fit-ті алмастыра ма?', 'Does AI replace a doctor or professional bike fit?')}</summary><p>{text('Нет. Это персональные спортивные подсказки. При боли или проблемах со здоровьем обратись к врачу; точную посадку проверяй со специалистом.', 'Жоқ. Бұл жеке спорттық кеңестер. Ауырсыну не денсаулық мәселесі болса, дәрігерге жүгін; нақты отырысты маманмен тексер.', 'No. These are personalized training tips. See a doctor for pain or health concerns and a professional for precise bike fitting.')}</p></details>
         <details><summary>{text('Что будет с бесплатной версией?', 'Тегін нұсқаға не болады?', 'What happens to the free version?')}</summary><p>{text('Запись поездок, базовые маршруты, лента и сообщество останутся доступными. Pro добавляет полный персональный ИИ-отчёт и подробные чек-листы.', 'Сапар жазу, негізгі бағыттар, лента және қауымдастық қолжетімді қалады. Pro толық жеке AI есебі мен егжей-тегжейлі тізімдерді қосады.', 'Ride recording, basic routes, the feed and community remain available. Pro adds a full personal AI report and detailed checklists.')}</p></details>
       </section>
-
-      <footer className="pro-final-cta">
-        <div><CreditCard size={23} /><span><strong>Slipstream Pro · $5/{text('месяц', 'ай', 'month')}</strong><small>{text('Отмена в любой момент', 'Кез келген уақытта тоқтату', 'Cancel anytime')}</small></span></div>
-        {active || needsBillingAttention ? <button type="button" onClick={() => void openPortal()} disabled={!billingConfiguration.checkoutEnabled || billingAction !== null}>{billingConfiguration.nativePlatform
-          ? text('Магазин', 'Дүкен', 'Store')
-          : needsBillingAttention
-            ? text('Исправить оплату', 'Төлемді түзету', 'Fix payment')
-            : text('Управлять', 'Басқару', 'Manage')} <ChevronRight size={17} /></button>
-          : session ? <button type="button" onClick={() => void beginCheckout()} disabled={!billingConfiguration.checkoutEnabled || billingAction !== null}>{billingConfiguration.checkoutEnabled
-            ? text('Подключить Pro', 'Pro қосу', 'Get Pro')
-            : billingConfiguration.nativePlatform
-              ? text('Google Play', 'Google Play', 'Google Play')
-              : text('Скоро', 'Жақында', 'Coming soon')} <ChevronRight size={17} /></button>
-            : <Link href="/auth/sign-in">{text('Войти', 'Кіру', 'Sign in')} <ChevronRight size={17} /></Link>}
-      </footer>
 
       <p className="pro-health-disclaimer">{text(
         'Slipstream Pro предоставляет спортивные и информационные рекомендации и не является медицинским сервисом. При боли, головокружении или плохом самочувствии остановись и обратись к врачу или взрослому, которому доверяешь.',

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { apiFetch } from './api';
+import { proPromoRequestHeaders } from './proAccess';
 
 function errorMessage(value: unknown): string | null {
   if (typeof value !== 'object' || value === null) return null;
@@ -76,6 +77,7 @@ export async function invokeAi(body: Record<string, unknown>, fallback: AiFallba
     headers: {
       authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
+      ...proPromoRequestHeaders(),
     },
     body: JSON.stringify(fallback.body),
   }, 45_000).catch(() => null);
