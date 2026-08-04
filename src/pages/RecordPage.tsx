@@ -8,6 +8,7 @@ import { useSession } from '../lib/auth';
 import { startBackgroundRecording, stopBackgroundRecording, supportsBackgroundRecording } from '../lib/backgroundRecording';
 import type { GpsTrackPoint, RideRecordingMetrics } from '../lib/cyclingModels';
 import { calculateRecordingMetrics, classifyGpsPoint, emptyRecordingMetrics } from '../lib/gps';
+import { requestLocationPermissionPrompt } from '../lib/locationPermission';
 import { createPost } from '../lib/posts';
 import { saveRecordedRide, type SavedRecordedRide, updateRecordedRide } from '../lib/recordedRides';
 import { shareRide } from '../lib/share';
@@ -156,6 +157,7 @@ export function RecordPage() {
     if (error.code === error.PERMISSION_DENIED) {
       setGpsStatus('denied');
       setMessage('Разреши доступ к геолокации в настройках браузера — без него маршрут не записывается.');
+      requestLocationPermissionPrompt();
       return;
     }
     setGpsStatus('error');
@@ -181,6 +183,7 @@ export function RecordPage() {
 
   const previewLocationError = useCallback((error: GeolocationPositionError) => {
     setGpsStatus(error.code === error.PERMISSION_DENIED ? 'denied' : 'error');
+    if (error.code === error.PERMISSION_DENIED) requestLocationPermissionPrompt();
   }, []);
 
   const startPreviewLocation = useCallback(() => {
@@ -253,6 +256,11 @@ export function RecordPage() {
   }, [keepScreenAwake, status]);
 
   function start() {
+    if (!navigator.geolocation || gpsStatus === 'denied') {
+      setMessage('Сначала разреши геолокацию — без неё маршрут не сможет записаться.');
+      requestLocationPermissionPrompt();
+      return;
+    }
     setMessage('');
     setSavedRide(null);
     setReviewOpen(false);

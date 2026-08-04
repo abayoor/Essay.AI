@@ -1,0 +1,138 @@
+/* Friendly geometry shared by every product surface. Kept last so feature CSS
+   cannot accidentally bring back the old sharp Race Control corners. */
+:root {
+  --radius-control: 12px;
+  --radius-card: 18px;
+  --radius-panel: 24px;
+}
+
+.signal-button,
+.header-cta,
+.outline-button,
+.outline-inline-button,
+.main-nav-link,
+.header-pro-link,
+.header-icon-link,
+.profile-toggle,
+.message-send-button,
+.ai-assist-button,
+.feed-load-more,
+.start-navigation-button,
+.route-preview-go,
+.marketplace-filters button,
+.map-quick-searches button,
+.section-tabs button,
+.community-feed-tabs button,
+.map-section-tabs button,
+.cycle-form :is(input, select, textarea),
+.comment-form input,
+.message-composer textarea,
+.marketplace-search,
+.map-place-search,
+.rider-search input,
+.header-preferences select {
+  border-radius: var(--radius-control);
+}
+
+.metric-card,
+.bike-mini,
+.bike-card,
+.form-card,
+.empty-panel,
+.route-preview,
+.route-description,
+.rider-profile-header,
+.post-card,
+.conversations-list,
+.conversation-surface,
+.content-management-grid > section,
+.dashboard-weekly-card,
+.coach-advice-card,
+.coach-readiness-card,
+.messages-launchpad,
+.messages-empty-state,
+.marketplace-card,
+.marketplace-map-card,
+.listing-gallery,
+.listing-seller-card,
+.city-map-panel,
+.city-leaflet-map,
+.global-map-canvas,
+.global-leaflet-map,
+.global-route-panel,
+.navigation-instruction-card,
+.navigation-bottom-sheet,
+.ride-list-card,
+.post-route-preview,
+.ride-review-modal,
+.friends-search-card,
+.friend-requests,
+.friends-map-card,
+.friends-list,
+.weekly-progress-card,
+.competition-event-card,
+.weekly-leaderboard,
+.legal-sections section,
+.legal-contact,
+.pro-analysis-form,
+.pro-analysis-result,
+.pro-toolkit-shell,
+.pro-weekly-digest {
+  border-radius: var(--radius-card);
+}
+
+.dashboard-safety-mission,
+.dashboard-coach-teaser,
+.messages-hero,
+.challenge-card,
+.marketplace-hero,
+.profile-hero,
+.competitions-page .competitions-hero,
+.pro-page .pro-price-card,
+.landing-final-cta {
+  border-radius: var(--radius-panel);
+}
+
+.community-feed-tabs,
+.map-section-tabs,
+.section-tabs {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 5px;
+}
+
+.route-data,
+.ride-detail-stats,
+.ride-review-stats,
+.coach-history-card {
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.profile-post-thumb,
+.post-media,
+.route-sketch,
+.marketplace-card-image {
+  overflow: hidden;
+}
+
+.profile-post-thumb { border-radius: 14px; }
+.post-card > .post-media:first-child { border-radius: var(--radius-card) var(--radius-card) 0 0; }
+
+@media (max-width: 620px) {
+  .post-card,
+  .marketplace-hero,
+  .messages-hero,
+  .dashboard-safety-mission,
+  .dashboard-coach-teaser,
+  .challenge-card,
+  .profile-hero,
+  .competitions-page .competitions-hero {
+    border-radius: 18px;
+  }
+
+  .mobile-profile-sheet {
+    border-radius: 24px 24px 0 0;
+  }
+}

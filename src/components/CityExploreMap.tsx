@@ -27,6 +27,7 @@ import { useLocation } from 'wouter';
 import { clearMapNavigation, loadMapNavigation, navigationUpdatedEvent, saveMapNavigation } from '../lib/activeNavigation';
 import type { LocaleText } from '../lib/localized';
 import { useLocaleText } from '../lib/localized';
+import { requestLocationPermissionPrompt } from '../lib/locationPermission';
 import { usePreferences } from '../lib/preferences';
 import type { RoutePoint } from '../lib/cyclingModels';
 import { routeCyclingWaypoints, type CyclingRouteInstruction, type CyclingRoutePreference, type CyclingRouteResult } from '../lib/directions';
@@ -532,6 +533,7 @@ export function CityExploreMap({
     const handleLocationError = (error: GeolocationPositionError) => {
       if (error.code === error.PERMISSION_DENIED) {
         setLocationStatus(text('Разреши геолокацию в настройках устройства.', 'Құрылғы баптауларында геолокацияға рұқсат бер.', 'Allow location access in your device settings.'));
+        requestLocationPermissionPrompt();
       } else if (!riderLocationRef.current) {
         setLocationStatus(text('Ищем GPS-сигнал…', 'GPS сигналын іздеп жатырмыз…', 'Searching for GPS signal…'));
       }

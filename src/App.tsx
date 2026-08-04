@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Route, Switch } from 'wouter';
 import { BikeLoader } from './components/BikeLoader';
+import { LocationPermissionGate } from './components/LocationPermissionGate';
 import { PersistentNavigationBar } from './components/PersistentNavigationBar';
 
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage').then((module) => ({ default: module.AuthCallbackPage })));
@@ -78,6 +79,7 @@ export default function App() {
           <Route component={NotFoundPage} />
         </Switch>
       </Suspense>
+      <LocationPermissionGate />
       <PersistentNavigationBar />
     </>
   );
