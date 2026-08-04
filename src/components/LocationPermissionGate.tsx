@@ -46,7 +46,7 @@ export function LocationPermissionGate() {
 
     if (!navigator.permissions) {
       if (hasVerifiedLocationPermission(nextUserId)) {
-        await verifyLocation(nextUserId);
+        setState('hidden');
       } else {
         setState('intro');
       }
@@ -56,16 +56,17 @@ export function LocationPermissionGate() {
     try {
       const permission = await navigator.permissions.query({ name: 'geolocation' });
       if (permission.state === 'granted') {
-        await verifyLocation(nextUserId);
+        rememberLocationPermission(nextUserId);
+        window.sessionStorage.removeItem(dismissalKey(nextUserId));
+        setState('hidden');
       } else {
-        if (permission.state === 'denied') forgetLocationPermission(nextUserId);
+        forgetLocationPermission(nextUserId);
         setState(permission.state === 'denied' ? 'denied' : 'intro');
       }
     } catch {
-      setState(hasVerifiedLocationPermission(nextUserId) ? 'requesting' : 'intro');
-      if (hasVerifiedLocationPermission(nextUserId)) await verifyLocation(nextUserId);
+      setState(hasVerifiedLocationPermission(nextUserId) ? 'hidden' : 'intro');
     }
-  }, [verifyLocation]);
+  }, []);
 
   useEffect(() => {
     if (!userId) {
