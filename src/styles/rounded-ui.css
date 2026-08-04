@@ -127,12 +127,12 @@
   border-radius: 15px;
   box-shadow: 0 8px 24px rgba(18, 52, 50, .2);
   color: var(--muted);
+  bottom: 18px;
   display: flex;
   height: 48px;
   justify-content: center;
-  left: 16px;
+  right: 382px;
   position: absolute;
-  top: 116px;
   transition: background-color .16s, color .16s, transform .16s;
   width: 48px;
   z-index: 900;
@@ -148,8 +148,12 @@
 
 @media (max-width: 760px) {
   .map-recenter-control {
-    left: 12px;
-    top: 112px;
+    bottom: 198px;
+    right: 14px;
+  }
+
+  .global-map-layout:has(.route-addresses) .map-recenter-control {
+    bottom: calc(48% + 26px);
   }
 }
 
