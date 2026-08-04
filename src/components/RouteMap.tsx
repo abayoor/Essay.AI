@@ -1,6 +1,6 @@
 import { latLngBounds } from 'leaflet';
 import { useEffect } from 'react';
-import { CircleMarker, MapContainer, Polyline, useMap } from 'react-leaflet';
+import { CircleMarker, MapContainer, Pane, Polyline, useMap } from 'react-leaflet';
 import type { RoutePoint } from '../lib/cyclingModels';
 import { CommunityTileLayer } from './CommunityTileLayer';
 
@@ -42,7 +42,6 @@ export function RouteMap({ points, className = '', staticPreview = false }: Rout
       dragging={!staticPreview}
       fadeAnimation={false}
       keyboard={!staticPreview}
-      preferCanvas
       scrollWheelZoom={false}
       touchZoom={!staticPreview}
       zoom={positions.length ? 12 : 11}
@@ -51,9 +50,26 @@ export function RouteMap({ points, className = '', staticPreview = false }: Rout
     >
       <CommunityTileLayer fixedStyle={staticPreview ? 'standard' : undefined} showLoading={!staticPreview} />
       <FitRoute positions={positions} />
-      {segments.map((segment, index) => segment.length > 1 && <Polyline interactive={false} key={`route-segment-${index}`} positions={segment} pathOptions={{ color: '#087d69', weight: staticPreview ? 6 : 5, lineCap: 'round', lineJoin: 'round' }} />)}
-      {positions[0] && <CircleMarker interactive={false} center={positions[0]} radius={7} pathOptions={{ color: '#fff', fillColor: '#087d69', fillOpacity: 1, weight: 3 }} />}
-      {positions.length > 1 && <CircleMarker interactive={false} center={positions[positions.length - 1]} radius={7} pathOptions={{ color: '#fff', fillColor: '#f6bf18', fillOpacity: 1, weight: 3 }} />}
+      <Pane name="slipstream-route" style={{ zIndex: 650 }}>
+        {segments.map((segment, index) => segment.length > 1 && (
+          <Polyline
+            interactive={false}
+            key={`route-outline-${index}`}
+            positions={segment}
+            pathOptions={{ color: 'rgba(255, 255, 255, 0.96)', weight: staticPreview ? 12 : 10, lineCap: 'round', lineJoin: 'round' }}
+          />
+        ))}
+        {segments.map((segment, index) => segment.length > 1 && (
+          <Polyline
+            interactive={false}
+            key={`route-segment-${index}`}
+            positions={segment}
+            pathOptions={{ color: '#006b58', weight: staticPreview ? 7 : 6, lineCap: 'round', lineJoin: 'round' }}
+          />
+        ))}
+        {positions[0] && <CircleMarker interactive={false} center={positions[0]} radius={7} pathOptions={{ color: '#fff', fillColor: '#006b58', fillOpacity: 1, weight: 3 }} />}
+        {positions.length > 1 && <CircleMarker interactive={false} center={positions[positions.length - 1]} radius={7} pathOptions={{ color: '#fff', fillColor: '#f6bf18', fillOpacity: 1, weight: 3 }} />}
+      </Pane>
     </MapContainer>
   );
 }

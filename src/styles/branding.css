@@ -112,3 +112,55 @@
     height: 42px;
   }
 }
+
+/* Keep every navigation state readable on the dark chrome. */
+.cycle-header .main-nav-link:hover,
+.cycle-header .main-nav-link:focus-visible,
+.cycle-header .header-icon-link:hover,
+.cycle-header .header-icon-link:focus-visible,
+.cycle-header .profile-toggle:hover,
+.cycle-header .profile-toggle:focus-visible {
+  background: rgb(246 191 24 / 16%) !important;
+  color: #f6bf18 !important;
+}
+
+.cycle-header .main-nav-link:hover svg,
+.cycle-header .main-nav-link:focus-visible svg,
+.cycle-header .header-icon-link:hover svg,
+.cycle-header .header-icon-link:focus-visible svg,
+.cycle-header .profile-toggle:hover svg,
+.cycle-header .profile-toggle:focus-visible svg {
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
+@media (max-width: 900px) {
+  .mobile-main-nav .main-nav-link,
+  .mobile-main-nav .main-nav-link:visited {
+    background: transparent !important;
+    color: #bfc7c1 !important;
+  }
+
+  .mobile-main-nav .main-nav-link:hover,
+  .mobile-main-nav .main-nav-link:focus-visible,
+  .mobile-main-nav .main-nav-link.active,
+  .mobile-main-nav .main-nav-link.active:hover,
+  .mobile-main-nav .main-nav-link.active:focus-visible {
+    background: rgb(246 191 24 / 16%) !important;
+    color: #f6bf18 !important;
+  }
+
+  .mobile-main-nav .main-nav-link svg {
+    color: currentColor !important;
+    stroke: currentColor !important;
+  }
+
+  .mobile-main-nav .main-nav-record,
+  .mobile-main-nav .main-nav-record:visited,
+  .mobile-main-nav .main-nav-record:hover,
+  .mobile-main-nav .main-nav-record:focus-visible,
+  .mobile-main-nav .main-nav-record.active {
+    background: #f6bf18 !important;
+    color: #000 !important;
+  }
+}
