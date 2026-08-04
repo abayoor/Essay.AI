@@ -3,7 +3,7 @@ import { Bike, LoaderCircle, Map, Mountain } from 'lucide-react';
 import { TileLayer, useMap } from 'react-leaflet';
 import { useLocaleText } from '../lib/localized';
 
-type MapLayerStyle = 'standard' | 'terrain' | 'cycling';
+export type MapLayerStyle = 'standard' | 'terrain' | 'cycling';
 
 const storageKey = 'slipstream-map-layer';
 
@@ -55,11 +55,20 @@ function MapBackground({ style }: { style: MapLayerStyle }) {
   return null;
 }
 
-type TileEvent = { tile?: HTMLImageElement };
+type TileEvent = {
+  tile?: HTMLImageElement;
+  coords?: { x: number; y: number; z: number };
+};
 
-export function CommunityTileLayer({ showSwitcher = false }: { showSwitcher?: boolean }) {
+type CommunityTileLayerProps = {
+  fixedStyle?: MapLayerStyle;
+  showLoading?: boolean;
+  showSwitcher?: boolean;
+};
+
+export function CommunityTileLayer({ fixedStyle, showLoading = true, showSwitcher = false }: CommunityTileLayerProps) {
   const text = useLocaleText();
-  const [style, setStyle] = useState<MapLayerStyle>(savedLayer);
+  const [style, setStyle] = useState<MapLayerStyle>(() => fixedStyle ?? savedLayer());
   const [loadingTiles, setLoadingTiles] = useState(0);
   const [showTileLoading, setShowTileLoading] = useState(false);
   const pendingTiles = useRef(new Set<HTMLImageElement>());
@@ -80,6 +89,10 @@ export function CommunityTileLayer({ showSwitcher = false }: { showSwitcher?: bo
     pendingTiles.current.clear();
     setLoadingTiles(0);
   }, [style]);
+
+  useEffect(() => {
+    if (fixedStyle) setStyle(fixedStyle);
+  }, [fixedStyle]);
 
   useEffect(() => {
     if (loadingTiles === 0) {
@@ -103,9 +116,16 @@ export function CommunityTileLayer({ showSwitcher = false }: { showSwitcher?: bo
       setLoadingTiles(pendingTiles.current.size);
     },
     tileerror: (event: unknown) => {
-      const tile = (event as TileEvent).tile;
+      const { tile, coords } = event as TileEvent;
+      const isHillshade = tile?.classList.contains('community-map-hillshade') ?? false;
+      if (tile && coords && !isHillshade && !tile.dataset.slipstreamFallback) {
+        tile.dataset.slipstreamFallback = 'true';
+        tile.style.opacity = '1';
+        tile.src = `https://tile.openstreetmap.org/${coords.z}/${coords.x}/${coords.y}.png`;
+        return;
+      }
       if (tile) {
-        tile.style.opacity = '0';
+        tile.style.opacity = isHillshade ? '0' : '1';
         tile.setAttribute('aria-hidden', 'true');
         pendingTiles.current.delete(tile);
       }
@@ -121,9 +141,9 @@ export function CommunityTileLayer({ showSwitcher = false }: { showSwitcher?: bo
   const sharedTileProps = {
     maxZoom: 20,
     updateWhenIdle: false,
-    updateWhenZooming: false,
-    updateInterval: 160,
-    keepBuffer: 3,
+    updateWhenZooming: true,
+    updateInterval: 60,
+    keepBuffer: 5,
     eventHandlers: tileEvents,
   };
 
@@ -146,7 +166,7 @@ export function CommunityTileLayer({ showSwitcher = false }: { showSwitcher?: bo
       opacity={0.34}
       {...sharedTileProps}
     />}
-    {showTileLoading && <div className="map-tile-loading visible" role="status" aria-live="polite">
+    {showLoading && showTileLoading && <div className="map-tile-loading visible" role="status" aria-live="polite">
       <LoaderCircle size={14} aria-hidden="true" />
       <span>{text('Обновляем карту', 'Карта жаңартылуда', 'Updating map')}</span>
     </div>}

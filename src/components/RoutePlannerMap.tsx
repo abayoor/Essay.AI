@@ -183,6 +183,8 @@ export function RoutePlannerMap({ points, waypoints, snappedWaypoints = [], onAd
       wheelPxPerZoomLevel={360}
       touchZoom="center"
       scrollWheelZoom
+      fadeAnimation={false}
+      preferCanvas
       className={`route-map planner-map slipstream-route-planner${routing ? ' is-routing' : ''}`}
     >
       <CommunityTileLayer />

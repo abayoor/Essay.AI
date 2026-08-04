@@ -110,18 +110,40 @@
 }
 
 .ride-route-visual {
-  background: #eef2ee;
+  background: #dce7e2;
   border-radius: 18px;
-  min-height: 220px;
+  height: 300px;
+  isolation: isolate;
   overflow: hidden;
   position: relative;
 }
 
-.ride-route-visual > svg {
-  display: block;
-  height: auto;
-  min-height: 220px;
+.ride-post-map {
+  border: 0;
+  border-radius: 0;
+  height: 300px;
+  min-height: 300px;
+  pointer-events: none;
   width: 100%;
+}
+
+.ride-post-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, .78);
+  font-size: 8px;
+  pointer-events: auto;
+}
+
+.ride-post-map-skeleton {
+  animation: ride-map-loading 1.2s ease-in-out infinite alternate;
+  background: linear-gradient(110deg, #d8e4df 30%, #eef3f0 50%, #d8e4df 70%);
+  background-size: 240% 100%;
+  height: 100%;
+  width: 100%;
+}
+
+@keyframes ride-map-loading {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
 }
 
 .ride-route-label {
@@ -139,65 +161,21 @@
   padding: 8px 11px;
   position: absolute;
   top: 14px;
-  z-index: 1;
+  z-index: 850;
 }
 
-.ride-route-background {
-  fill: #edf2ee;
-}
-
-.ride-route-grid {
-  fill: none;
-  stroke: rgba(73, 107, 96, .09);
-  stroke-width: 1;
-}
-
-.ride-map-road {
-  fill: none;
-  stroke: rgba(255, 255, 255, .96);
-  stroke-linecap: round;
-  stroke-width: 12;
-}
-
-.ride-map-road-wide {
-  stroke-width: 18;
-}
-
-.ride-map-path-shadow {
-  fill: none;
-  opacity: .18;
-  stroke: #0c3129;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 13;
-}
-
-.ride-map-path {
-  fill: none;
-  stroke: #16806d;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 7;
-}
-
-.ride-map-path-placeholder {
-  stroke-dasharray: 4 12;
-}
-
-.ride-map-start {
-  fill: #fff;
-  stroke: #16806d;
-  stroke-width: 5;
-}
-
-.ride-map-finish-ring {
-  fill: #ffd449;
-  stroke: #fff;
-  stroke-width: 5;
-}
-
-.ride-map-finish {
-  fill: #173a32;
+.ride-route-private-note {
+  background: rgba(255, 255, 255, .9);
+  border-radius: 999px;
+  color: #405650;
+  font-size: .72rem;
+  font-weight: 750;
+  left: 50%;
+  padding: 8px 12px;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 850;
 }
 
 .ride-summary-stats {
@@ -270,18 +248,8 @@
   box-shadow: 0 12px 34px rgba(0, 0, 0, .36);
 }
 
-:root[data-theme='dark'] .ride-route-visual,
-:root[data-theme='dark'] .ride-route-background {
+:root[data-theme='dark'] .ride-route-visual {
   background: #000;
-  fill: #000;
-}
-
-:root[data-theme='dark'] .ride-route-grid {
-  stroke: rgba(255, 255, 255, .08);
-}
-
-:root[data-theme='dark'] .ride-map-road {
-  stroke: rgba(255, 255, 255, .08);
 }
 
 :root[data-theme='dark'] .ride-route-label {
@@ -312,8 +280,9 @@
   }
 
   .ride-route-visual,
-  .ride-route-visual > svg {
-    min-height: 190px;
+  .ride-post-map {
+    height: 220px;
+    min-height: 220px;
   }
 
   .ride-summary-stats {

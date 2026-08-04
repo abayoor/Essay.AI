@@ -26,7 +26,7 @@ function FriendsViewport({ locations }: { locations: FriendLiveLocation[] }) {
 
 export function FriendsMap({ locations }: { locations: FriendLiveLocation[] }) {
   return <div className="friends-map" aria-label="Карта друзей">
-    <MapContainer center={locations.length ? [locations[0].lat, locations[0].lng] : [43.2389, 76.8897]} zoom={12} zoomControl={false}>
+    <MapContainer center={locations.length ? [locations[0].lat, locations[0].lng] : [43.2389, 76.8897]} zoom={12} zoomControl={false} fadeAnimation={false} preferCanvas>
       <CommunityTileLayer />
       <ZoomControl position="bottomright" />
       <FriendsViewport locations={locations} />
