@@ -101,7 +101,6 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
   const title = input.title.trim();
   const description = input.description.trim();
   if (!track.length) throw new Error('Не удалось получить GPS-точку для сохранения поездки.');
-  if (!title) throw new Error('Дай заезду короткое название.');
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('Войди в аккаунт, чтобы сохранить тренировку.');
   const simplifiedTrack = limitStoredTrack(simplifyGpsTrack(track)).map(({ lat, lng, elevation, timestamp, segmentStart }) => ({
@@ -114,7 +113,7 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
   const savedMetrics = metrics.distanceKm > 0 ? metrics : { ...metrics, distanceKm: .001 };
   const payload = {
     user_id: authData.user.id,
-    title,
+    title: title || null,
     description: description || null,
     distance_km: savedMetrics.distanceKm,
     duration_seconds: Math.max(1, Math.round(savedMetrics.elapsedTimeSeconds)),
@@ -139,8 +138,7 @@ export async function saveRecordedRide(input: SaveRecordedRideInput): Promise<Sa
 export async function updateRecordedRide(id: string, input: Pick<SaveRecordedRideInput, 'title' | 'description'>): Promise<void> {
   const title = input.title.trim();
   const description = input.description.trim();
-  if (!title) throw new Error('Дай заезду короткое название.');
-  const { error } = await supabase.from('ride_activities').update({ title, description: description || null }).eq('id', id);
+  const { error } = await supabase.from('ride_activities').update({ title: title || null, description: description || null }).eq('id', id);
   if (error) throw error;
 }
 

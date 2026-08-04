@@ -18,6 +18,7 @@ export function PostComposer({ onPublished }: PostComposerProps) {
   const { locale } = usePreferences();
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState('');
+  const [rideTitle, setRideTitle] = useState('');
   const [activities, setActivities] = useState<StravaActivity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,11 +74,13 @@ export function PostComposer({ onPublished }: PostComposerProps) {
       await createPost({
         mediaUrl: media.url,
         mediaType: media.type,
-        caption,
+        caption: selectedActivity ? '' : caption,
+        rideTitle: selectedActivity ? rideTitle.trim() || null : null,
+        rideDescription: selectedActivity ? caption.trim() || null : null,
         rideActivityId: importedRide?.id,
         rideStats: importedRide?.stats,
       });
-      setFile(null); setCaption(''); setSelectedActivity(null); setMessage('Пост опубликован.'); setPublished(true);
+      setFile(null); setCaption(''); setRideTitle(''); setSelectedActivity(null); setMessage('Пост опубликован.'); setPublished(true);
       window.setTimeout(() => setPublished(false), 900);
       await onPublished();
     } catch (error) {
@@ -88,8 +91,13 @@ export function PostComposer({ onPublished }: PostComposerProps) {
   return <section className="form-card post-composer"><p className="kicker">Новая история</p><h2>Поделись заездом</h2><form className="cycle-form" onSubmit={(event) => void submit(event)}>
     <label>Фото или видео<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />{file && <small>Выбрано: {file.name}</small>}</label>
     <div className="strava-import"><div><strong>Тренировка из Strava</strong><span>{selectedActivity ? formatActivity(selectedActivity) : 'Импортируй статистику и линию маршрута в пост.'}</span></div><button type="button" className="outline-inline-button" disabled={loadingActivities} onClick={() => void importActivities()}>{loadingActivities ? 'Загружаем…' : 'Импортировать из Strava'}</button></div>
-    {activities.length > 0 && <label>Выбери тренировку<select value={selectedActivity ? String(selectedActivity.id) : ''} onChange={(event) => setSelectedActivity(activities.find((activity) => String(activity.id) === event.target.value) ?? null)}><option value="">Без тренировки</option>{activities.map((activity) => <option key={activity.id} value={activity.id}>{activity.name} — {formatActivity(activity)}</option>)}</select></label>}
-    <label>Описание<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={2200} placeholder="Как прошёл заезд?" /></label>
+    {activities.length > 0 && <label>Выбери тренировку<select value={selectedActivity ? String(selectedActivity.id) : ''} onChange={(event) => {
+      const nextActivity = activities.find((activity) => String(activity.id) === event.target.value) ?? null;
+      setSelectedActivity(nextActivity);
+      setRideTitle(nextActivity?.name ?? '');
+    }}><option value="">Без тренировки</option>{activities.map((activity) => <option key={activity.id} value={activity.id}>{activity.name} — {formatActivity(activity)}</option>)}</select></label>}
+    {selectedActivity && <label>Название заезда <span>(необязательно)</span><input value={rideTitle} onChange={(event) => setRideTitle(event.target.value)} maxLength={120} placeholder="Например, вечерний круг" /></label>}
+    <label>Описание {selectedActivity && <span>(необязательно)</span>}<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={selectedActivity ? 1000 : 2200} placeholder="Как прошёл заезд?" /></label>
     <button type="button" className="ai-assist-button" disabled={aiBusy} onClick={() => void generateCaption()}><PencilLine size={17} />{aiBusy ? 'Готовим черновик…' : 'Помочь с текстом'}</button>
     <button className="signal-button" disabled={busy}>{busy ? 'Публикуем…' : 'Опубликовать'}</button>
   </form><AnimatePresence>{published && <motion.p className="form-note publish-success" role="status" initial={{ opacity: 0, scale: .86 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .9 }}><Check size={16} aria-hidden="true" /> Пост опубликован</motion.p>}</AnimatePresence>{message && !published && <p className="form-note" role="status">{message}</p>}</section>;

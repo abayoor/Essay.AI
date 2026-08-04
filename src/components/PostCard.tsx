@@ -209,19 +209,19 @@ export function PostCard({ post, viewerId, onLikeChange, onPostChange }: PostCar
       </div>
     </header>
 
-    {(post.media_url || post.rideStats) && <div className={`post-media ${post.media_url ? '' : 'post-media-empty'}`}>
-      {post.media_url && post.media_type === 'image' && <img
+    {post.media_url && <div className="post-media">
+      {post.media_type === 'image' && <img
         src={post.media_url}
-        alt={post.caption || text('Публикация райдера', 'Райдер жазбасы', 'Rider post')}
+        alt={post.rideTitle || post.caption || text('Публикация райдера', 'Райдер жазбасы', 'Rider post')}
         loading="lazy"
         decoding="async"
       />}
-      {post.media_url && post.media_type === 'video' && <video controls playsInline preload="metadata" src={post.media_url} />}
-      {post.rideStats && <RideOverlay stats={post.rideStats} />}
+      {post.media_type === 'video' && <video controls playsInline preload="metadata" src={post.media_url} />}
     </div>}
 
     <div className="post-copy">
-      {post.caption && <p className="post-caption">{post.caption}</p>}
+      {post.rideStats && <RideOverlay stats={post.rideStats} title={post.rideTitle} description={post.rideDescription} />}
+      {post.caption && !post.rideStats && <p className="post-caption">{post.caption}</p>}
       {post.routePreview && <RoutePostPreview route={post.routePreview} />}
       <div className="post-actions">
         <span className="like-control">

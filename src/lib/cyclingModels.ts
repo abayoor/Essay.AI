@@ -128,6 +128,8 @@ export type SocialPost = {
   media_url: string | null;
   media_type: PostMediaType | null;
   caption: string;
+  rideTitle: string | null;
+  rideDescription: string | null;
   created_at: string;
   author: PublicProfile;
   likes: { id: string; user_id: string }[];

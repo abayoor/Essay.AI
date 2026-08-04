@@ -54,7 +54,9 @@ export function RideDetailPage() {
       const postId = await createPost({
         mediaUrl: '',
         mediaType: 'image',
-        caption: [ride.title, ride.description].filter(Boolean).join('\n'),
+        caption: '',
+        rideTitle: ride.title,
+        rideDescription: ride.description,
         rideActivityId: ride.id,
         rideStats: { distanceKm: ride.distanceKm, elevationGainM: ride.elevationGainM, durationSeconds: ride.movingTimeSeconds ?? ride.durationSeconds, summaryPolyline: null, track: ride.gpsTrack },
       });

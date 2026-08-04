@@ -281,8 +281,8 @@
 
 .profile-stats strong { font-size: 1.3rem; }
 
-.post-card { border-top: 3px solid var(--race-carbon); }
-.post-author { border-bottom: 1px solid var(--line); }
+.post-card { border-top: 0; }
+.post-author { border-bottom: 0; }
 .post-actions { border-top-color: var(--line); }
 
 .post-media,

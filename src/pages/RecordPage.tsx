@@ -355,7 +355,9 @@ export function RecordPage() {
       const postId = await createPost({
         mediaUrl: '',
         mediaType: 'image',
-        caption: [rideTitle.trim(), rideDescription.trim()].filter(Boolean).join('\n'),
+        caption: '',
+        rideTitle: rideTitle.trim() || null,
+        rideDescription: rideDescription.trim() || null,
         rideActivityId: ride.id,
         rideStats: {
           distanceKm: ride.metrics.distanceKm,

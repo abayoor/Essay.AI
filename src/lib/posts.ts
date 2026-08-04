@@ -75,6 +75,44 @@ function createRideStats(post: PostRow): RidePostStats | null {
   };
 }
 
+const rideCopyPrefix = 'slipstream:ride:v1:';
+
+type RideCopy = {
+  title: string | null;
+  description: string | null;
+};
+
+function decodeRideCopy(caption: string, hasRide: boolean): RideCopy {
+  if (!hasRide || !caption) return { title: null, description: null };
+  if (caption.startsWith(rideCopyPrefix)) {
+    try {
+      const value: unknown = JSON.parse(caption.slice(rideCopyPrefix.length));
+      if (typeof value === 'object' && value !== null) {
+        const record = value as Record<string, unknown>;
+        return {
+          title: typeof record.title === 'string' && record.title.trim() ? record.title.trim() : null,
+          description: typeof record.description === 'string' && record.description.trim() ? record.description.trim() : null,
+        };
+      }
+    } catch {
+      return { title: null, description: caption };
+    }
+  }
+  const [firstLine, ...remainingLines] = caption.split(/\r?\n/);
+  const remainingCopy = remainingLines.join('\n').trim();
+  if (remainingCopy) return { title: firstLine.trim() || null, description: remainingCopy };
+  return caption.length <= 120
+    ? { title: caption.trim() || null, description: null }
+    : { title: null, description: caption.trim() };
+}
+
+function encodeRideCopy(title: string | null | undefined, description: string | null | undefined): string {
+  const normalizedTitle = title?.trim() || null;
+  const normalizedDescription = description?.trim() || null;
+  if (!normalizedTitle && !normalizedDescription) return '';
+  return `${rideCopyPrefix}${JSON.stringify({ title: normalizedTitle, description: normalizedDescription })}`;
+}
+
 function isDifficulty(value: string | null): value is Difficulty {
   return value === 'easy' || value === 'moderate' || value === 'hard';
 }
@@ -156,23 +194,29 @@ export async function loadPosts(userId?: string, options: LoadPostsOptions = {})
     commentsByPost.set(comment.post_id, group);
   }
 
-  const result = posts.map((post) => ({
-    id: post.id,
-    user_id: post.user_id,
-    media_url: post.media_url,
-    media_type: post.media_type,
-    caption: post.caption,
-    created_at: post.created_at,
-    author: profilesById.get(post.user_id) ?? { ...unknownProfile, id: post.user_id },
-    likes: (likesByPost.get(post.id) ?? []).map((like) => ({ id: like.id, user_id: like.user_id })),
-    comments: (commentsByPost.get(post.id) ?? [])
-      .map((comment): PostComment => ({
-        ...comment,
-        author: profilesById.get(comment.user_id) ?? { ...unknownProfile, id: comment.user_id },
-      })),
-    rideStats: createRideStats(post),
-    routePreview: createRoutePreview(post),
-  }));
+  const result = posts.map((post): SocialPost => {
+    const rideStats = createRideStats(post);
+    const rideCopy = decodeRideCopy(post.caption, Boolean(rideStats));
+    return {
+      id: post.id,
+      user_id: post.user_id,
+      media_url: post.media_url,
+      media_type: post.media_type,
+      caption: rideStats ? '' : post.caption,
+      rideTitle: rideCopy.title,
+      rideDescription: rideCopy.description,
+      created_at: post.created_at,
+      author: profilesById.get(post.user_id) ?? { ...unknownProfile, id: post.user_id },
+      likes: (likesByPost.get(post.id) ?? []).map((like) => ({ id: like.id, user_id: like.user_id })),
+      comments: (commentsByPost.get(post.id) ?? [])
+        .map((comment): PostComment => ({
+          ...comment,
+          author: profilesById.get(comment.user_id) ?? { ...unknownProfile, id: comment.user_id },
+        })),
+      rideStats,
+      routePreview: createRoutePreview(post),
+    };
+  });
   return options.preferredHomeCity ? result.sort((first, second) => {
     const scoreDifference = locationRecommendationScore(second.author.home_city, options.preferredHomeCity)
       - locationRecommendationScore(first.author.home_city, options.preferredHomeCity);
@@ -189,6 +233,8 @@ export type CreatePostInput = {
   mediaUrl?: string | null;
   mediaType?: PostMediaType | null;
   caption: string;
+  rideTitle?: string | null;
+  rideDescription?: string | null;
   rideActivityId?: string;
   rideStats?: RidePostStats;
   routePreview?: RoutePostPreview;
@@ -254,8 +300,12 @@ export async function createPost(input: CreatePostInput): Promise<string> {
   const durationSeconds = input.rideStats
     ? Math.max(1, Math.round(input.rideStats.durationSeconds))
     : null;
+  const hasExplicitRideCopy = input.rideTitle !== undefined || input.rideDescription !== undefined;
+  const caption = input.rideStats && hasExplicitRideCopy
+    ? encodeRideCopy(input.rideTitle, input.rideDescription)
+    : input.caption.trim();
   const { data, error } = await supabase.rpc('create_public_post', {
-    p_caption: input.caption.trim(),
+    p_caption: caption,
     p_media_url: mediaUrl,
     p_media_type: mediaUrl ? input.mediaType ?? null : null,
     p_ride_activity_id: input.rideActivityId ?? null,

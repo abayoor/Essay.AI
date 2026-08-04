@@ -55,8 +55,8 @@ export function RideReviewModal(props: RideReviewModalProps) {
         <div><dt>Темп</dt><dd>{formatPace(props.metrics.paceMinPerKm)}</dd></div>
       </dl>
       <div className="ride-review-fields">
-        <label>Название заезда<input value={props.title} onChange={(event) => props.onTitleChange(event.target.value)} maxLength={120} placeholder="Например, вечерний круг" /></label>
-        <label>Описание для себя или публикации<textarea value={props.description} onChange={(event) => props.onDescriptionChange(event.target.value)} maxLength={1000} placeholder="Погода, покрытие, с кем ехал(а)" /></label>
+        <label>Название заезда <span>(необязательно)</span><input value={props.title} onChange={(event) => props.onTitleChange(event.target.value)} maxLength={120} placeholder="Например, вечерний круг" /></label>
+        <label>Описание <span>(необязательно)</span><textarea value={props.description} onChange={(event) => props.onDescriptionChange(event.target.value)} maxLength={1000} placeholder="Как прошёл заезд, погода, покрытие" /></label>
       </div>
       <div className="ride-review-actions">
         <button className="outline-inline-button" disabled={props.busy} onClick={props.onSave}>{props.savedRide ? 'Сохранить изменения' : 'Сохранить в мои заезды'}</button>
