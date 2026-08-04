@@ -33,9 +33,59 @@
   letter-spacing: 0;
 }
 
+.cycle-brand > .brand-logo {
+  align-items: center;
+  background: transparent !important;
+  border-radius: 0;
+  color: inherit !important;
+  display: inline-flex;
+  font-family: inherit;
+  font-size: inherit;
+  gap: 10px;
+  height: auto;
+  justify-content: flex-start;
+  overflow: visible;
+  transform: none;
+  width: auto;
+}
+
 .cycle-brand .brand-logo-mark {
-  height: 29px;
-  width: 37px;
+  background: #eef0ed;
+  border-radius: 10px;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 5px;
+  width: 47px;
+}
+
+.cycle-brand .brand-logo-wordmark {
+  color: #f5fffc !important;
+  display: block;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cycle-header .primary-nav {
+  gap: 6px;
+}
+
+.cycle-header .primary-nav .main-nav-link {
+  border-radius: 14px;
+  height: 44px;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  width: 44px;
+}
+
+.cycle-header .primary-nav .main-nav-label {
+  display: none;
+}
+
+.cycle-header .primary-nav .main-nav-record {
+  margin: 0;
+  min-width: 44px;
 }
 
 .auth-brand-logo {
@@ -74,8 +124,9 @@
 
 @media (max-width: 560px) {
   .cycle-brand .brand-logo-mark {
-    height: 27px;
-    width: 34px;
+    height: 34px;
+    padding: 4px;
+    width: 42px;
   }
 
   .cycle-brand .brand-logo-wordmark {

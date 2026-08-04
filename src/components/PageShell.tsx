@@ -38,9 +38,11 @@ function MainLink({ href, label, icon, active, central = false }: MainLinkProps)
   return <Link
     href={href}
     className={`main-nav-link${active ? ' active' : ''}${central ? ' main-nav-record' : ''}`}
+    aria-label={label}
+    title={label}
   >
     {icon}
-    <span>{label}</span>
+    <span className="main-nav-label">{label}</span>
   </Link>;
 }
 
@@ -164,9 +166,11 @@ export function PageShell({ children }: { children: ReactNode }) {
               className={`main-nav-link profile-toggle${profileActive ? ' active' : ''}`}
               onClick={() => setProfileOpen((open) => !open)}
               aria-expanded={profileOpen}
+              aria-label={t('profile')}
+              title={t('profile')}
             >
               <CircleUserRound size={18} />
-              <span>{t('profile')}</span>
+              <span className="main-nav-label">{t('profile')}</span>
             </button>
             {profileOpen && <div className="profile-popover">
               <Link href="/profile" onClick={() => setProfileOpen(false)}>
