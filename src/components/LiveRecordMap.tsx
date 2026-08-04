@@ -1,5 +1,5 @@
 import { CircleMarker, MapContainer, Polyline, useMap, ZoomControl } from 'react-leaflet';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { GpsTrackPoint } from '../lib/cyclingModels';
 import { splitGpsTrackSegments } from '../lib/gps';
 import { CommunityTileLayer } from './CommunityTileLayer';
@@ -8,8 +8,15 @@ const almaty: [number, number] = [43.2389, 76.8897];
 
 function FollowRider({ point }: { point: GpsTrackPoint | null }) {
   const map = useMap();
+  const hasCentered = useRef(false);
   useEffect(() => {
-    if (point && map.distance(map.getCenter(), [point.lat, point.lng]) > 18) {
+    if (!point) return;
+    if (!hasCentered.current) {
+      hasCentered.current = true;
+      map.setView([point.lat, point.lng], Math.max(map.getZoom(), 16), { animate: false });
+      return;
+    }
+    if (map.distance(map.getCenter(), [point.lat, point.lng]) > 18) {
       map.panTo([point.lat, point.lng], { animate: true, duration: .35 });
     }
   }, [map, point]);

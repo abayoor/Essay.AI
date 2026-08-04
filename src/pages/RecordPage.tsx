@@ -8,7 +8,7 @@ import { useSession } from '../lib/auth';
 import { startBackgroundRecording, stopBackgroundRecording, supportsBackgroundRecording } from '../lib/backgroundRecording';
 import type { GpsTrackPoint, RideRecordingMetrics } from '../lib/cyclingModels';
 import { calculateRecordingMetrics, classifyGpsPoint, emptyRecordingMetrics } from '../lib/gps';
-import { requestLocationPermissionPrompt } from '../lib/locationPermission';
+import { locationPermissionGrantedEvent, requestLocationPermissionPrompt } from '../lib/locationPermission';
 import { createPost } from '../lib/posts';
 import { saveRecordedRide, type SavedRecordedRide, updateRecordedRide } from '../lib/recordedRides';
 import { shareRide } from '../lib/share';
@@ -189,6 +189,11 @@ export function RecordPage() {
   const startPreviewLocation = useCallback(() => {
     if (!navigator.geolocation || previewWatchId.current !== null) return;
     setGpsStatus('locating');
+    navigator.geolocation.getCurrentPosition(
+      previewLocation,
+      () => undefined,
+      { enableHighAccuracy: false, maximumAge: 60_000, timeout: 6_000 },
+    );
     previewWatchId.current = navigator.geolocation.watchPosition(previewLocation, previewLocationError, { enableHighAccuracy: true, maximumAge: 1500, timeout: 20000 });
   }, [previewLocation, previewLocationError]);
 
@@ -200,6 +205,11 @@ export function RecordPage() {
     }
     if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     setGpsStatus('locating');
+    navigator.geolocation.getCurrentPosition(
+      receiveLocation,
+      () => undefined,
+      { enableHighAccuracy: false, maximumAge: 60_000, timeout: 6_000 },
+    );
     watchId.current = navigator.geolocation.watchPosition(receiveLocation, handleLocationError, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
   }, [handleLocationError, receiveLocation]);
 
@@ -240,6 +250,24 @@ export function RecordPage() {
     if (status !== 'running') startPreviewLocation();
     return () => stopPreviewLocation();
   }, [startPreviewLocation, status, stopPreviewLocation]);
+  useEffect(() => {
+    const acceptGrantedLocation = (event: Event) => {
+      const position = (event as CustomEvent<GeolocationPosition>).detail;
+      if (!position) return;
+      setMessage('');
+      if (status === 'running') {
+        receiveLocation(position);
+        stopWatching();
+        void startTracking();
+        return;
+      }
+      previewLocation(position);
+      stopPreviewLocation();
+      startPreviewLocation();
+    };
+    window.addEventListener(locationPermissionGrantedEvent, acceptGrantedLocation);
+    return () => window.removeEventListener(locationPermissionGrantedEvent, acceptGrantedLocation);
+  }, [previewLocation, receiveLocation, startPreviewLocation, startTracking, status, stopPreviewLocation, stopWatching]);
   useEffect(() => {
     if (status !== 'running') return undefined;
     const interval = window.setInterval(() => {
@@ -282,6 +310,14 @@ export function RecordPage() {
     setStatus('running');
     void startTracking();
     void keepScreenAwake();
+  }
+
+  function retryLocation() {
+    setMessage('');
+    setGpsStatus('locating');
+    stopPreviewLocation();
+    if (gpsStatus === 'denied') requestLocationPermissionPrompt();
+    startPreviewLocation();
   }
 
   function pause() {
@@ -402,7 +438,7 @@ export function RecordPage() {
           <div><span>{t('recordSpeed')}</span><strong>{metrics.currentSpeedKmh.toFixed(1)} <small>{t('kmh')}</small></strong></div>
           <div><span>{t('recordTime')}</span><strong>{formatTime(metrics.elapsedTimeSeconds)}</strong></div>
         </section>
-        <section className="record-map-slot" aria-label={t('map')}><LiveRecordMap track={track} currentPoint={currentPosition} /><p className={`gps-location-status gps-${gpsStatus}`} role="status" aria-live="polite"><LocateFixed size={16} aria-hidden="true" />{gpsLabel}</p></section>
+        <section className="record-map-slot" aria-label={t('map')}><LiveRecordMap track={track} currentPoint={currentPosition} /><div className={`gps-location-status gps-${gpsStatus}`} role="status" aria-live="polite"><LocateFixed size={16} aria-hidden="true" /><span>{gpsLabel}</span>{(gpsStatus === 'denied' || gpsStatus === 'error') && <button type="button" className="gps-location-retry" onClick={retryLocation}>Повторить</button>}</div></section>
         {supportsBackgroundRecording() && status === 'running' && <p className="record-background-note" role="status">Фоновая GPS-запись включена — можешь заблокировать экран.</p>}
         <section className={`record-controls${status === 'running' ? ' is-recording' : ''}`} aria-label="Управление записью">
           {status === 'idle' && <button className="signal-button record-primary" onClick={start}>{t('startRecording')}</button>}
