@@ -8,16 +8,6 @@
 
 .community-map-tiles {
   backface-visibility: hidden;
-  transition: opacity 60ms linear;
-  will-change: opacity;
-}
-
-.leaflet-tile-pane {
-  will-change: transform;
-}
-
-.leaflet-fade-anim .leaflet-tile {
-  transition: opacity 60ms linear;
 }
 
 .community-map-hillshade {
@@ -96,7 +86,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .community-map-tiles,
   .map-tile-loading {
     transition: none;
   }

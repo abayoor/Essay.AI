@@ -118,7 +118,7 @@ export function CommunityTileLayer({ fixedStyle, showLoading = true, showSwitche
     tileerror: (event: unknown) => {
       const { tile, coords } = event as TileEvent;
       const isHillshade = tile?.classList.contains('community-map-hillshade') ?? false;
-      if (tile && coords && !isHillshade && !tile.dataset.slipstreamFallback) {
+      if (style !== 'standard' && tile && coords && !isHillshade && !tile.dataset.slipstreamFallback) {
         tile.dataset.slipstreamFallback = 'true';
         tile.style.opacity = '1';
         tile.src = `https://tile.openstreetmap.org/${coords.z}/${coords.x}/${coords.y}.png`;
@@ -136,14 +136,14 @@ export function CommunityTileLayer({ fixedStyle, showLoading = true, showSwitche
       if (!tile || !pendingTiles.current.delete(tile)) return;
       setLoadingTiles(pendingTiles.current.size);
     },
-  }), []);
+  }), [style]);
 
   const sharedTileProps = {
     maxZoom: 20,
-    updateWhenIdle: false,
-    updateWhenZooming: true,
-    updateInterval: 60,
-    keepBuffer: 5,
+    updateWhenIdle: true,
+    updateWhenZooming: false,
+    updateInterval: 200,
+    keepBuffer: 3,
     eventHandlers: tileEvents,
   };
 

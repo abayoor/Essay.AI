@@ -63,7 +63,7 @@ function RideRoutePreview({ points }: { points: RoutePoint[] }) {
       if (!entry.isIntersecting) return;
       setShouldRenderMap(true);
       observer.disconnect();
-    }, { rootMargin: '600px 0px' });
+    }, { rootMargin: '120px 0px' });
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
