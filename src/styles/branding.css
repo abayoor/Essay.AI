@@ -1,0 +1,84 @@
+.brand-logo {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  gap: 9px;
+  min-width: 0;
+}
+
+.brand-logo-mark {
+  display: block;
+  flex: 0 0 auto;
+  height: 30px;
+  object-fit: contain;
+  width: 38px;
+}
+
+.brand-logo-wordmark,
+.cycle-brand .brand-logo-wordmark {
+  background: transparent !important;
+  color: inherit !important;
+  font-family: Archivo, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 850;
+  height: auto;
+  letter-spacing: -.045em;
+  line-height: 1;
+  transform: none;
+  width: auto;
+}
+
+.cycle-brand {
+  gap: 0;
+  letter-spacing: 0;
+}
+
+.cycle-brand .brand-logo-mark {
+  height: 29px;
+  width: 37px;
+}
+
+.auth-brand-logo {
+  color: var(--ink);
+  margin-bottom: 18px;
+}
+
+.auth-brand-logo .brand-logo-mark {
+  height: 38px;
+  width: 48px;
+}
+
+.auth-brand-logo .brand-logo-wordmark {
+  font-size: 1.35rem;
+}
+
+.bike-loader-icon {
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  width: 52px;
+}
+
+.bike-loader-icon > span {
+  align-items: center;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
+}
+
+.bike-loader-icon .brand-logo-mark {
+  height: 36px;
+  width: 46px;
+}
+
+@media (max-width: 560px) {
+  .cycle-brand .brand-logo-mark {
+    height: 27px;
+    width: 34px;
+  }
+
+  .cycle-brand .brand-logo-wordmark {
+    font-size: 1.05rem;
+  }
+}

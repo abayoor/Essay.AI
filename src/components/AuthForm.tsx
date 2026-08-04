@@ -5,6 +5,7 @@ import { useLocaleText } from '../lib/localized';
 import { isUsernameAvailable } from '../lib/rider';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { isValidUsername, normalizeUsername } from '../lib/usernames';
+import { BrandLogo } from './BrandLogo';
 
 export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const text = useLocaleText();
@@ -123,7 +124,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   }
 
   return <section className="auth-card">
-    <p className="kicker">Slipstream</p>
+    <BrandLogo className="auth-brand-logo" />
     <h1>{isSignup
       ? text('Начни свой путь.', 'Өз жолыңды баста.', 'Start your journey.')
       : text('С возвращением.', 'Қайта келгеніңе қуаныштымыз.', 'Welcome back.')}</h1>

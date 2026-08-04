@@ -4,7 +4,6 @@ import {
   BadgeCheck,
   BrainCircuit,
   CircleUserRound,
-  Compass,
   Home,
   LogOut,
   Map,
@@ -25,6 +24,7 @@ import { saveRiderProfile } from '../lib/rider';
 import { supabase } from '../lib/supabase';
 import { useTranslations } from '../lib/translations';
 import { FriendLocationPublisher } from './FriendLocationPublisher';
+import { BrandLogo } from './BrandLogo';
 
 type MainLinkProps = {
   href: string;
@@ -153,8 +153,7 @@ export function PageShell({ children }: { children: ReactNode }) {
     <FriendLocationPublisher />
     <header className="cycle-header">
       <Link href={session ? '/dashboard' : '/'} className="cycle-brand">
-        <Compass size={20} aria-hidden="true" />
-        Slipstream
+        <BrandLogo />
       </Link>
       {session ? <div className="header-session-actions">
         <nav className="primary-nav" aria-label={t('dashboard')}>
