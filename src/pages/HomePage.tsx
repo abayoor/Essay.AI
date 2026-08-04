@@ -1,11 +1,24 @@
+import { useEffect } from 'react';
 import { ArrowRight, Check, MessageCircleMore, Route, Sparkles, Store, TimerReset } from 'lucide-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { BikeLoader } from '../components/BikeLoader';
 import { LandingVisual } from '../components/LandingVisual';
 import { PageShell } from '../components/PageShell';
+import { useSession } from '../lib/auth';
 import { useLocaleText } from '../lib/localized';
 
 export function HomePage() {
   const t = useLocaleText();
+  const { session, loading } = useSession();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!loading && session) navigate('/dashboard', { replace: true });
+  }, [loading, navigate, session]);
+
+  if (loading || session) {
+    return <main className="route-loading"><BikeLoader label={t('Открываем твою главную…', 'Басты бетіңді ашып жатырмыз…', 'Opening your dashboard…')} /></main>;
+  }
 
   return (
     <PageShell>
@@ -13,7 +26,7 @@ export function HomePage() {
         <section className="landing-hero">
           <div className="landing-hero-copy">
             <p className="kicker">{t('Велосообщество в одном приложении', 'Велоқоғамдастық бір қолданбада', 'Your cycling community in one app')}</p>
-            <h1>{t('Всё для следующего заезда', 'Келесі сапарға керектің бәрі', 'Everything for your next ride')}</h1>
+            <h1>{t('Всё для нового заезда', 'Жаңа сапарға керектің бәрі', 'Everything for your next ride')}</h1>
             <p>{t(
               'Записывай тренировки, строй маршруты на открытой карте, разбирай заезды с ИИ и оставайся на связи с райдерами своего города',
               'Жаттығуларды жаз, ашық картада бағыт құр, сапарларды AI көмегімен талда және қалаңдағы райдерлермен байланыста бол',
@@ -48,13 +61,13 @@ export function HomePage() {
         <section className="landing-feature">
           <div className="landing-copy">
             <p className="kicker">{t('01 · Запись тренировок', '01 · Жаттығуды жазу', '01 · Workout recording')}</p>
-            <h2>{t('Просто нажми старт и поезжай', 'Стартты бас та, жолға шық', 'Tap start and ride')}</h2>
+            <h2>{t('Запись заезда без лишних действий', 'Сапарды артық әрекетсіз жаз', 'Record your ride without the extra steps')}</h2>
             <p>{t(
               'Slipstream запишет трек, время, дистанцию, среднюю скорость и набор высоты. После финиша заезд сразу сохранится в твоём журнале',
               'Slipstream тректі, уақытты, қашықтықты, орташа жылдамдықты және биіктік жинауды жазады. Мәреден кейін сапар журналыңа бірден сақталады',
               'Slipstream records your track, time, distance, average speed and elevation. Your ride is saved to your journal as soon as you finish',
             )}</p>
-            <Link className="text-link" href="/auth/sign-up">{t('Записать первый заезд', 'Алғашқы сапарды жазу', 'Record your first ride')} <ArrowRight size={16} /></Link>
+            <Link className="text-link" href="/auth/sign-up">{t('Открыть запись', 'Жазбаны ашу', 'Open ride recording')} <ArrowRight size={16} /></Link>
           </div>
           <LandingVisual kind="recording" />
         </section>
@@ -116,8 +129,8 @@ export function HomePage() {
         </section>
 
         <section className="landing-final-cta">
-          <p className="kicker">{t('Твой следующий заезд', 'Келесі сапарың', 'Your next ride')}</p>
-          <h2>{t('Начни с одной поездки', 'Бір сапардан баста', 'Start with one ride')}</h2>
+          <p className="kicker">Slipstream</p>
+          <h2>{t('Присоединяйся к сообществу райдеров', 'Райдерлер қауымдастығына қосыл', 'Join the rider community')}</h2>
           <p>{t(
             'Создай бесплатный аккаунт и собери всю велосипедную жизнь в одном месте',
             'Тегін аккаунт ашып, велосипед өміріңді бір жерге жина',
