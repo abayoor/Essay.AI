@@ -123,7 +123,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
     </section></main>;
   }
 
-  return <section className="auth-card">
+  return <section className="auth-card auth-card-with-brand-band">
     <BrandLogo className="auth-brand-logo" />
     <h1>{isSignup
       ? text('Начни свой путь.', 'Өз жолыңды баста.', 'Start your journey.')

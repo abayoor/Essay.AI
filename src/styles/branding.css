@@ -70,13 +70,24 @@
 }
 
 .auth-brand-logo {
-  color: var(--ink);
-  margin-bottom: 18px;
+  align-items: center;
+  background: #000;
+  color: #fff;
+  display: flex;
+  margin: 0 -32px 26px;
+  min-height: 88px;
+  padding: 18px 32px;
+  width: calc(100% + 64px);
 }
 
 .auth-brand-logo .brand-logo-image {
   height: 48px;
   max-width: min(78vw, 216px);
+}
+
+.auth-card-with-brand-band {
+  overflow: hidden;
+  padding-top: 0;
 }
 
 .bike-loader-icon {
@@ -103,5 +114,17 @@
   .cycle-brand .brand-logo-image {
     height: 34px;
     max-width: min(42vw, 154px);
+  }
+
+  .auth-brand-logo {
+    margin-left: -18px;
+    margin-right: -18px;
+    min-height: 76px;
+    padding: 15px 18px;
+    width: calc(100% + 36px);
+  }
+
+  .auth-brand-logo .brand-logo-image {
+    height: 42px;
   }
 }
