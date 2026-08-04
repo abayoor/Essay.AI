@@ -120,6 +120,39 @@
 .profile-post-thumb { border-radius: 14px; }
 .post-card > .post-media:first-child { border-radius: var(--radius-card) var(--radius-card) 0 0; }
 
+.map-recenter-control {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  box-shadow: 0 8px 24px rgba(18, 52, 50, .2);
+  color: var(--muted);
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  left: 16px;
+  position: absolute;
+  top: 116px;
+  transition: background-color .16s, color .16s, transform .16s;
+  width: 48px;
+  z-index: 900;
+}
+
+.map-recenter-control:hover,
+.map-recenter-control.has-location {
+  background: var(--surface);
+  color: var(--signal);
+}
+
+.map-recenter-control:active { transform: scale(.94); }
+
+@media (max-width: 760px) {
+  .map-recenter-control {
+    left: 12px;
+    top: 112px;
+  }
+}
+
 @media (max-width: 620px) {
   .post-card,
   .marketplace-hero,

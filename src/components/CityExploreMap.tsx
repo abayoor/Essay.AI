@@ -238,8 +238,7 @@ function sampleRouteAnchors(points: readonly RoutePoint[], maximum = 24): RouteP
   ));
 }
 
-function MapViewport({ focus, route, recenterRequest, navigationActive }: {
-  focus: RoutePoint | null;
+function MapViewport({ route, recenterRequest, navigationActive }: {
   route: RoutePoint[];
   recenterRequest: { point: RoutePoint; id: number } | null;
   navigationActive: boolean;
@@ -249,10 +248,8 @@ function MapViewport({ focus, route, recenterRequest, navigationActive }: {
     if (navigationActive) return;
     if (route.length > 1) {
       map.fitBounds(latLngBounds(route.map((point) => [point.lat, point.lng])), { padding: [48, 48], maxZoom: 16 });
-    } else if (focus) {
-      map.flyTo([focus.lat, focus.lng], Math.max(map.getZoom(), 14), { duration: 0.7 });
     }
-  }, [focus, map, navigationActive, route]);
+  }, [map, navigationActive, route]);
   useEffect(() => {
     if (recenterRequest && !navigationActive) {
       map.flyTo([recenterRequest.point.lat, recenterRequest.point.lng], Math.max(map.getZoom(), 15), { duration: 0.7 });
@@ -526,6 +523,7 @@ export function CityExploreMap({
       if (!hasCenteredOnRider.current) {
         hasCenteredOnRider.current = true;
         setRoutingOrigin((current) => current ?? point);
+        setRecenterRequest({ point: { ...point }, id: Date.now() });
         reverseLookupPoint.current = point;
         void reverseMapLocation(point, locale).then(setResolvedLocation).catch(() => undefined);
       }
@@ -766,7 +764,6 @@ export function CityExploreMap({
       setLocationAttempt((current) => current + 1);
       return;
     }
-    setRoutingOrigin(riderLocation);
     setRecenterRequest({ point: { ...riderLocation }, id: Date.now() });
   }
 
@@ -798,7 +795,6 @@ export function CityExploreMap({
     setQuery('');
   }
 
-  const focusPoint = destination ?? riderLocation;
   const visibleRoute = activeRoute?.result.points ?? [];
   const totalMinutes = activeRoute ? estimatedRideMinutes(activeRoute.result) : 0;
   const remainingRatio = activeRoute && progress
@@ -833,7 +829,7 @@ export function CityExploreMap({
             {!searching && searchResults.map((place, index) => <button type="button" key={place.id} onClick={() => chooseDestination(place)}><MapPin size={16} /><span><strong>{place.name}{index === 0 && <em>{text('Рядом', 'Жақын', 'Nearby')}</em>}</strong><small>{place.subtitle}</small></span></button>)}
           </div>}
         </div>
-        <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || text('Твоё местоположение', 'Сенің орналасқан жерің', 'Your location')}</strong><small>{locationStatus}</small></div><button type="button" onClick={recenterOnRider} aria-label={text('Показать моё местоположение', 'Орналасқан жерімді көрсету', 'Show my location')}><LocateFixed size={18} /></button></div>
+        <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || text('Твоё местоположение', 'Сенің орналасқан жерің', 'Your location')}</strong><small>{locationStatus}</small></div></div>
         {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, query: quickQuery, icon: Icon }) => <button type="button" key={label} onClick={() => setQuery(quickQuery)}><Icon size={14} />{label}</button>)}</div>}
       </div>
       <div className="city-map-canvas global-map-canvas" role="region" aria-label={text('Интерактивная велосипедная карта', 'Интерактивті велосипед картасы', 'Interactive cycling map')}>
@@ -842,7 +838,7 @@ export function CityExploreMap({
           {!navigationActive && <ZoomControl position="bottomright" />}
           <StartPicker enabled={!riderLocation && !hazardPickMode} onPick={chooseManualStart} />
           <HazardPointPicker enabled={hazardPickMode} onPick={onPickHazardLocation} />
-          <MapViewport focus={focusPoint} route={visibleRoute} recenterRequest={recenterRequest} navigationActive={navigationActive} />
+          <MapViewport route={visibleRoute} recenterRequest={recenterRequest} navigationActive={navigationActive} />
           <NavigationCamera active={navigationActive} rider={riderLocation} />
           <HazardLayer
             hazards={hazards}
@@ -880,6 +876,13 @@ export function CityExploreMap({
               eventHandlers={{ click: () => !navigationActive && setActivePreference(option.preference) }}
             />)}
         </MapContainer>
+        {!navigationActive && !hazardPickMode && <button
+          type="button"
+          className={`map-recenter-control${riderLocation ? ' has-location' : ''}`}
+          onClick={recenterOnRider}
+          aria-label={text('Вернуться к моему местоположению', 'Менің орналасқан жеріме оралу', 'Return to my location')}
+          title={text('Моё местоположение', 'Менің орналасқан жерім', 'My location')}
+        ><LocateFixed size={21} /></button>}
         {!riderLocation && !hazardPickMode && <div className="map-start-hint"><MapPin size={16} />{text('Нажми на карту, чтобы указать старт', 'Бастау нүктесін таңдау үшін картаны бас', 'Tap the map to set a start')}</div>}
         {hazardPickMode && <div className="safety-map-pick-hint" role="status"><MapPin size={17} /><span>{text('Нажми на место или выбери центр карты клавишей Enter', 'Орынды бас немесе Enter арқылы карта ортасын таңда', 'Tap the place or press Enter to use the map center')}</span><button type="button" aria-label={text('Отменить выбор точки', 'Нүкте таңдаудан бас тарту', 'Cancel location picking')} onClick={onOpenHazardReport}><X size={16} aria-hidden="true" /></button></div>}
         {!hazardPickMode && <button type="button" className={`safety-report-trigger${navigationActive ? ' is-navigation' : ''}`} onClick={onOpenHazardReport}><AlertTriangle size={18} aria-hidden="true" /><span>{text('Сообщить об опасности', 'Қауіп туралы хабарлау', 'Report hazard')}</span></button>}
