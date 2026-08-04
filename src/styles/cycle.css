@@ -1019,7 +1019,7 @@
 .persistent-navigation-resume { background: #f7fffd; color: #10211d; }
 
 :root[data-theme='dark'] .cycle-shell { background: radial-gradient(circle at 12% -8%, rgba(82, 208, 188, .12), transparent 34%), var(--fog); }
-:root[data-theme='dark'] .cycle-header { background: rgba(9, 17, 15, .82); }
+:root[data-theme='dark'] .cycle-header { background: #000000; }
 :root[data-theme='dark'] .map-quick-searches button,
 :root[data-theme='dark'] .navigation-instruction-card,
 :root[data-theme='dark'] .navigation-bottom-sheet,

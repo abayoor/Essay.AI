@@ -1,7 +1,7 @@
 /* Race Control: metric-first, high-contrast and built around athletic momentum. */
 :root {
-  --race-carbon: #171c19;
-  --race-carbon-soft: #232a25;
+  --race-carbon: #000000;
+  --race-carbon-soft: #000000;
   --race-yellow: #f0bd20;
   --race-green: #2f6f55;
   --radius-control: 6px;
@@ -271,7 +271,7 @@
   color: #fff;
 }
 
-.profile-edit-button:hover { background: #303832; }
+.profile-edit-button:hover { background: var(--race-carbon); }
 .profile-hero-pattern { display: none; }
 
 .profile-stats {
