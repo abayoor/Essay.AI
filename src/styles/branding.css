@@ -2,30 +2,23 @@
   align-items: center;
   color: inherit;
   display: inline-flex;
-  gap: 9px;
   min-width: 0;
 }
 
-.brand-logo-mark {
+.brand-logo-image {
   display: block;
   flex: 0 0 auto;
-  height: 30px;
+  height: auto;
   object-fit: contain;
-  width: 38px;
+  width: auto;
 }
 
-.brand-logo-wordmark,
-.cycle-brand .brand-logo-wordmark {
-  background: transparent !important;
-  color: inherit !important;
-  font-family: Archivo, sans-serif;
-  font-size: 1.2rem;
-  font-weight: 850;
-  height: auto;
-  letter-spacing: -.045em;
-  line-height: 1;
-  transform: none;
-  width: auto;
+.brand-logo--wordmark .brand-logo-image {
+  height: 30px;
+}
+
+.brand-logo--mark .brand-logo-image {
+  height: 30px;
 }
 
 .cycle-brand {
@@ -41,7 +34,6 @@
   display: inline-flex;
   font-family: inherit;
   font-size: inherit;
-  gap: 10px;
   height: auto;
   justify-content: flex-start;
   overflow: visible;
@@ -49,20 +41,9 @@
   width: auto;
 }
 
-.cycle-brand .brand-logo-mark {
-  background: #eef0ed;
-  border-radius: 10px;
-  box-sizing: border-box;
+.cycle-brand .brand-logo-image {
   height: 38px;
-  padding: 5px;
-  width: 47px;
-}
-
-.cycle-brand .brand-logo-wordmark {
-  color: #f5fffc !important;
-  display: block;
-  line-height: 1;
-  white-space: nowrap;
+  max-width: min(42vw, 178px);
 }
 
 .cycle-header .primary-nav {
@@ -93,13 +74,9 @@
   margin-bottom: 18px;
 }
 
-.auth-brand-logo .brand-logo-mark {
-  height: 38px;
-  width: 48px;
-}
-
-.auth-brand-logo .brand-logo-wordmark {
-  font-size: 1.35rem;
+.auth-brand-logo .brand-logo-image {
+  height: 48px;
+  max-width: min(78vw, 216px);
 }
 
 .bike-loader-icon {
@@ -117,19 +94,14 @@
   position: absolute;
 }
 
-.bike-loader-icon .brand-logo-mark {
+.bike-loader-icon .brand-logo-image {
   height: 36px;
-  width: 46px;
+  max-width: 46px;
 }
 
 @media (max-width: 560px) {
-  .cycle-brand .brand-logo-mark {
+  .cycle-brand .brand-logo-image {
     height: 34px;
-    padding: 4px;
-    width: 42px;
-  }
-
-  .cycle-brand .brand-logo-wordmark {
-    font-size: 1.05rem;
+    max-width: min(42vw, 154px);
   }
 }
