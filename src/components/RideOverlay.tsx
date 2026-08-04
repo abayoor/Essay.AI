@@ -1,4 +1,4 @@
-import { Clock3, Gauge, Mountain, Route } from 'lucide-react';
+import { Bike, Clock3, Gauge, Mountain, Route } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { RidePostStats, RoutePoint } from '../lib/cyclingModels';
 import { useLocaleText } from '../lib/localized';
@@ -71,7 +71,7 @@ function RideRoutePreview({ points }: { points: RoutePoint[] }) {
   return <div className="ride-route-visual" ref={containerRef}>
     {shouldRenderMap
       ? <RouteMap points={points} className="ride-post-map" staticPreview />
-      : <div className="ride-post-map-skeleton" aria-hidden="true" />}
+      : <div className="ride-post-map-skeleton" aria-hidden="true"><Bike size={30} /></div>}
     <span className="ride-route-label"><Route size={16} aria-hidden="true" />{text('Маршрут заезда', 'Жүріс бағыты', 'Ride route')}</span>
     {points.length < 2 && <span className="ride-route-private-note">{text('Линия маршрута скрыта', 'Бағыт сызығы жасырылған', 'Route line is hidden')}</span>}
   </div>;

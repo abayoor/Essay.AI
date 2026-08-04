@@ -1,4 +1,5 @@
 import { divIcon, latLngBounds } from 'leaflet';
+import { Bike } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { MapContainer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import type { RoutePoint } from '../lib/cyclingModels';
@@ -208,7 +209,7 @@ export function RoutePlannerMap({ points, waypoints, snappedWaypoints = [], onAd
         zIndexOffset={marker.kind === 'via' ? 650 : 800}
       />)}
       {hint && <div className="slipstream-route-map-status" role="status" aria-live="polite">
-        {routing && <span aria-hidden="true" />}
+        {routing && <Bike className="route-loading-bike" size={17} aria-hidden="true" />}
         {hint}
       </div>}
     </MapContainer>

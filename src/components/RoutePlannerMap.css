@@ -123,17 +123,15 @@
   z-index: 700;
 }
 
-.slipstream-route-map-status > span {
-  animation: slipstream-route-spinner .75s linear infinite;
-  border: 2px solid rgba(47, 111, 85, .22);
-  border-radius: 50%;
-  border-top-color: #2f6f55;
-  height: 14px;
-  width: 14px;
+.slipstream-route-map-status .route-loading-bike {
+  animation: slipstream-route-bike .7s ease-in-out infinite;
+  color: #000;
+  flex: 0 0 auto;
 }
 
-@keyframes slipstream-route-spinner {
-  to { transform: rotate(360deg); }
+@keyframes slipstream-route-bike {
+  0%, 100% { transform: translate(-1px, 0) rotate(-2deg); }
+  50% { transform: translate(2px, -1px) rotate(1deg); }
 }
 
 @media (max-width: 780px) {

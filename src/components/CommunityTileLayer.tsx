@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
-import { Bike, LoaderCircle, Map, Mountain } from 'lucide-react';
+import { Bike, Map, Mountain } from 'lucide-react';
 import { TileLayer, useMap } from 'react-leaflet';
 import { useLocaleText } from '../lib/localized';
 
@@ -167,7 +167,7 @@ export function CommunityTileLayer({ fixedStyle, showLoading = true, showSwitche
       {...sharedTileProps}
     />}
     {showLoading && showTileLoading && <div className="map-tile-loading visible" role="status" aria-live="polite">
-      <LoaderCircle size={14} aria-hidden="true" />
+      <Bike className="map-loading-bike" size={16} aria-hidden="true" />
       <span>{text('Обновляем карту', 'Карта жаңартылуда', 'Updating map')}</span>
     </div>}
     {showSwitcher && <div

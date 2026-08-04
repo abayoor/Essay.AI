@@ -57,17 +57,18 @@
   transform: translateY(0);
 }
 
-.map-tile-loading svg {
-  animation: slipstream-map-spin .8s linear infinite;
-  color: var(--signal);
+.map-tile-loading .map-loading-bike {
+  animation: slipstream-map-bike .7s ease-in-out infinite;
+  color: #000;
 }
 
 .navigation-active .map-tile-loading {
   display: none;
 }
 
-@keyframes slipstream-map-spin {
-  to { transform: rotate(360deg); }
+@keyframes slipstream-map-bike {
+  0%, 100% { transform: translate(-1px, 0) rotate(-2deg); }
+  50% { transform: translate(2px, -1px) rotate(1deg); }
 }
 
 :root[data-theme='dark'] .city-leaflet-map,
@@ -100,7 +101,7 @@
     transition: none;
   }
 
-  .map-tile-loading svg {
+  .map-tile-loading .map-loading-bike {
     animation: none;
   }
 }

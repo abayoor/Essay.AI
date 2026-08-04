@@ -905,7 +905,7 @@ export function CityExploreMap({
             <span><strong>{arrivalTime(remainingMinutes, locale)}</strong><small>{text('прибытие', 'келу', 'arrival')}</small></span>
             <span><strong>{currentSpeedKmh === null ? '—' : currentSpeedKmh.toFixed(1)}</strong><small>{text('км/ч', 'км/сағ', 'km/h')}</small></span>
           </div>
-          {routing && <p className="navigation-rerouting"><RefreshCw size={14} />{text('Перестраиваем маршрут по улицам…', 'Бағытты көшелермен қайта құрып жатырмыз…', 'Rerouting on streets…')}</p>}
+          {routing && <p className="navigation-rerouting"><Bike className="navigation-loading-bike" size={15} />{text('Перестраиваем маршрут по улицам…', 'Бағытты көшелермен қайта құрып жатырмыз…', 'Rerouting on streets…')}</p>}
           <button type="button" className="navigation-stop-button" onClick={() => setNavigationActive(false)}><Square size={15} />{text('Завершить', 'Аяқтау', 'Finish')}</button>
         </div>}
       </div>

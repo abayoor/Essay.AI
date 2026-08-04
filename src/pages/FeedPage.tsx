@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CircleCheck, Newspaper, Plus, RefreshCw, ShoppingBag, Users } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { MarketplaceCard } from '../components/MarketplaceCard';
+import { BikeLoader } from '../components/BikeLoader';
 import { PageShell } from '../components/PageShell';
 import { PostCard } from '../components/PostCard';
 import { useSession } from '../lib/auth';
@@ -13,32 +14,11 @@ import { loadPost, loadPosts } from '../lib/posts';
 import { loadRiderProfile } from '../lib/rider';
 import { useTranslations } from '../lib/translations';
 
-const skeletonCards = [0, 1];
 const feedPageSize = 15;
 type FeedTab = 'recommendations' | 'friends' | 'marketplace';
 
 function FeedSkeleton({ label }: { label: string }) {
-  return <section className="feed-skeleton" role="status" aria-label={label} aria-live="polite">
-    <span className="visually-hidden">{label}</span>
-    {skeletonCards.map((item) => <article className="feed-skeleton-card" key={item} aria-hidden="true">
-      <div className="feed-skeleton-author">
-        <span className="feed-skeleton-avatar" />
-        <span className="feed-skeleton-copy">
-          <i className="feed-skeleton-line" />
-          <i className="feed-skeleton-line is-short" />
-        </span>
-      </div>
-      <div className="feed-skeleton-media" />
-      <div className="feed-skeleton-footer">
-        <i className="feed-skeleton-line" />
-        <i className="feed-skeleton-line" />
-        <span className="feed-skeleton-actions">
-          <i className="feed-skeleton-line" />
-          <i className="feed-skeleton-line" />
-        </span>
-      </div>
-    </article>)}
-  </section>;
+  return <section className="feed-bike-loading" aria-live="polite"><BikeLoader label={label} /></section>;
 }
 
 export function FeedPage() {

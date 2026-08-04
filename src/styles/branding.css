@@ -91,23 +91,7 @@
 }
 
 .bike-loader-icon {
-  display: flex;
-  height: 40px;
-  justify-content: center;
-  width: 52px;
-}
-
-.bike-loader-icon > span {
-  align-items: center;
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  position: absolute;
-}
-
-.bike-loader-icon .brand-logo-image {
-  height: 36px;
-  max-width: 46px;
+  color: #000;
 }
 
 @media (max-width: 560px) {
