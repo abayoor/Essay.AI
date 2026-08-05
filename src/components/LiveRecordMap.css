@@ -1,0 +1,55 @@
+.record-rider-location-marker {
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+}
+
+.record-rider-location-beacon {
+  position: relative;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+}
+
+.record-rider-location-beacon::before {
+  position: absolute;
+  inset: 1px;
+  border: 2px solid rgba(27, 133, 119, 0.55);
+  border-radius: 50%;
+  background: rgba(27, 133, 119, 0.22);
+  content: '';
+  animation: record-location-pulse 1.8s ease-out infinite;
+}
+
+.record-rider-location-dot {
+  position: relative;
+  z-index: 1;
+  width: 25px;
+  height: 25px;
+  border: 5px solid #fff;
+  border-radius: 50%;
+  background: #1b8577;
+  box-shadow: 0 0 0 2px #071310, 0 4px 14px rgba(7, 19, 16, 0.42);
+}
+
+@keyframes record-location-pulse {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.45);
+  }
+
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .record-rider-location-beacon::before {
+    animation: none;
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+}
