@@ -59,6 +59,26 @@
     bottom: 10px;
   }
 
+  .map-page-map-mode .leaflet-control-zoom {
+    display: none;
+  }
+
+  .map-page-map-mode .safety-report-trigger:not(.is-navigation) {
+    bottom: 198px;
+    left: 14px;
+    max-width: calc(100% - 90px);
+  }
+
+  .map-page-map-mode .safety-report-trigger:not(.is-navigation) span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .map-page-map-mode .global-map-layout:has(.route-addresses) .safety-report-trigger:not(.is-navigation) {
+    bottom: calc(48% + 26px);
+  }
+
   .map-page-map-mode .map-attribution-note {
     display: none;
   }
