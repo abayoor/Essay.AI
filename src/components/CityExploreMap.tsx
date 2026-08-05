@@ -899,10 +899,10 @@ export function CityExploreMap({
     : 0;
 
   const quickSearches = [
-    { label: text('Кофе', 'Кофе', 'Coffee'), query: text('кофейня', 'кофехана', 'coffee shop'), icon: Utensils },
-    { label: text('Парки', 'Саябақтар', 'Parks'), query: text('парк', 'саябақ', 'park'), icon: Trees },
-    { label: text('Интересные места', 'Көрікті жерлер', 'Things to see'), query: text('достопримечательность', 'көрікті жер', 'tourist attraction'), icon: Landmark },
-    { label: text('Веломастерские', 'Велошеберханалар', 'Bike repair'), query: text('веломастерская', 'велошеберхана', 'bike repair'), icon: Wrench },
+    { label: text('Кофе', 'Кофе', 'Coffee'), compactLabel: text('Кофе', 'Кофе', 'Coffee'), query: text('кофейня', 'кофехана', 'coffee shop'), icon: Utensils },
+    { label: text('Парки', 'Саябақтар', 'Parks'), compactLabel: text('Парки', 'Саябақ', 'Parks'), query: text('парк', 'саябақ', 'park'), icon: Trees },
+    { label: text('Интересные места', 'Көрікті жерлер', 'Things to see'), compactLabel: text('Места', 'Орындар', 'Places'), query: text('достопримечательность', 'көрікті жер', 'tourist attraction'), icon: Landmark },
+    { label: text('Веломастерские', 'Велошеберханалар', 'Bike repair'), compactLabel: text('Ремонт', 'Жөндеу', 'Repair'), query: text('веломастерская', 'велошеберхана', 'bike repair'), icon: Wrench },
   ];
   const pinnedPlaces = storedPlaces.filter((place) => place.kind !== 'history');
   const recentPlaces = storedPlaces.filter((place) => place.kind === 'history').slice(0, 8);
@@ -950,14 +950,14 @@ export function CityExploreMap({
         </div>
         <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || text('Твоё местоположение', 'Сенің орналасқан жерің', 'Your location')}</strong><small>{locationStatus}</small></div></div>
         {!destination && <div className="map-place-shortcuts">
-          <button type="button" className={homePlace ? 'is-saved' : ''} onClick={() => homePlace ? chooseDestination(homePlace) : beginPinning('home')}><Home size={14} />{homePlace ? text('Дом', 'Үй', 'Home') : text('Добавить дом', 'Үйді қосу', 'Add home')}</button>
-          <button type="button" className={workPlace ? 'is-saved' : ''} onClick={() => workPlace ? chooseDestination(workPlace) : beginPinning('work')}><Briefcase size={14} />{workPlace ? text('Работа', 'Жұмыс', 'Work') : text('Добавить работу', 'Жұмысты қосу', 'Add work')}</button>
-          {favoritePlaces.slice(0, 3).map((place) => <button type="button" className="is-saved" key={place.recordId} onClick={() => chooseDestination(place)}><Star size={14} />{place.name}</button>)}
-          <button type="button" onClick={() => beginPinning('favorite')}><Plus size={14} />{text('Закрепить место', 'Орынды бекіту', 'Pin a place')}</button>
-          {pinningKind && <button type="button" className="map-pinning-cancel" onClick={() => setPinningKind(null)}><X size={14} />{text('Отмена', 'Бас тарту', 'Cancel')}</button>}
+          <button type="button" className={homePlace ? 'is-saved' : ''} onClick={() => homePlace ? chooseDestination(homePlace) : beginPinning('home')}><Home size={14} /><span className="map-control-label-full">{homePlace ? text('Дом', 'Үй', 'Home') : text('Добавить дом', 'Үйді қосу', 'Add home')}</span><span className="map-control-label-compact">{text('Дом', 'Үй', 'Home')}</span></button>
+          <button type="button" className={workPlace ? 'is-saved' : ''} onClick={() => workPlace ? chooseDestination(workPlace) : beginPinning('work')}><Briefcase size={14} /><span className="map-control-label-full">{workPlace ? text('Работа', 'Жұмыс', 'Work') : text('Добавить работу', 'Жұмысты қосу', 'Add work')}</span><span className="map-control-label-compact">{text('Работа', 'Жұмыс', 'Work')}</span></button>
+          {favoritePlaces.slice(0, 3).map((place) => <button type="button" className="is-saved map-favorite-shortcut" key={place.recordId} onClick={() => chooseDestination(place)}><Star size={14} /><span>{place.name}</span></button>)}
+          <button type="button" onClick={() => beginPinning('favorite')}><Plus size={14} /><span className="map-control-label-full">{text('Закрепить место', 'Орынды бекіту', 'Pin a place')}</span><span className="map-control-label-compact">{text('Место', 'Орын', 'Place')}</span></button>
+          {pinningKind && <button type="button" className="map-pinning-cancel" onClick={() => setPinningKind(null)}><X size={14} /><span>{text('Отмена', 'Бас тарту', 'Cancel')}</span></button>}
         </div>}
         {placeLibraryError && <p className="map-place-library-error" role="status">{placeLibraryError}</p>}
-        {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, query: quickQuery, icon: Icon }) => <button type="button" key={label} onClick={() => runQuickSearch(quickQuery)}><Icon size={14} />{label}</button>)}</div>}
+        {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, compactLabel, query: quickQuery, icon: Icon }) => <button type="button" aria-label={label} key={label} onClick={() => runQuickSearch(quickQuery)}><Icon size={14} /><span className="map-control-label-full">{label}</span><span className="map-control-label-compact">{compactLabel}</span></button>)}</div>}
       </div>
       <div className="city-map-canvas global-map-canvas" role="region" aria-label={text('Интерактивная велосипедная карта', 'Интерактивті велосипед картасы', 'Interactive cycling map')}>
         <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.125} zoomDelta={0.25} wheelPxPerZoomLevel={360} touchZoom="center" scrollWheelZoom zoomControl={false} fadeAnimation={false} className="city-leaflet-map global-leaflet-map">
