@@ -19,6 +19,7 @@ import {
 } from '../lib/hazards';
 import { useLocaleText } from '../lib/localized';
 import { navigationUpdatedEvent } from '../lib/activeNavigation';
+import '../styles/map-mobile.css';
 
 type MapTab = 'places' | 'hazards';
 
@@ -205,7 +206,7 @@ export function MapPage() {
     setReportOpen(true);
   }
 
-  return <PageShell><main className="cycle-page map-page">
+  return <PageShell><main className={`cycle-page map-page${tab === 'places' ? ' map-page-map-mode' : ''}`}>
     <header className="map-page-heading">
       <div><p className="kicker">Safety Radar · {text('живая карта города', 'қаланың тірі картасы', 'live city map')}</p><h1>{text('Едь безопаснее.', 'Қауіпсіз жүр.', 'Ride safer.')}</h1><p>{text('Сравни маршруты по опасностям и получай свежие предупреждения от райдеров.', 'Бағыттарды қауіп бойынша салыстырып, райдерлерден жаңа ескертулер ал.', 'Compare routes by risk and get fresh warnings from riders nearby.')}</p></div>
       <Link className="outline-inline-button" href="/routes/new">{text('Создать маршрут', 'Бағыт жасау', 'Create route')}</Link>

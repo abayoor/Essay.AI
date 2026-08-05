@@ -1,0 +1,65 @@
+@media (max-width: 760px) {
+  .cycle-shell:has(.map-page-map-mode) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+    padding-bottom: calc(63px + env(safe-area-inset-bottom));
+  }
+
+  .cycle-shell:has(.map-page-map-mode) > .cycle-header {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .map-page-map-mode {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    padding: 8px 0 0;
+    width: 100%;
+  }
+
+  .map-page-map-mode .map-page-heading {
+    display: none;
+  }
+
+  .map-page-map-mode .map-section-tabs {
+    flex: 0 0 auto;
+    margin: 0 6px 7px;
+  }
+
+  .map-page-map-mode > .global-city-map {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .map-page-map-mode .global-map-layout,
+  .map-page-map-mode .global-map-canvas,
+  .map-page-map-mode .global-leaflet-map {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .map-page-map-mode .global-map-layout {
+    flex: 1 1 auto;
+  }
+
+  .map-page-map-mode .global-map-canvas,
+  .map-page-map-mode .global-leaflet-map {
+    border-radius: 18px 18px 0 0;
+  }
+
+  .map-page-map-mode .global-route-panel {
+    bottom: 10px;
+  }
+
+  .map-page-map-mode .map-attribution-note {
+    display: none;
+  }
+}
