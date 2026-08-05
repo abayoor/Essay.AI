@@ -127,17 +127,30 @@
   }
 
   .map-page-map-mode .global-map-layout:has(.map-search-results) .map-recenter-control,
+  .map-page-map-mode .global-map-layout:has(.map-search-results) .map-layer-switcher,
   .map-page-map-mode .global-map-layout:has(.map-search-results) .map-start-hint,
   .map-page-map-mode .global-map-layout:has(.map-search-results) .safety-report-trigger {
     visibility: hidden;
   }
 
   .map-page-map-mode .global-leaflet-map .map-layer-switcher {
-    display: none;
+    display: flex;
+    left: auto;
+    right: 10px;
+    top: 154px;
+  }
+
+  .map-page-map-mode .global-map-layout:has(.route-addresses) .map-layer-switcher {
+    top: 74px;
   }
 
   .map-page-map-mode .map-start-hint {
+    left: 10px;
+    max-width: calc(100% - 146px);
+    right: 136px;
     top: 154px;
+    transform: none;
+    white-space: normal;
   }
 
   .map-page-map-mode .safety-pick-mode .global-map-search {
