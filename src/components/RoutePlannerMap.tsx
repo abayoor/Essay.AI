@@ -185,7 +185,6 @@ export function RoutePlannerMap({ points, waypoints, snappedWaypoints = [], onAd
       touchZoom="center"
       scrollWheelZoom
       fadeAnimation={false}
-      preferCanvas
       className={`route-map planner-map slipstream-route-planner${routing ? ' is-routing' : ''}`}
     >
       <CommunityTileLayer />
@@ -197,7 +196,7 @@ export function RoutePlannerMap({ points, waypoints, snappedWaypoints = [], onAd
         pathOptions={{ color: '#f8fbff', opacity: .72, weight: 3, dashArray: '3 7', lineCap: 'round' }}
         interactive={false}
       />)}
-      <DirectionalRouteLine points={points} weight={6} maxArrows={18} />
+      <DirectionalRouteLine points={points} weight={7} />
       {markers.map((marker) => <Marker
         key={marker.key}
         position={[marker.point.lat, marker.point.lng]}

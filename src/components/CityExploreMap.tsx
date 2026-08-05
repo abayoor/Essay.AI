@@ -3,19 +3,25 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Bike,
+  Briefcase,
   Clock3,
   Gauge,
+  History,
+  Home,
   LocateFixed,
   MapPin,
   Mountain,
   Navigation,
   Play,
+  Plus,
   RefreshCw,
   Route,
   Search,
   ShieldCheck,
   Square,
+  Star,
   Timer,
+  Trash2,
   Utensils,
   Trees,
   Landmark,
@@ -32,6 +38,15 @@ import { usePreferences } from '../lib/preferences';
 import type { RoutePoint } from '../lib/cyclingModels';
 import { routeCyclingWaypoints, type CyclingRouteInstruction, type CyclingRoutePreference, type CyclingRouteResult } from '../lib/directions';
 import { reverseMapLocation, searchMapPlaces, type MapPlace, type ResolvedMapLocation } from '../lib/places';
+import {
+  clearMapSearchHistory,
+  loadMapPlaces,
+  rememberMapSearch,
+  removeMapPlace,
+  savePinnedMapPlace,
+  type PinnedMapPlaceKind,
+  type StoredMapPlace,
+} from '../lib/mapPlaces';
 import { saveMapRouteDraft } from '../lib/routeDraft';
 import { distanceMeters, distanceToRouteMeters, routeProgress, type RouteProgress } from '../lib/routeProjection';
 import type { HazardReport, HazardType } from '../lib/hazards';
@@ -322,9 +337,14 @@ export function CityExploreMap({
   const { locale } = usePreferences();
   const text = useLocaleText();
   const restoredNavigation = useMemo(() => loadMapNavigation(), []);
+  const searchInput = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MapPlace[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [pinningKind, setPinningKind] = useState<PinnedMapPlaceKind | null>(null);
+  const [storedPlaces, setStoredPlaces] = useState<StoredMapPlace[]>([]);
+  const [placeLibraryError, setPlaceLibraryError] = useState('');
   const [riderLocation, setRiderLocation] = useState<RoutePoint | null>(null);
   const [riderHeading, setRiderHeading] = useState(0);
   const [currentSpeedKmh, setCurrentSpeedKmh] = useState<number | null>(null);
@@ -616,6 +636,20 @@ export function CityExploreMap({
   }, [navigationActive]);
 
   useEffect(() => {
+    let current = true;
+    void loadMapPlaces()
+      .then((places) => {
+        if (current) setStoredPlaces(places);
+      })
+      .catch(() => {
+        if (current) setPlaceLibraryError(text('Не удалось загрузить сохранённые места.', 'Сақталған орындарды жүктеу мүмкін болмады.', 'Saved places could not be loaded.'));
+      });
+    return () => {
+      current = false;
+    };
+  }, [text]);
+
+  useEffect(() => {
     const value = query.trim();
     if (value.length < 2) {
       setSearchResults([]);
@@ -731,7 +765,17 @@ export function CityExploreMap({
     });
   }, [destination, navigationSource, routingOrigin, text]);
 
+  async function refreshPlaceLibrary() {
+    try {
+      setStoredPlaces(await loadMapPlaces());
+      setPlaceLibraryError('');
+    } catch {
+      setPlaceLibraryError(text('Не удалось обновить сохранённые места.', 'Сақталған орындарды жаңарту мүмкін болмады.', 'Saved places could not be updated.'));
+    }
+  }
+
   function chooseDestination(place: MapPlace) {
+    const placeKind = pinningKind;
     clearMapNavigation();
     setDestination(place);
     setNavigationSource('search');
@@ -739,6 +783,17 @@ export function CityExploreMap({
     setRouteOptions([]);
     setQuery('');
     setSearchResults([]);
+    setSearchOpen(false);
+    setPinningKind(null);
+    void (async () => {
+      try {
+        await rememberMapSearch(place);
+        if (placeKind) await savePinnedMapPlace(placeKind, place);
+        await refreshPlaceLibrary();
+      } catch {
+        setPlaceLibraryError(text('Место выбрано, но сохранить его не удалось.', 'Орын таңдалды, бірақ оны сақтау мүмкін болмады.', 'The place was selected but could not be saved.'));
+      }
+    })();
     if (riderLocation) {
       setRoutingOrigin(riderLocation);
       setRouteError('');
@@ -795,6 +850,39 @@ export function CityExploreMap({
     setQuery('');
   }
 
+  function beginPinning(kind: PinnedMapPlaceKind) {
+    setPinningKind(kind);
+    setQuery('');
+    setSearchResults([]);
+    setSearchOpen(true);
+    window.setTimeout(() => searchInput.current?.focus(), 0);
+  }
+
+  function runQuickSearch(value: string) {
+    setPinningKind(null);
+    setQuery(value);
+    setSearchOpen(true);
+    window.setTimeout(() => searchInput.current?.focus(), 0);
+  }
+
+  async function removeStoredPlace(place: StoredMapPlace) {
+    try {
+      await removeMapPlace(place.recordId);
+      await refreshPlaceLibrary();
+    } catch {
+      setPlaceLibraryError(text('Не удалось удалить место.', 'Орынды жою мүмкін болмады.', 'The place could not be removed.'));
+    }
+  }
+
+  async function clearSearchHistory() {
+    try {
+      await clearMapSearchHistory();
+      await refreshPlaceLibrary();
+    } catch {
+      setPlaceLibraryError(text('Не удалось очистить историю.', 'Тарихты тазалау мүмкін болмады.', 'Search history could not be cleared.'));
+    }
+  }
+
   const visibleRoute = activeRoute?.result.points ?? [];
   const totalMinutes = activeRoute ? estimatedRideMinutes(activeRoute.result) : 0;
   const remainingRatio = activeRoute && progress
@@ -816,24 +904,63 @@ export function CityExploreMap({
     { label: text('Интересные места', 'Көрікті жерлер', 'Things to see'), query: text('достопримечательность', 'көрікті жер', 'tourist attraction'), icon: Landmark },
     { label: text('Веломастерские', 'Велошеберханалар', 'Bike repair'), query: text('веломастерская', 'велошеберхана', 'bike repair'), icon: Wrench },
   ];
+  const pinnedPlaces = storedPlaces.filter((place) => place.kind !== 'history');
+  const recentPlaces = storedPlaces.filter((place) => place.kind === 'history').slice(0, 8);
+  const homePlace = pinnedPlaces.find((place) => place.kind === 'home') ?? null;
+  const workPlace = pinnedPlaces.find((place) => place.kind === 'work') ?? null;
+  const favoritePlaces = pinnedPlaces.filter((place) => place.kind === 'favorite');
+  const showSearchMenu = searchOpen && !destination && (searching
+    || query.trim().length >= 2
+    || pinnedPlaces.length > 0
+    || recentPlaces.length > 0
+    || pinningKind !== null);
+
+  function pinningTitle(kind: PinnedMapPlaceKind): string {
+    if (kind === 'home') return text('дом', 'үй', 'home');
+    if (kind === 'work') return text('работу', 'жұмыс', 'work');
+    return text('место', 'орын', 'place');
+  }
 
   return <section className={`city-explore global-city-map${navigationActive ? ' navigation-active' : ''}${hazardPickMode ? ' safety-pick-mode' : ''}`}>
     <div className="city-map-layout global-map-layout">
       <div className="global-map-search">
         <div className="map-place-search">
           <Search size={19} aria-hidden="true" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={destination ? text('Куда теперь?', 'Енді қайда?', 'Where next?') : text('Куда поедем? Адрес или место', 'Қайда барамыз? Мекенжай не орын', 'Where to? Address or place')} aria-label={text('Поиск адреса или места', 'Мекенжайды не орынды іздеу', 'Search address or place')} autoComplete="off" />
+          <input ref={searchInput} value={query} onFocus={() => setSearchOpen(true)} onBlur={() => window.setTimeout(() => setSearchOpen(false), 160)} onChange={(event) => setQuery(event.target.value)} placeholder={pinningKind ? text(`Найди ${pinningTitle(pinningKind)} для закрепления`, `${pinningTitle(pinningKind)} орнын тауып бекіт`, `Find ${pinningTitle(pinningKind)} to pin`) : destination ? text('Куда теперь?', 'Енді қайда?', 'Where next?') : text('Куда поедем? Адрес или место', 'Қайда барамыз? Мекенжай не орын', 'Where to? Address or place')} aria-label={text('Поиск адреса или места', 'Мекенжайды не орынды іздеу', 'Search address or place')} autoComplete="off" />
           {query && <button type="button" aria-label={text('Очистить поиск', 'Іздеуді тазарту', 'Clear search')} onClick={() => setQuery('')}><X size={16} /></button>}
-          {(searching || searchResults.length > 0) && <div className="map-search-results">
+          {showSearchMenu && <div className="map-search-results map-place-library" onMouseDown={(event) => event.preventDefault()}>
             {searching && <p>{text('Сначала ищем рядом с тобой…', 'Алдымен маңайыңнан іздейміз…', 'Searching nearby first…')}</p>}
-            {!searching && searchResults.map((place, index) => <button type="button" key={place.id} onClick={() => chooseDestination(place)}><MapPin size={16} /><span><strong>{place.name}{index === 0 && <em>{text('Рядом', 'Жақын', 'Nearby')}</em>}</strong><small>{place.subtitle}</small></span></button>)}
+            {!searching && query.trim().length >= 2 && searchResults.map((place, index) => <button className="map-place-result" type="button" key={place.id} onClick={() => chooseDestination(place)}><MapPin size={16} /><span><strong>{place.name}{pinningKind ? <em>{text('Закрепить', 'Бекіту', 'Pin')}</em> : index === 0 && <em>{text('Рядом', 'Жақын', 'Nearby')}</em>}</strong><small>{place.subtitle}</small></span></button>)}
+            {!searching && query.trim().length >= 2 && searchResults.length === 0 && <p>{text('Ничего не нашли. Попробуй другой запрос.', 'Ештеңе табылмады. Басқа сұрау енгізіп көр.', 'Nothing found. Try another search.')}</p>}
+            {!searching && query.trim().length < 2 && <>
+              {pinningKind && <p className="map-library-hint"><Star size={15} />{text(`Введи адрес, чтобы закрепить ${pinningTitle(pinningKind)}.`, `${pinningTitle(pinningKind)} орнын бекіту үшін мекенжайды енгіз.`, `Enter an address to pin ${pinningTitle(pinningKind)}.`)}</p>}
+              {pinnedPlaces.length > 0 && <section className="map-library-section">
+                <header><strong>{text('Закреплённые места', 'Бекітілген орындар', 'Pinned places')}</strong></header>
+                {pinnedPlaces.map((place) => {
+                  const Icon = place.kind === 'home' ? Home : place.kind === 'work' ? Briefcase : Star;
+                  return <div className="map-library-row" key={place.recordId}><button className="map-place-result" type="button" onClick={() => chooseDestination(place)}><Icon size={16} /><span><strong>{place.kind === 'home' ? text('Дом', 'Үй', 'Home') : place.kind === 'work' ? text('Работа', 'Жұмыс', 'Work') : place.name}</strong><small>{place.kind === 'favorite' ? place.subtitle : place.name}</small></span></button><button className="map-place-remove" type="button" aria-label={text('Удалить закреплённое место', 'Бекітілген орынды жою', 'Remove pinned place')} onClick={() => void removeStoredPlace(place)}><X size={15} /></button></div>;
+                })}
+              </section>}
+              {recentPlaces.length > 0 && <section className="map-library-section">
+                <header><strong><History size={14} />{text('Недавние', 'Соңғылар', 'Recent')}</strong><button type="button" onClick={() => void clearSearchHistory()}><Trash2 size={13} />{text('Очистить', 'Тазалау', 'Clear')}</button></header>
+                {recentPlaces.map((place) => <button className="map-place-result" type="button" key={place.recordId} onClick={() => chooseDestination(place)}><History size={16} /><span><strong>{place.name}</strong><small>{place.subtitle}</small></span></button>)}
+              </section>}
+            </>}
           </div>}
         </div>
         <div className="rider-location-strip"><span><Bike size={17} /></span><div><strong>{resolvedLocation?.label || text('Твоё местоположение', 'Сенің орналасқан жерің', 'Your location')}</strong><small>{locationStatus}</small></div></div>
-        {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, query: quickQuery, icon: Icon }) => <button type="button" key={label} onClick={() => setQuery(quickQuery)}><Icon size={14} />{label}</button>)}</div>}
+        {!destination && <div className="map-place-shortcuts">
+          <button type="button" className={homePlace ? 'is-saved' : ''} onClick={() => homePlace ? chooseDestination(homePlace) : beginPinning('home')}><Home size={14} />{homePlace ? text('Дом', 'Үй', 'Home') : text('Добавить дом', 'Үйді қосу', 'Add home')}</button>
+          <button type="button" className={workPlace ? 'is-saved' : ''} onClick={() => workPlace ? chooseDestination(workPlace) : beginPinning('work')}><Briefcase size={14} />{workPlace ? text('Работа', 'Жұмыс', 'Work') : text('Добавить работу', 'Жұмысты қосу', 'Add work')}</button>
+          {favoritePlaces.slice(0, 3).map((place) => <button type="button" className="is-saved" key={place.recordId} onClick={() => chooseDestination(place)}><Star size={14} />{place.name}</button>)}
+          <button type="button" onClick={() => beginPinning('favorite')}><Plus size={14} />{text('Закрепить место', 'Орынды бекіту', 'Pin a place')}</button>
+          {pinningKind && <button type="button" className="map-pinning-cancel" onClick={() => setPinningKind(null)}><X size={14} />{text('Отмена', 'Бас тарту', 'Cancel')}</button>}
+        </div>}
+        {placeLibraryError && <p className="map-place-library-error" role="status">{placeLibraryError}</p>}
+        {!destination && <div className="map-quick-searches">{quickSearches.map(({ label, query: quickQuery, icon: Icon }) => <button type="button" key={label} onClick={() => runQuickSearch(quickQuery)}><Icon size={14} />{label}</button>)}</div>}
       </div>
       <div className="city-map-canvas global-map-canvas" role="region" aria-label={text('Интерактивная велосипедная карта', 'Интерактивті велосипед картасы', 'Interactive cycling map')}>
-        <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.125} zoomDelta={0.25} wheelPxPerZoomLevel={360} touchZoom="center" scrollWheelZoom zoomControl={false} fadeAnimation={false} preferCanvas className="city-leaflet-map global-leaflet-map">
+        <MapContainer center={[20, 0]} zoom={3} minZoom={2} maxZoom={18} zoomSnap={0.125} zoomDelta={0.25} wheelPxPerZoomLevel={360} touchZoom="center" scrollWheelZoom zoomControl={false} fadeAnimation={false} className="city-leaflet-map global-leaflet-map">
           <CommunityTileLayer fixedStyle="standard" showSwitcher />
           {!navigationActive && <ZoomControl position="bottomright" />}
           <StartPicker enabled={!riderLocation && !hazardPickMode} onPick={chooseManualStart} />
@@ -856,25 +983,22 @@ export function CityExploreMap({
             interactive={false}
             pathOptions={{ color: '#f8fbff', opacity: .76, weight: 3, dashArray: '3 7', lineCap: 'round' }}
           />}
-          {routeOptions.map((option) => activePreference === option.preference
-            ? <DirectionalRouteLine
-              key={option.preference}
-              points={option.result.points}
-              color="#2f6f55"
-              weight={navigationActive ? 9 : 7}
-              opacity={0.98}
-              showArrows
-              maxArrows={navigationActive ? 24 : 16}
-              interactive={!hazardPickMode && !navigationActive}
-              onClick={() => !navigationActive && setActivePreference(option.preference)}
-            />
-            : <Polyline
-              key={option.preference}
-              positions={option.result.points.map((point) => [point.lat, point.lng] as [number, number])}
-              interactive={!hazardPickMode && !navigationActive}
-              pathOptions={{ color: '#9078d6', weight: 4, opacity: navigationActive ? 0 : 0.45, lineCap: 'round', lineJoin: 'round' }}
-              eventHandlers={{ click: () => !navigationActive && setActivePreference(option.preference) }}
-            />)}
+          {routeOptions.filter((option) => option.preference !== activePreference).map((option) => <Polyline
+            key={option.preference}
+            positions={option.result.points.map((point) => [point.lat, point.lng] as [number, number])}
+            interactive={!hazardPickMode && !navigationActive}
+            pathOptions={{ color: '#9078d6', weight: 4, opacity: navigationActive ? 0 : 0.45, lineCap: 'round', lineJoin: 'round' }}
+            eventHandlers={{ click: () => !navigationActive && setActivePreference(option.preference) }}
+          />)}
+          {activeRoute && <DirectionalRouteLine
+            key={activeRoute.preference}
+            points={activeRoute.result.points}
+            color="#00b98a"
+            weight={navigationActive ? 10 : 8}
+            opacity={1}
+            interactive={!hazardPickMode && !navigationActive}
+            onClick={() => !navigationActive && setActivePreference(activeRoute.preference)}
+          />}
         </MapContainer>
         {!navigationActive && !hazardPickMode && <button
           type="button"
