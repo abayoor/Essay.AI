@@ -10,7 +10,7 @@ import type { SocialPost } from '../lib/cyclingModels';
 import { useLocaleText } from '../lib/localized';
 import { loadFriendHub } from '../lib/friends';
 import { loadMarketplaceListings, type MarketplaceListing } from '../lib/marketplace';
-import { loadPost, loadPosts } from '../lib/posts';
+import { deletePost, loadPost, loadPosts } from '../lib/posts';
 import { loadRiderProfile } from '../lib/rider';
 import { useTranslations } from '../lib/translations';
 
@@ -115,6 +115,11 @@ export function FeedPage() {
     setPosts((current) => current.map((post) => post.id === nextPost.id ? nextPost : post));
   }
 
+  async function removePost(postId: string) {
+    await deletePost(postId);
+    setPosts((current) => current.filter((post) => post.id !== postId));
+  }
+
   useEffect(() => {
     if (!loading && !session) navigate('/auth/sign-in');
     if (session) void refresh(true);
@@ -165,6 +170,7 @@ export function FeedPage() {
               viewerId={session?.user.id ?? ''}
               onLikeChange={updateLike}
               onPostChange={updatePost}
+              onDelete={removePost}
             />)}
             {hasMore && <button className="feed-load-more" type="button" onClick={() => void loadMore()} disabled={moreLoading}>
               {moreLoading ? text('Загружаем…', 'Жүктелуде…', 'Loading…') : text('Показать ещё', 'Тағы көрсету', 'Show more')}

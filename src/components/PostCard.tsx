@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent, type MouseEvent, type PointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, MessageCircle, Send } from 'lucide-react';
+import { Heart, LoaderCircle, MessageCircle, Send, Trash2 } from 'lucide-react';
 import { Link } from 'wouter';
 import type { SocialPost } from '../lib/cyclingModels';
 import { useLocaleText } from '../lib/localized';
@@ -15,6 +15,7 @@ type PostCardProps = {
   viewerId: string;
   onLikeChange: (postId: string, shouldBeLiked: boolean) => void;
   onPostChange: (post: SocialPost) => void;
+  onDelete: (postId: string) => Promise<void>;
 };
 
 type LikeAnimation = {
@@ -43,12 +44,13 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
     && Boolean(target.closest('a, button, input, textarea, select, video, [data-no-double-like]'));
 }
 
-export function PostCard({ post, viewerId, onLikeChange, onPostChange }: PostCardProps) {
+export function PostCard({ post, viewerId, onLikeChange, onPostChange, onDelete }: PostCardProps) {
   const text = useLocaleText();
   const [comment, setComment] = useState('');
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
   const [commentBusy, setCommentBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [error, setError] = useState('');
   const [likeBurst, setLikeBurst] = useState(false);
   const [postLikeAnimation, setPostLikeAnimation] = useState<LikeAnimation | null>(null);
@@ -57,6 +59,7 @@ export function PostCard({ post, viewerId, onLikeChange, onPostChange }: PostCar
   const lastTouchRef = useRef<TouchPoint | null>(null);
   const lastGestureLikeAtRef = useRef(0);
   const liked = post.likes.some((like) => like.user_id === viewerId);
+  const isOwnPost = post.user_id === viewerId;
 
   function playSmallLikeBurst() {
     setLikeBurst(true);
@@ -166,6 +169,26 @@ export function PostCard({ post, viewerId, onLikeChange, onPostChange }: PostCar
     if (!commentsOpen) window.setTimeout(() => commentInputRef.current?.focus(), 170);
   }
 
+  async function removePost() {
+    if (deleteBusy || !isOwnPost || !window.confirm(text(
+      'Удалить эту публикацию? Это действие нельзя отменить.',
+      'Осы жазбаны жою керек пе? Бұл әрекетті қайтару мүмкін емес.',
+      'Delete this post? This action cannot be undone.',
+    ))) return;
+    setDeleteBusy(true);
+    setError('');
+    try {
+      await onDelete(post.id);
+    } catch {
+      setError(text(
+        'Не удалось удалить публикацию. Попробуй ещё раз.',
+        'Жазбаны жою мүмкін болмады. Қайталап көр.',
+        'Could not delete the post. Try again.',
+      ));
+      setDeleteBusy(false);
+    }
+  }
+
   return <article
     ref={cardRef}
     className="post-card"
@@ -207,6 +230,18 @@ export function PostCard({ post, viewerId, onLikeChange, onPostChange }: PostCar
           <time dateTime={post.created_at}>{formatDate(post.created_at, text('ru-RU', 'kk-KZ', 'en-US'))}</time>
         </span>
       </div>
+      {isOwnPost && <button
+        type="button"
+        className="post-delete-button"
+        onClick={() => void removePost()}
+        disabled={deleteBusy}
+        aria-label={text('Удалить публикацию', 'Жазбаны жою', 'Delete post')}
+        title={text('Удалить публикацию', 'Жазбаны жою', 'Delete post')}
+      >
+        {deleteBusy
+          ? <LoaderCircle className="post-delete-spinner" size={18} aria-hidden="true" />
+          : <Trash2 size={18} aria-hidden="true" />}
+      </button>}
     </header>
 
     {post.media_url && <div className="post-media">

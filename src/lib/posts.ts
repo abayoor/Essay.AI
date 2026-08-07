@@ -364,6 +364,16 @@ export async function addPostComment(postId: string, comment: string): Promise<v
 }
 
 export async function deletePost(postId: string): Promise<void> {
-  const { error } = await supabase.from('posts').delete().eq('id', postId);
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) throw new Error('Войди в аккаунт, чтобы удалить публикацию.');
+
+  const { data, error } = await supabase
+    .from('posts')
+    .delete()
+    .eq('id', postId)
+    .eq('user_id', authData.user.id)
+    .select('id')
+    .maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error('Публикация не найдена или принадлежит другому райдеру.');
 }

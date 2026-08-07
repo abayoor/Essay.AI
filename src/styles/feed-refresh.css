@@ -50,6 +50,52 @@
   letter-spacing: -.01em;
 }
 
+.post-author-copy {
+  flex: 1;
+}
+
+.post-delete-button {
+  align-items: center;
+  align-self: center;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 40px;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0;
+  transition: background .16s, color .16s;
+  width: 40px;
+}
+
+.post-delete-button:hover,
+.post-delete-button:focus-visible {
+  background: color-mix(in srgb, #d94b4b 11%, var(--surface));
+  color: #c43f3f;
+  outline: 0;
+}
+
+.post-delete-button:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, #d94b4b 18%, transparent);
+}
+
+.post-delete-button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.post-delete-spinner {
+  animation: post-delete-spin .8s linear infinite;
+}
+
+@keyframes post-delete-spin {
+  to { transform: rotate(360deg); }
+}
+
 .post-author-meta {
   align-items: center;
   color: var(--muted);
